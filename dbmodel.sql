@@ -1,54 +1,54 @@
-CREATE TABLE IF NOT EXISTS `plane` (
-    `player_id` INT(10) NOT NULL,
-    `color` ENUM(
-        'RED',
-        'ORANGE',
-        'GREEN',
-        'BLUE',
-        'PURPLE'
-    ) DEFAULT NULL,
-    `colors` SET(
-        'RED',
-        'ORANGE',
-        'GREEN',
-        'BLUE',
-        'PURPLE'
-    ) DEFAULT NULL,
-    `speed` INT(2) NOT NULL DEFAULT '3',
-    `seats` INT(2) NOT NULL DEFAULT '1',
-    `fuel` INT(2) NOT NULL DEFAULT '3',
-    `cash` INT(2) NOT NULL,
-    `current_node` VARCHAR(50) DEFAULT NULL,
-    `prior_node` VARCHAR(50) DEFAULT NULL,
-    `extra_speed` TINYINT(1) DEFAULT NULL,
-    `extra_seat` TINYINT(1) DEFAULT NULL,
-    PRIMARY KEY (`player_id`)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8;
-
-CREATE TABLE IF NOT EXISTS `pax` (
+CREATE TABLE `pax` (
     `pax_id` INT(3) NOT NULL AUTO_INCREMENT,
     `order` INT(3) NOT NULL,
     `status` ENUM(
-        'QUEUED',
+        'QUEUE',
         'PORT',
         'SEAT',
         'EXTRA_SEAT',
-        'DELIVERED',
-        'SPENT',
+        'CASH',
+        'DONE',
         'COMPLAINT'
-    ) NOT NULL,
+    ) NOT NULL DEFAULT 'QUEUE',
     `anger` INT(1) NOT NULL DEFAULT '0',
     `cash` INT(1) NOT NULL,
-    `begin_node` VARCHAR(50) NOT NULL,
-    `end_node` VARCHAR(50) NOT NULL,
-    `current_node` VARCHAR(50) DEFAULT NULL,
+    `origin` VARCHAR(50) NOT NULL,
+    `destination` VARCHAR(50) NOT NULL,
+    `location` VARCHAR(50) DEFAULT NULL,
     `player_id` INT(10) DEFAULT NULL,
     PRIMARY KEY (`pax_id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8 AUTO_INCREMENT = 1;
 
-CREATE TABLE IF NOT EXISTS `weather` (
+CREATE TABLE `plane` (
+    `player_id` INT(10) NOT NULL,
+    `alliance` ENUM(
+        'ATL',
+        'DFW',
+        'LAX',
+        'ORD',
+        'SEA'
+    ) DEFAULT NULL,
+    `alliances` SET(
+        'ATL',
+        'DFW',
+        'LAX',
+        'ORD',
+        'SEA'
+    ) DEFAULT NULL,
+    `origin` VARCHAR(50) DEFAULT NULL,
+    `location` VARCHAR(50) DEFAULT NULL,
+    `extra_speed` TINYINT(1) DEFAULT NULL,
+    `extra_seat` TINYINT(1) DEFAULT NULL,
+    `cash` INT(2) NOT NULL DEFAULT '0',
+    `speed` INT(2) NOT NULL DEFAULT '3',
+    `speed_remain` INT(2) NOT NULL DEFAULT '3',
+    `seats` INT(2) NOT NULL DEFAULT '1',
+    PRIMARY KEY (`player_id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8;
+
+CREATE TABLE `weather` (
     `weather_id` INT(1) NOT NULL AUTO_INCREMENT,
     `token` ENUM('FAST', 'SLOW') NOT NULL,
-    `current_node` VARCHAR(50) DEFAULT NULL,
+    `location` VARCHAR(50) DEFAULT NULL,
     PRIMARY KEY (`weather_id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8 AUTO_INCREMENT = 1;

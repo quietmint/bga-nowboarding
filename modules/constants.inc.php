@@ -3,6 +3,9 @@
 // States
 const N_STATE_BEGIN = 1;
 const N_STATE_BUILD = 2;
+const N_STATE_BUILD_ALLIANCE = 21;
+const N_STATE_BUILD_ALLIANCE2 = 22;
+const N_STATE_BUILD_UPGRADE = 23;
 const N_STATE_SHUFFLE = 3;
 const N_STATE_PREFLIGHT = 4;
 const N_STATE_FLIGHT = 5;
@@ -13,22 +16,22 @@ const N_STATE_END = 99;
 const N_OPTION_VERSION = 300;
 
 // Reference lookups
-const N_COLOR_REF = [
-    'RED' => ['hex' => 'ff0000', 'startNode' => 'ORD'],
-    'ORANGE' => ['hex' => 'f07f16', 'startNode' => 'LAX'],
-    'GREEN' => ['hex' => '008000', 'startNode' => 'ATL'],
-    'BLUE' => ['hex' => '0000ff', 'startNode' => 'SEA'],
-    'PURPLE' => ['hex' => '982fff', 'startNode' => 'DFW'],
+const N_REF_ALLIANCE_COLOR = [
+    'ATL' => '16a34a', // green
+    'DFW' => '7e22ce', // purple
+    'LAX' => 'd97706', // orange
+    'ORD' => 'b91c1c', // red
+    'SEA' => '1d4ed8', // blue
 ];
 
-const N_SEAT_REF = [
+const N_REF_SEAT_COST = [
     2 => 5,
     3 => 9,
     4 => 13,
     5 => 17,
 ];
 
-const N_SPEED_REF = [
+const N_REF_SPEED_COST = [
     4 => 5,
     5 => 7,
     6 => 9,

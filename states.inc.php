@@ -14,17 +14,64 @@ $machinestates = [
 
     N_STATE_BUILD => [
         'name' => 'build',
-        'action' => 'stMultiactive',
-        'args' => 'argBuild',
-        'description' => clienttranslate('Waiting for others to build their airplane'),
-        'descriptionmyturn' => clienttranslate('Build your airplane'),
+        'action' => 'stBuild',
+        'description' => clienttranslate('Wait for others to finish'),
+        'descriptionmyturn' => '',
+        'initialprivate' => N_STATE_BUILD_ALLIANCE,
+        'possibleactions' => [
+            'buildReset',
+        ],
+        'transitions' => [
+            'buildComplete' => N_STATE_SHUFFLE,
+        ],
+        'type' => 'multipleactiveplayer',
+    ],
+
+    N_STATE_BUILD_ALLIANCE => [
+        'name' => 'buildAlliance',
+        'action' => 'stBuildAlliance',
+        'args' => 'argBuildAlliance',
+        'descriptionmyturn' => clienttranslate('Choose a starting airport and alliance'),
         'possibleactions' => [
             'buy',
         ],
         'transitions' => [
-            'shuffle' => N_STATE_SHUFFLE,
+            'buildAlliance2' => N_STATE_BUILD_ALLIANCE2,
+            'buildUpgrade' => N_STATE_BUILD_UPGRADE,
         ],
-        'type' => 'multipleactiveplayer',
+        'type' => 'private',
+    ],
+
+    N_STATE_BUILD_ALLIANCE2 => [
+        'name' => 'buildAlliance2',
+        'action' => 'stBuildAlliance2',
+        'args' => 'argBuildAlliance2',
+        'descriptionmyturn' => clienttranslate('Choose a second alliance'),
+        'possibleactions' => [
+            'buildReset',
+            'buy',
+        ],
+        'transitions' => [
+            'buildAlliance' => N_STATE_BUILD_ALLIANCE,
+            'buildUpgrade' => N_STATE_BUILD_UPGRADE,
+        ],
+        'type' => 'private',
+    ],
+
+    N_STATE_BUILD_UPGRADE => [
+        'name' => 'buildUpgrade',
+        'action' => 'stBuildUpgrade',
+        'args' => 'argBuildUpgrade',
+        'descriptionmyturn' => clienttranslate('Choose a starting upgrade'),
+        'possibleactions' => [
+            'buildReset',
+            'buy',
+        ],
+        'transitions' => [
+            'buildAlliance' => N_STATE_BUILD_ALLIANCE,
+            'buildAlliance2' => N_STATE_BUILD_ALLIANCE2
+        ],
+        'type' => 'private',
     ],
 
     N_STATE_SHUFFLE => [
@@ -41,7 +88,7 @@ $machinestates = [
         'name' => 'preflight',
         'action' => 'stMultiactive',
         'args' => 'argPreflight',
-        'description' => clienttranslate('Waiting for others to begin the round'),
+        'description' => clienttranslate('Wait for others to finish'),
         'descriptionmyturn' => clienttranslate('Discuss plans and purchase upgrades before the round begins'),
         'possibleactions' => [
             'begin',
@@ -57,7 +104,7 @@ $machinestates = [
         'name' => 'flight',
         'action' => 'stMultiactive',
         'args' => 'argFlight',
-        'description' => clienttranslate('Waiting for others to finish the round'),
+        'description' => clienttranslate('Wait for others to finish'),
         'descriptionmyturn' => clienttranslate('Go! Go! Go!'),
         'possibleactions' => [
             'dropPassenger',

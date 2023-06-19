@@ -2,18 +2,11 @@
 
 class NMap extends APP_GameClass implements JsonSerializable
 {
-    protected array $nodes = [];
-    protected array $routes = [];
-    protected array $weather = [];
+    public array $nodes = [];
+    public array $routes = [];
+    public array $weather = [];
 
-    public static function load(): NMap
-    {
-        $players = intval(self::getUniqueValueFromDB("SELECT COUNT(1) FROM player"));
-        $dbrows = self::getObjectListFromDB("SELECT * FROM weather");
-        return new NMap($players, $dbrows);
-    }
-
-    protected function __construct(int $players, array $dbrows)
+    public function __construct(int $playerCount, array $dbrows)
     {
         // Build the map
         $this->addRoute('ATL', 'DEN', 3, null);
@@ -31,7 +24,7 @@ class NMap extends APP_GameClass implements JsonSerializable
         $this->addRoute('LAX', 'MIA', 4, 'ORANGE');
         $this->addRoute('LAX', 'SFO', 1, null);
 
-        if ($players >= 4) {
+        if ($playerCount >= 4) {
             // 4-5 player map with Seattle
             $this->addRoute('SEA', 'DEN', 2, 'BLUE');
             $this->addRoute('SEA', 'JFK', 4, 'BLUE');
@@ -46,7 +39,7 @@ class NMap extends APP_GameClass implements JsonSerializable
         foreach ($dbrows as $dbrow) {
             $weatherId = intval($dbrow['weather_id']);
             $token = $dbrow['token'];
-            $nodeId = $dbrow['current_node'];
+            $nodeId = $dbrow['location'];
             if ($nodeId != null) {
                 $node = $this->nodes[$nodeId];
                 $node->setWeather($token);

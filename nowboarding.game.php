@@ -29,20 +29,18 @@ class NowBoarding extends Table
 
     protected function setupNewGame($players, $options = [])
     {
-        $playerCount = count($players);
-        $cash = $playerCount == 2 ? 19 : 12;
-
         // Create players and planes
         foreach ($players as $player_id => $player) {
             $sql = "INSERT INTO player (player_id, player_color, player_canal, player_name, player_avatar) VALUES ($player_id, '000000', '" . $player['player_canal'] . "', '" . addslashes($player['player_name']) . "', '" . addslashes($player['player_avatar']) . "')";
             self::DbQuery($sql);
 
-            $sql = "INSERT INTO plane (player_id, cash) VALUES ($player_id, $cash)";
+            $sql = "INSERT INTO plane (player_id) VALUES ($player_id)";
             self::DbQuery($sql);
         }
         self::reloadPlayersBasicInfos();
 
         // Create weather tokens
+        $playerCount = count($players);
         if ($playerCount == 2) {
             $weatherCount = 1;
         } else if ($playerCount == 3) {
@@ -56,12 +54,9 @@ class NowBoarding extends Table
         }
 
         // Create passengers
-
-        // Activate all players
-        $this->gamestate->setAllPlayersMultiactive();
     }
 
-    public function checkVersion(int $clientVersion): void
+    function checkVersion(int $clientVersion): void
     {
         $gameVersion = $this->gamestate->table_globals[N_OPTION_VERSION];
         if ($clientVersion != $gameVersion) {
@@ -73,8 +68,8 @@ class NowBoarding extends Table
     {
         $players = self::getCollectionFromDb("SELECT player_id id, player_score score FROM player");
         $data = [
-            'map' => NMap::load(),
-            'planes' => NPlane::loadAll(),
+            'map' => $this->getMap(),
+            'planes' => $this->getPlanesByIds(),
             'players' => $players,
             'version' => intval($this->gamestate->table_globals[N_OPTION_VERSION]),
         ];
@@ -87,98 +82,101 @@ class NowBoarding extends Table
         return 0;
     }
 
-    /*
-     * PHASE 1: SETUP
-     * Each player buys a color (2 colors in 2-player games)
-     * Each player buys a seat or speed
-     * Shuffle passengers
-     */
+    //////////////////////////////////////////////////////////////////////////////
+    //////////// States
+    ////////////
 
-    function stMultiactive()
+    /*
+     * SETUP
+     * Each player builds their plane (private parallel states follow) 
+     */
+    function stBuild()
     {
         $this->gamestate->setAllPlayersMultiactive();
+        $this->gamestate->initializePrivateStateForAllActivePlayers();
     }
 
-    function argBuild(): array
+    /*
+     * SETUP #1
+     * Each player chooses a starting airport and alliance
+     */
+    function stBuildAlliance(int $playerId): void
     {
-        $args = [];
-        $requiredCount = self::getPlayersNumber() == 2 ? 2 : 1;
-        $planes = NPlane::loadAll();
-        foreach ($planes as $playerId => $plane) {
-            $buys = $plane->getBuys();
-            if ($plane->getColorsCount() < $requiredCount) {
-                $buys = array_values(array_filter($buys, function ($buy) {
-                    return $buy['type'] == 'COLOR';
-                }));
-            } else {
-                $buys = array_values(array_filter($buys, function ($buy) {
-                    return $buy['type'] != 'EXTRA_SEAT' && $buy['type'] != 'EXTRA_SPEED';
-                }));
-            }
-            $args[$playerId]['buys'] = $buys;
-        }
-        return $args;
+        self::DbQuery("UPDATE plane SET `alliance` = NULL, `alliances` = NULL, `location` = NULL WHERE `player_id` = $playerId");
+        self::DbQuery("UPDATE player SET `player_color` = '000000' WHERE `player_id` = $playerId");
+        self::reloadPlayersBasicInfos();
     }
 
-    function buy(string $type, ?string $color): void
+    function argBuildAlliance(int $playerId): array
     {
-        $state = $this->gamestate->state();
-        $playerId = self::getCurrentPlayerId();
-        $plane = NPlane::loadById($playerId);
-
-        $args = [];
-        if ($type == 'COLOR') {
-            $plane->buyColor($color);
-            $msg = '${player_name} joins the ${colorFancy} alliance';
-            $args = [
-                'i18n' => ['colorFancy'],
-                'colorFancy' => $color,
+        $buys = [];
+        $claimed = self::getObjectListFromDB("SELECT `alliance` FROM plane WHERE `alliance` IS NOT NULL AND `player_id` != $playerId", true);
+        $possible = array_diff(array_keys(N_REF_ALLIANCE_COLOR), $claimed);
+        foreach ($possible as $alliance) {
+            $buys[] = [
+                'type' => 'ALLIANCE',
+                'alliance' => $alliance,
+                'cost' => 0,
             ];
-            if ($state['name'] == 'build' && $plane->getColorsCount() == 1) {
-                // The player's color was just assigned
-                $args['plane'] = $plane;
-                self::reloadPlayersBasicInfos();
-            }
-        } else if ($type == 'EXTRA_SEAT') {
-            $plane->buyExtraSeat();
-            $msg = '${player_name} borrows the temporary seat';
-        } else if ($type == 'EXTRA_SPEED') {
-            $plane->buyExtraSpeed();
-            $msg = '${player_name} borrows the temporary engine';
-        } else if ($type == 'SEAT') {
-            $plane->buySeat();
-            $msg = '${player_name} upgrades to ${seat} seats';
-            $args = [
-                'seat' => $plane->getSeats(),
-            ];
-        } else if ($type == 'SPEED') {
-            $plane->buySpeed();
-            $msg = '${player_name} upgrades to ${speed} engines';
-            $args = [
-                'speed' => $plane->getSpeed(),
-            ];
-        } else {
-            throw new BgaVisibleSystemException("Unknown purchase type: $type");
         }
-
-        $args['player_id'] = $playerId;
-        $args['player_name'] = $plane->getName();
-        $this->notifyAllPlayers('buy', $msg, $args);
-
-        // Refresh state arguments
-        $argFunction = "arg" . ucfirst($state['name']);
-        $args = $this->$argFunction();
-        $this->notifyAllPlayers('stateArgs', '', $args);
-
-        // Give extra time
-        $this->giveExtraTime($playerId);
-
-        // Automatically proceed when build is complete
-        if ($state['name'] == 'build' && empty($args[$playerId]['buys'])) {
-            $this->gamestate->setPlayerNonMultiactive($playerId, 'shuffle');
-        }
+        return ['buys' => $buys];
     }
 
+    /*
+     * SETUP #2
+     * Each player chooses a second alliance (2-player only)
+     */
+    function stBuildAlliance2(int $playerId): void
+    {
+        self::DbQuery("UPDATE plane SET `cash` = 7, `alliances` = `alliance` WHERE `player_id` = $playerId");
+    }
+
+    function argBuildAlliance2(int $playerId): array
+    {
+        $buys = [];
+        $claimed = self::getObjectListFromDB("SELECT `alliance` FROM plane WHERE `player_id` = $playerId", true);
+        $possible = array_diff(array_keys(N_REF_ALLIANCE_COLOR), $claimed);
+        foreach ($possible as $alliance) {
+            $buys[] = [
+                'type' => 'ALLIANCE',
+                'alliance' => $alliance,
+                'cost' => 0,
+            ];
+        }
+        return ['buys' => $buys];
+    }
+
+    /*
+     * SETUP #3
+     * Each player chooses a seat or speed upgrade
+     */
+    function stBuildUpgrade(int $playerId): void
+    {
+        self::DbQuery("UPDATE plane SET `cash` = 5, `seats` = 1, `speed` = 3 WHERE `player_id` = $playerId");
+    }
+
+    function argBuildUpgrade(int $playerId): array
+    {
+        return [
+            'buys' => [
+                [
+                    'type' => 'SEAT',
+                    'seat' => 2,
+                    'cost' => 0,
+                ],
+                [
+                    'type' => 'SPEED',
+                    'speed' => 4,
+                    'cost' => 0,
+                ],
+            ],
+        ];
+    }
+
+    /*
+     * SETUP #4
+     * Prepares passengers and weather
+     */
     function stShuffle()
     {
         $this->gamestate->nextState('preflight');
@@ -189,22 +187,14 @@ class NowBoarding extends Table
      * Add passengers
      * Players purchase upgrades
      */
+    function stMultiactive()
+    {
+        $this->gamestate->setAllPlayersMultiactive();
+    }
 
     function argPreflight(): array
     {
-        $args = [];
-        $planes = NPlane::loadAll();
-        foreach ($planes as $playerId => $plane) {
-            $buys = $plane->getBuys();
-            $args[$playerId]['buys'] = $buys;
-        }
-        return $args;
-    }
-
-    function begin(): void
-    {
-        $playerId = self::getCurrentPlayerId();
-        $this->gamestate->setPlayerNonMultiactive($playerId, 'flight');
+        return [];
     }
 
     /*
@@ -214,12 +204,227 @@ class NowBoarding extends Table
 
     function argFlight(): array
     {
-        $plane = NPlane::loadById(self::getCurrentPlayerId());
         return [
+            'dropPassenger' => [],
             'move' => [],
             'pickPassenger' => [],
-            'dropPassenger' => [],
         ];
+    }
+
+    /*
+     * PHASE 4: MAINTENANCE
+     * Add anger and complaints
+     */
+
+    function stMaintenance(): void
+    {
+        $this->gamestate->nextState('preflight');
+    }
+
+    //////////////////////////////////////////////////////////////////////////////
+    //////////// Actions
+    ////////////
+
+    function buildReset(): void
+    {
+        $playerId = $this->getCurrentPlayerId();
+        $this->notifyAllPlayers('buildReset', '${player_name} restarts their turn', [
+            'player_id' => $playerId,
+            'player_name' => $this->getCurrentPlayerName(),
+        ]);
+        $this->gamestate->setPlayersMultiactive([$playerId], '');
+        $this->gamestate->initializePrivateState($playerId);
+    }
+
+    function buy(string $type, ?string $alliance): void
+    {
+        $playerId = self::getCurrentPlayerId();
+        $plane = $this->getPlane($playerId);
+        if ($type == 'ALLIANCE') {
+            if ($plane->alliance == null) {
+                $this->buyAlliancePrimary($plane, $alliance);
+            } else {
+                $this->buyAlliance($plane, $alliance);
+            }
+        } else if ($type == 'SEAT') {
+            $this->buySeat($plane);
+        } else if ($type == 'SPEED') {
+            $this->buySpeed($plane);
+        }
+
+        // $args = [];
+        // if ($type == 'COLOR') {
+        //     $plane->buyColor($color);
+        //     $msg = '${player_name} joins the ${colorFancy} alliance';
+        //     $args = [
+        //         'i18n' => ['colorFancy'],
+        //         'colorFancy' => $color,
+        //     ];
+        //     if ($state['name'] == 'build' && $plane->getColorsCount() == 1) {
+        //         // The player's color was just assigned
+        //         $args['plane'] = $plane;
+        //         self::reloadPlayersBasicInfos();
+        //     }
+        // } else if ($type == 'EXTRA_SEAT') {
+        //     $plane->buyExtraSeat();
+        //     $msg = '${player_name} borrows the temporary seat';
+        // } else if ($type == 'EXTRA_SPEED') {
+        //     $plane->buyExtraSpeed();
+        //     $msg = '${player_name} borrows the temporary engine';
+        // } else if ($type == 'SEAT') {
+        //     $plane->buySeat();
+        //     $msg = '${player_name} upgrades to ${seat} seats';
+        //     $args = [
+        //         'seat' => $plane->getSeats(),
+        //     ];
+        // } else if ($type == 'SPEED') {
+        //     $plane->buySpeed();
+        //     $msg = '${player_name} upgrades to ${speed} engines';
+        //     $args = [
+        //         'speed' => $plane->getSpeed(),
+        //     ];
+        // } else {
+        //     throw new BgaVisibleSystemException("Unknown purchase type: $type");
+        // }
+
+        // $args['player_id'] = $playerId;
+        // $args['player_name'] = $plane->getName();
+        // $this->notifyAllPlayers('buy', $msg, $args);
+
+        // // Refresh state arguments
+        // $argFunction = "arg" . ucfirst($state['name']);
+        // $args = $this->$argFunction();
+        // $this->notifyAllPlayers('stateArgs', '', $args);
+
+        // // Give extra time
+        // $this->giveExtraTime($playerId);
+
+        // // Automatically proceed when build is complete
+        // if ($state['name'] == 'build' && empty($args[$playerId]['buys'])) {
+        //     $this->gamestate->setPlayerNonMultiactive($playerId, 'shuffle');
+        // }
+    }
+
+    private function buyAlliancePrimary(NPlane $plane, string $alliance): void
+    {
+        $owner = self::getUniqueValueFromDB("SELECT 1 FROM plane WHERE `alliance` = '$alliance' LIMIT 1");
+        if ($owner != null) {
+            throw new BgaUserException("Another player already selected $alliance as their starting alliance. Choose again.");
+        }
+
+        $color = N_REF_ALLIANCE_COLOR[$alliance];
+        self::DbQuery("UPDATE plane SET `alliance` = '$alliance', `alliances` = '$alliance', `location` = '$alliance' WHERE `player_id` = {$plane->id}");
+        self::DbQuery("UPDATE player SET `player_color` = '$color' WHERE `player_id` = {$plane->id}");
+        self::reloadPlayersBasicInfos();
+
+        $this->notifyAllPlayers('alliance', '${player_name} joins the ${allianceFancy} alliance', [
+            'alliance' => $alliance,
+            'allianceFancy' => $alliance,
+            'color' => $color,
+            'player_id' => $plane->id,
+            'player_name' => $plane->name,
+        ]);
+
+        $playerCount = $this->getPlayersNumber();
+        $this->gamestate->nextPrivateState($plane->id,  $playerCount == 2 ? 'buildAlliance2' : 'buildUpgrade');
+    }
+
+    private function buyAlliance(NPlane $plane, string $alliance): void
+    {
+        if (in_array($alliance, $plane->alliances)) {
+            throw new BgaUserException("You're already a member of the $alliance alliance");
+        }
+        $cost = 7;
+        if ($plane->cash < $cost) {
+            throw new BgaUserException("\${$plane->cash} is not enough to join an alliance (cost: \${$cost})");
+        }
+
+        $plane->cash -= $cost;
+        $plane->alliances[] = $alliance;
+        $alliances = join(',', $plane->alliances);
+        self::DbQuery("UPDATE plane SET `cash` = {$plane->cash}, `alliances` = '$alliances' WHERE `player_id` = {$plane->id}");
+
+        $this->notifyAllPlayers('alliance', '${player_name} joins the ${allianceFancy} alliance', [
+            'alliance' => $alliance,
+            'allianceFancy' => $alliance,
+            'player_id' => $plane->id,
+            'player_name' => $plane->name,
+        ]);
+
+        $state = $this->gamestate->state();
+        $this->gamestate->nextPrivateState($plane->id, $state['name'] == 'purchase' ? 'purchase' : 'buildUpgrade');
+    }
+
+    private function buySeat(NPlane $plane): void
+    {
+        if ($plane->seats >= 5) {
+            throw new BgaUserException("Cannot buy more than 5 seats");
+        }
+        $cost = N_REF_SEAT_COST[$plane->seats + 1];
+        if ($plane->cash < $cost) {
+            throw new BgaUserException("\${$plane->cash} is not enough to purchase seat {$plane->seats} (cost: \${$cost})");
+        }
+
+        $plane->cash -= $cost;
+        $plane->seats++;
+        self::DbQuery("UPDATE plane SET `cash` = {$plane->cash}, `seats` = {$plane->seats} WHERE `player_id` = {$plane->id}");
+
+        $this->notifyAllPlayers('seats', '${player_name} upgrades to ${seatsFancy} seats', [
+            'seats' => $plane->seats,
+            'seatsFancy' => $plane->seats,
+            'player_id' => $plane->id,
+            'player_name' => $plane->name,
+        ]);
+
+        $state = $this->gamestate->state();
+        if ($state['name'] == 'purchase') {
+            $this->gamestate->nextPrivateState($plane->id, 'purchase');
+        } else {
+            // $this->gamestate->unsetPrivateState($plane->id);
+            $this->gamestate->setPlayerNonMultiactive($plane->id, 'buildComplete');
+        }
+    }
+
+    private function buySpeed(NPlane $plane): void
+    {
+        if ($plane->speed >= 9) {
+            throw new BgaUserException("Cannot buy more than 9 engines");
+        }
+        $cost = N_REF_SPEED_COST[$plane->speed + 1];
+        if ($plane->cash < $cost) {
+            throw new BgaUserException("\${$plane->cash} is not enough to purchase engine {$plane->speed} (cost: \${$cost})");
+        }
+
+        $plane->cash -= $cost;
+        $plane->speed++;
+        self::DbQuery("UPDATE plane SET `cash` = {$plane->cash}, `speed` = {$plane->speed} WHERE `player_id` = {$plane->id}");
+
+        $this->notifyAllPlayers('seats', '${player_name} upgrades to ${speedFancy} engines', [
+            'speed' => $plane->speed,
+            'speedFancy' => $plane->speed,
+            'player_id' => $plane->id,
+            'player_name' => $plane->name,
+        ]);
+
+        $state = $this->gamestate->state();
+        if ($state['name'] == 'purchase') {
+            $this->gamestate->nextPrivateState($plane->id, 'purchase');
+        } else {
+            // $this->gamestate->unsetPrivateState($plane->id);
+            $this->gamestate->setPlayerNonMultiactive($plane->id, 'buildComplete');
+        }
+    }
+
+    function flightBegin(): void
+    {
+        $playerId = self::getCurrentPlayerId();
+        $this->gamestate->setPlayerNonMultiactive($playerId, 'flight');
+    }
+
+    function flightEnd(): void
+    {
+        $playerId = self::getCurrentPlayerId();
+        $this->gamestate->setPlayerNonMultiactive($playerId, 'maintenance');
     }
 
     function move(string $nodeId): void
@@ -234,20 +439,61 @@ class NowBoarding extends Table
     {
     }
 
-    function end(): void
+    //////////////////////////////////////////////////////////////////////////////
+    //////////// Utilities
+    ////////////
+
+    function getMap(): NMap
     {
-        $playerId = self::getCurrentPlayerId();
-        $this->gamestate->setPlayerNonMultiactive($playerId, 'maintenance');
+        $playerCount = $this->getPlayersNumber();
+        $dbrows = self::getObjectListFromDB("SELECT * FROM weather");
+        return new NMap($playerCount, $dbrows);
     }
 
-    /*
-     * PHASE 4: MAINTENANCE
-     * Add anger and complaints
-     */
-
-    function stMaintenance(): void
+    function getPlane(int $playerId): NPlane
     {
-        $this->gamestate->nextState('preflight');
+        return $this->getPlanesByIds([$playerId])[$playerId];
+    }
+
+    function getPlanesByIds($ids = []): array
+    {
+        $sql = "SELECT
+        p.*,
+        p.seats - (
+            SELECT
+                COUNT(1)
+            FROM
+                `pax` x
+            WHERE
+                x.player_id = p.player_id
+                AND x.status = 'SEAT'
+        ) AS seats_remain,
+        b.player_name
+    FROM
+        `plane` p
+        JOIN `player` b ON (b.player_id = p.player_id)";
+        if (!empty($ids)) {
+            $sql .= " WHERE p.player_id IN (" . join(',', $ids) . ")";
+        }
+        return array_map(function ($dbrow) {
+            return new NPlane($dbrow);
+        }, self::getCollectionFromDb($sql));
+    }
+
+    function getPax(int $paxId): NPax
+    {
+        return $this->getPaxByIds([$paxId])[$paxId];
+    }
+
+    function getPaxByIds($ids = []): array
+    {
+        $sql = "SELECT * FROM pax";
+        if (!empty($ids)) {
+            $sql .= " WHERE `pax_id` IN (" . join(',', $ids) . ")";
+        }
+        return array_map(function ($dbrow) {
+            return new NPax($dbrow);
+        }, self::getCollectionFromDb($sql));
     }
 
     //////////////////////////////////////////////////////////////////////////////

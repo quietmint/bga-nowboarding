@@ -2,47 +2,35 @@
 
 class NPlane extends APP_GameClass implements JsonSerializable
 {
-    protected int $id;
-    protected ?string $color;
-    protected array $colors;
-    protected int $cash;
-    protected ?string $currentNode;
-    protected bool $extraSeat;
-    protected bool $extraSpeed;
-    protected int $fuel;
-    protected string $name;
-    protected ?string $priorNode;
-    protected int $seats;
-    protected int $speed;
+    public int $id;
+    public ?string $alliance;
+    public array $alliances;
+    public int $cash;
+    public bool $extraSeat;
+    public bool $extraSpeed;
+    public ?string $location;
+    public string $name;
+    public ?string $origin;
+    public int $seats;
+    public int $seatsRemain;
+    public int $speed;
+    public int $speedRemain;
 
-    public static function loadAll(): array
-    {
-        $dbrows = self::getCollectionFromDb("SELECT p.*, b.player_name FROM plane p JOIN player b ON (b.player_id = p.player_id)");
-        return array_map(function ($dbrow) {
-            return new NPlane($dbrow);
-        }, $dbrows);
-    }
-
-    public static function loadById(int $id): NPlane
-    {
-        $dbrow = self::getObjectFromDB("SELECT p.*, b.player_name FROM plane p JOIN player b ON (b.player_id = p.player_id) WHERE p.player_id = $id");
-        return new NPlane($dbrow);
-    }
-
-    protected function __construct(array $dbrow)
+    public function __construct(array $dbrow)
     {
         $this->id = intval($dbrow['player_id']);
+        $this->alliance = $dbrow['alliance'];
+        $this->alliances = $dbrow['alliances'] == null ? [] : explode(',', $dbrow['alliances']);
         $this->cash = intval($dbrow['cash']);
-        $this->color = $dbrow['color'];
-        $this->colors = $dbrow['colors'] == null ? [] : explode(',', $dbrow['colors']);
-        $this->currentNode = $dbrow['current_node'];
         $this->extraSeat = $dbrow['extra_seat'] != null;
         $this->extraSpeed = $dbrow['extra_speed'] != null;
-        $this->fuel = intval($dbrow['fuel']);
+        $this->location = $dbrow['location'];
         $this->name = $dbrow['player_name'];
-        $this->priorNode = $dbrow['prior_node'];
+        $this->origin = $dbrow['origin'];
         $this->seats = intval($dbrow['seats']);
+        $this->seatsRemain = intval($dbrow['seats_remain']);
         $this->speed = intval($dbrow['speed']);
+        $this->speedRemain = intval($dbrow['speed_remain']);
     }
 
     public function __toString(): string
@@ -54,20 +42,21 @@ class NPlane extends APP_GameClass implements JsonSerializable
     {
         return [
             'id' => $this->id,
+            'alliance' => $this->alliance,
+            'alliances' => $this->alliances,
             'cash' => $this->cash,
-            'color' => $this->color,
-            'colorHex' => $this->color == null ? null : N_COLOR_REF[$this->color]['hex'],
-            'colors' => $this->colors,
-            'currentNode' => $this->currentNode,
             'extraSeat' => $this->extraSeat,
             'extraSpeed' => $this->extraSpeed,
-            'fuel' => $this->fuel,
-            'priorNode' => $this->priorNode,
+            'location' => $this->location,
+            'origin' => $this->origin,
             'seats' => $this->seats,
+            'seatsRemain' => $this->seatsRemain,
             'speed' => $this->speed,
+            'speedRemain' => $this->speedRemain,
         ];
     }
 
+    /*
     public function getId(): int
     {
         return $this->id;
@@ -75,68 +64,7 @@ class NPlane extends APP_GameClass implements JsonSerializable
 
     public function getBuys(): array
     {
-        $buys = [];
-
-        // Colors
-        if ($this->cash >= 7) {
-            if ($this->color == null) {
-                $claimedColors = self::getObjectListFromDB("SELECT color FROM plane WHERE color IS NOT NULL", true);
-            } else {
-                $claimedColors = $this->colors;
-            }
-            $unclaimedColors = array_diff(array_keys(N_COLOR_REF), $claimedColors);
-            foreach ($unclaimedColors as $color) {
-                $buys[] = [
-                    'type' => 'COLOR',
-                    'cost' => 7,
-                    'color' => $color
-                ];
-            }
-        }
-
-        // Seat
-        if ($this->seats < 5) {
-            $seat = $this->seats + 1;
-            $cost = N_SEAT_REF[$seat];
-            if ($this->cash >= $cost) {
-                $buys[] = [
-                    'type' => 'SEAT',
-                    'cost' => $cost,
-                    'seat' => $seat
-                ];
-            }
-        }
-
-        // Speed
-        if ($this->speed < 9) {
-            $speed = $this->speed + 1;
-            $cost = N_SPEED_REF[$speed];
-            if ($this->cash >= $cost) {
-                $buys[] = [
-                    'type' => 'SPEED',
-                    'cost' => $cost,
-                    'speed' => $speed
-                ];
-            }
-        }
-
-        // Extra seat
-        if ($this->cash >= 2) {
-            $buys[] = [
-                'type' => 'EXTRA_SEAT',
-                'cost' => 2,
-            ];
-        }
-
-        // Extra speed
-        if ($this->cash >= 1) {
-            $buys[] = [
-                'type' => 'EXTRA_SPEED',
-                'cost' => 1,
-            ];
-        }
-
-        return $buys;
+        return [];
     }
 
     public function getCash(): int
@@ -144,19 +72,14 @@ class NPlane extends APP_GameClass implements JsonSerializable
         return $this->cash;
     }
 
-    public function getColor(): ?string
+    public function getAlliance(): ?string
     {
-        return $this->color;
+        return $this->alliance;
     }
 
-    public function getColors(): array
+    public function getAlliances(): array
     {
-        return $this->colors;
-    }
-
-    public function getColorsCount(): int
-    {
-        return count($this->colors);
+        return $this->alliances;
     }
 
     public function getCurrentNode(): string
@@ -366,4 +289,5 @@ class NPlane extends APP_GameClass implements JsonSerializable
             // TODO
         }
     }
+    */
 }

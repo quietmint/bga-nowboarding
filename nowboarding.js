@@ -18,7 +18,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       if (gamedatas.planes) {
         for (let planeId in gamedatas.planes) {
           let plane = gamedatas.planes[planeId];
-          if (plane.currentNode) {
+          if (plane.location) {
             this.createPlane(plane);
           }
         }
@@ -32,7 +32,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       }
 
       // Setup notifications
-      dojo.subscribe("buy", this, "onNotify");
+      dojo.subscribe("alliance", this, "onNotify");
+      dojo.subscribe("buildReset", this, "onNotify");
       dojo.subscribe("move", this, "onNotify");
       this.notifqueue.setSynchronous("move");
       dojo.subscribe("stateArgs", this, "onNotify");
@@ -102,8 +103,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     /* @Override */
     format_string_recursive: function (log, args) {
       if (log && args && !args.processed) {
-        if (args.colorFancy) {
-          args.colorFancy = `<span class="logfancy color ${args.colorFancy}"><i class="icon color ${args.colorFancy}"></i> ${_(args.colorFancy)}</span>`;
+        if (args.allianceFancy) {
+          args.allianceFancy = `<span class="logfancy alliance ${args.allianceFancy}"><i class="icon alliance ${args.allianceFancy}"></i> ${args.allianceFancy}</span>`;
         }
         args.processed = true;
       }
@@ -123,25 +124,28 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     onUpdateActionButtons(stateName, args) {
       console.log(`▶️ State ${stateName}`, args);
 
-      if (this.isCurrentPlayerActive()) {
-        if (stateName == "build" || stateName == "preflight") {
-          if (args[this.player_id] && args[this.player_id].buys && args[this.player_id].buys.length > 0) {
-            let buys = args[this.player_id].buys;
+      if (!this.is_spectator) {
+        if (this.isCurrentPlayerActive()) {
+          if (args && args.buys && args.buys.length > 0) {
+            let buys = args.buys;
             for (let i in buys) {
               let buy = buys[i];
               let id = "button_buy_" + buy.type;
               let txt = "";
-              if (buy.type == "COLOR") {
-                id += "_" + buy.color;
-                txt = `<div class="icon color ${buy.color}"></div>${buy.color} Alliance ($${buy.cost})`;
+              if (buy.type == "ALLIANCE") {
+                id += "_" + buy.alliance;
+                txt = `<div class="icon alliance ${buy.alliance}"></div>${buy.alliance} Alliance`;
               } else if (buy.type == "EXTRA_SEAT") {
-                txt = `<div class="icon seat"></div>Temporary Seat ($${buy.cost})`;
+                txt = `<div class="icon seat"></div>Temporary Seat`;
               } else if (buy.type == "EXTRA_SPEED") {
-                txt = `<div class="icon speed"></div>Temporary Engine ($${buy.cost})`;
+                txt = `<div class="icon speed"></div>Temporary Engine`;
               } else if (buy.type == "SEAT") {
-                txt = `<div class="icon seat"></div>${buy.seat} Seats ($${buy.cost})`;
+                txt = `<div class="icon seat"></div>${buy.seat} Seats`;
               } else if (buy.type == "SPEED") {
-                txt = `<div class="icon speed"></div>${buy.speed} Engines ($${buy.cost})`;
+                txt = `<div class="icon speed"></div>${buy.speed} Engines`;
+              }
+              if (buy.cost > 0) {
+                txt += ` ($${buy.cost})`;
               }
               this.addActionButton(
                 id,
@@ -155,30 +159,44 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
               );
             }
           }
+
+          if (stateName == "preflight") {
+            this.addActionButton("button_flightBegin", _("Begin Round"), () => this.takeAction("flightBegin"));
+          }
+
+          if (stateName == "flight") {
+            this.addActionButton("button_flightEnd", _("End Round"), () => this.takeAction("flightEnd"), null, false, "red");
+          }
         }
 
-        if (stateName == "preflight") {
-          this.addActionButton("begin_button", _("Begin Round"), () => this.takeAction("begin"));
-        }
-
-        if (stateName == "flight") {
-          this.addActionButton("end_button", _("End Round"), () => this.takeAction("end"), null, false, "red");
+        if (stateName == "build" || stateName == "buildAlliance2" || stateName == "buildUpgrade") {
+          this.addActionButton("button_buildReset", _("Start Over"), () => this.takeAction("buildReset"));
         }
       }
     },
 
     onNotify: function (notif) {
       console.log(`💬 Notify ${notif.type}`, notif.args);
-      if (notif.type == "buy") {
-        if (notif.args.plane) {
+      if (notif.type == "alliance") {
+        if (notif.args.color) {
           // Set player color
-          this.gamedatas.players[notif.args.plane.id].color = notif.args.plane.colorHex;
-          dojo.query(`#player_name_${notif.args.plane.id} a`).style({
-            color: `#${notif.args.plane.colorHex}`,
+          this.gamedatas.players[notif.args.player_id].color = notif.args.color;
+          dojo.query(`#player_name_${notif.args.player_id} a`).style({
+            color: `#${notif.args.color}`,
           });
           // Creeate the plane
-          this.createPlane(notif.args.plane);
+          this.createPlane({
+            id: notif.args.player_id,
+            alliance: notif.args.alliance,
+            location: notif.args.alliance,
+            seats: 1,
+            seatsRemain: 1,
+            speed: 3,
+            speedRemain: 3,
+          });
         }
+      } else if (notif.type == "buildReset") {
+        this.deletePlane(notif.args.player_id);
       } else if (notif.type == "stateArgs") {
         // Update the action buttons
         console.log("the old args", JSON.stringify(this.gamedatas.gamestate.args, null, 2));
@@ -243,26 +261,31 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     deleteWeather(node) {},
 
     createPlane(plane) {
-      console.log("Creating a plane");
+      this.deletePlane(plane.id);
+      console.log(`✈️ Creating plane ${plane.id} (${plane.alliance}) at ${plane.location}`);
       dojo.place(
-        `<div id="plane-${plane.id}" class="plane ${plane.color} node ${plane.currentNode}">
-          <div class="planebody icon plane ${plane.color}"></div>
-          <div class="planestats">${plane.fuel}/${plane.seats}</div>
+        `<div id="plane-${plane.id}" class="plane ${plane.alliance} node ${plane.location}">
+          <div class="planebody icon plane ${plane.alliance}"></div>
+          <div class="planestats">${plane.speedRemain}/${plane.seatsRemain}</div>
         </div>`,
         "NMap"
       );
 
-      if (plane.priorNode != null) {
-        this.pointPlane(plane.id, plane.priorNode, plane.currentNode);
+      if (plane.priorLocation != null) {
+        this.rotatePlane(plane.id, plane.priorLocation, plane.location);
       }
     },
 
-    pointPlane(playerId, priorNode, currentNode) {
-      let priorPos = dojo.position(`node-${priorNode}`);
-      let currentPos = dojo.position(`node-${currentNode}`);
-      console.log("positions", priorPos, currentPos);
+    deletePlane(id) {
+      console.log(`❌ Deleting plane ${id}`);
+      dojo.destroy("plane-" + id);
+    },
+
+    rotatePlane(playerId, priorLocation, currentLocation) {
+      let priorPos = dojo.position(`node-${priorLocation}`);
+      let currentPos = dojo.position(`node-${location}`);
       let rotation = (Math.atan2(currentPos.y - priorPos.y, currentPos.x - priorPos.x) * 180) / Math.PI + 90;
-      console.log("rotation", rotation);
+      console.log(`⤴️ Rotating plane ${plane.id} to ${rotation}°`);
       dojo
         .query(`#plane-${playerId} .planebody`)
         .at(0)

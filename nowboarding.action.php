@@ -29,12 +29,11 @@ class action_nowboarding extends APP_GameAction
     self::ajaxResponse();
   }
 
-  public function begin()
+  public function buildReset()
   {
     self::setAjaxMode();
     self::checkVersion();
-    $this->game->checkAction('begin');
-    $this->game->begin();
+    $this->game->buildReset();
     self::ajaxResponse();
   }
 
@@ -44,17 +43,26 @@ class action_nowboarding extends APP_GameAction
     self::checkVersion();
     $this->game->checkAction('buy');
     $type = self::getArg('type', AT_alphanum, true);
-    $color = self::getArg('color', AT_alphanum, false);
-    $this->game->buy($type, $color);
+    $alliance = self::getArg('alliance', AT_alphanum, false);
+    $this->game->buy($type, $alliance);
     self::ajaxResponse();
   }
 
-  public function end()
+  public function flightBegin()
+  {
+    self::setAjaxMode();
+    self::checkVersion();
+    $this->game->checkAction('begin');
+    $this->game->flightBegin();
+    self::ajaxResponse();
+  }
+
+  public function flightEnd()
   {
     self::setAjaxMode();
     self::checkVersion();
     $this->game->checkAction('end');
-    $this->game->end();
+    $this->game->flightEnd();
     self::ajaxResponse();
   }
 }
