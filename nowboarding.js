@@ -106,6 +106,12 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         if (args.allianceFancy) {
           args.allianceFancy = `<span class="logfancy alliance ${args.allianceFancy}"><i class="icon alliance ${args.allianceFancy}"></i> ${args.allianceFancy}</span>`;
         }
+        if (args.seatFancy) {
+          args.seatFancy = `<span class="logfancy seat"><i class="icon seat"></i> ${args.seatFancy}</span>`;
+        }
+        if (args.speedFancy) {
+          args.speedFancy = `<span class="logfancy speed"><i class="icon speed"></i> ${args.speedFancy}</span>`;
+        }
         args.processed = true;
       }
       return this.inherited(arguments);
@@ -138,11 +144,11 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
               } else if (buy.type == "EXTRA_SEAT") {
                 txt = `<div class="icon seat"></div>Temporary Seat`;
               } else if (buy.type == "EXTRA_SPEED") {
-                txt = `<div class="icon speed"></div>Temporary Engine`;
+                txt = `<div class="icon speed"></div>Temporary Speed`;
               } else if (buy.type == "SEAT") {
                 txt = `<div class="icon seat"></div>${buy.seat} Seats`;
               } else if (buy.type == "SPEED") {
-                txt = `<div class="icon speed"></div>${buy.speed} Engines`;
+                txt = `<div class="icon speed"></div>${buy.speed} Speed`;
               }
               if (buy.cost > 0) {
                 txt += ` ($${buy.cost})`;

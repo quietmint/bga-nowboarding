@@ -9,15 +9,17 @@
   margin: auto;
 }
 
-.logfancy.alliance {
+.logfancy {
+  background-color: #E5E5E5;
   border-radius: 4px;
   display: inline-block;
-  font-size: 16px;
+  font-size: 18px;
+  font-weight: bold;
   padding: 0 6px;
   vertical-align: middle;
 }
 
-.logfancy.alliance .icon {
+.logfancy .icon {
   vertical-align: -2px;
 }
 

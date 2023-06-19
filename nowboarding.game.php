@@ -344,7 +344,7 @@ class NowBoarding extends Table
         $alliances = join(',', $plane->alliances);
         self::DbQuery("UPDATE plane SET `cash` = {$plane->cash}, `alliances` = '$alliances' WHERE `player_id` = {$plane->id}");
 
-        $this->notifyAllPlayers('alliance', '${player_name} joins the ${allianceFancy} alliance', [
+        $this->notifyAllPlayers('alliance', '${player_name} joins alliance ${allianceFancy}', [
             'alliance' => $alliance,
             'allianceFancy' => $alliance,
             'player_id' => $plane->id,
@@ -358,7 +358,7 @@ class NowBoarding extends Table
     private function buySeat(NPlane $plane): void
     {
         if ($plane->seats >= 5) {
-            throw new BgaUserException("Cannot buy more than 5 seats");
+            throw new BgaUserException("Maximum seats is 5");
         }
         $cost = N_REF_SEAT_COST[$plane->seats + 1];
         if ($plane->cash < $cost) {
@@ -369,9 +369,9 @@ class NowBoarding extends Table
         $plane->seats++;
         self::DbQuery("UPDATE plane SET `cash` = {$plane->cash}, `seats` = {$plane->seats} WHERE `player_id` = {$plane->id}");
 
-        $this->notifyAllPlayers('seats', '${player_name} upgrades to ${seatsFancy} seats', [
-            'seats' => $plane->seats,
-            'seatsFancy' => $plane->seats,
+        $this->notifyAllPlayers('seats', '${player_name} upgrades seats to ${seatFancy}', [
+            'seat' => $plane->seats,
+            'seatFancy' => $plane->seats,
             'player_id' => $plane->id,
             'player_name' => $plane->name,
         ]);
@@ -388,18 +388,18 @@ class NowBoarding extends Table
     private function buySpeed(NPlane $plane): void
     {
         if ($plane->speed >= 9) {
-            throw new BgaUserException("Cannot buy more than 9 engines");
+            throw new BgaUserException("Maximum speed is 9");
         }
         $cost = N_REF_SPEED_COST[$plane->speed + 1];
         if ($plane->cash < $cost) {
-            throw new BgaUserException("\${$plane->cash} is not enough to purchase engine {$plane->speed} (cost: \${$cost})");
+            throw new BgaUserException("\${$plane->cash} is not enough to purchase speed {$plane->speed} (cost: \${$cost})");
         }
 
         $plane->cash -= $cost;
         $plane->speed++;
         self::DbQuery("UPDATE plane SET `cash` = {$plane->cash}, `speed` = {$plane->speed} WHERE `player_id` = {$plane->id}");
 
-        $this->notifyAllPlayers('seats', '${player_name} upgrades to ${speedFancy} engines', [
+        $this->notifyAllPlayers('seats', '${player_name} upgrades speed to ${speedFancy}', [
             'speed' => $plane->speed,
             'speedFancy' => $plane->speed,
             'player_id' => $plane->id,
