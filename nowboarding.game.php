@@ -2,7 +2,6 @@
 
 require_once(APP_GAMEMODULE_PATH . 'module/table/table.game.php');
 require_once('modules/constants.inc.php');
-require_once('modules/polyfill.inc.php');
 require_once('modules/NMap.class.php');
 require_once('modules/NNode.class.php');
 require_once('modules/NNodeHop.class.php');
@@ -204,9 +203,11 @@ class NowBoarding extends Table
 
     function argFlight(): array
     {
+        $map = $this->getMap();
+        $plane = $this->getPlane(2305327);
         return [
             'dropPassenger' => [],
-            'move' => [],
+            'move' => $map->getPossibleMoves($plane),
             'pickPassenger' => [],
         ];
     }
@@ -457,21 +458,23 @@ class NowBoarding extends Table
 
     function getPlanesByIds($ids = []): array
     {
-        $sql = "SELECT
-        p.*,
-        p.seats - (
-            SELECT
-                COUNT(1)
-            FROM
-                `pax` x
-            WHERE
-                x.player_id = p.player_id
-                AND x.status = 'SEAT'
-        ) AS seats_remain,
-        b.player_name
+        $sql = <<<SQL
+SELECT
+  p.*,
+  p.seats - (
+    SELECT
+      COUNT(1)
     FROM
-        `plane` p
-        JOIN `player` b ON (b.player_id = p.player_id)";
+      `pax` x
+    WHERE
+      x.player_id = p.player_id
+      AND x.status = 'SEAT'
+  ) AS seats_remain,
+  b.player_name
+FROM
+  `plane` p
+  JOIN `player` b ON (b.player_id = p.player_id)
+SQL;
         if (!empty($ids)) {
             $sql .= " WHERE p.player_id IN (" . join(',', $ids) . ")";
         }
@@ -479,6 +482,7 @@ class NowBoarding extends Table
             return new NPlane($dbrow);
         }, self::getCollectionFromDb($sql));
     }
+
 
     function getPax(int $paxId): NPax
     {

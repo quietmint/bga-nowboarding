@@ -2,8 +2,8 @@
 
 abstract class NNode extends APP_GameClass implements JsonSerializable
 {
-    protected string $id;
-    protected array $connections = [];
+    public string $id;
+    public array $connections = [];
 
     protected function __construct(string $id)
     {
@@ -30,20 +30,5 @@ abstract class NNode extends APP_GameClass implements JsonSerializable
     {
         unset($this->connections[$other->id]);
         unset($other->connections[$this->id]);
-    }
-
-    public function getId(): string
-    {
-        return $this->id;
-    }
-
-    public function getFirstConnection(): NNode
-    {
-        return array_values($this->connections)[0];
-    }
-
-    public function getConnections(): array
-    {
-        return $this->connections;
     }
 }

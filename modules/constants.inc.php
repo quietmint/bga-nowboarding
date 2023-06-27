@@ -39,3 +39,9 @@ const N_REF_SPEED_COST = [
     8 => 13,
     9 => 15
 ];
+
+const N_REF_WEATHER_SPEED = [
+    null => 0,
+    'FAST' => -1,
+    'SLOW' => 1,
+];
