@@ -1,4 +1,8 @@
-#generalactions.newline {
+html {
+  background: #3089c0;
+}
+
+#overall-content.gamestate_prepare #generalactions.newline {
   display: block;
   margin-top: 5px;
 }
@@ -10,7 +14,7 @@
 }
 
 .logfancy {
-  background-color: #E5E5E5;
+  background-color: #e5e5e5;
   border-radius: 4px;
   display: inline-block;
   font-size: 18px;
@@ -24,31 +28,31 @@
 }
 
 #button_buy_ALLIANCE_SEA,
-.logfancy.alliance.SEA {
+.alliance-SEA {
   background-color: #1d4ed8;
   color: white;
 }
 
 #button_buy_ALLIANCE_ATL,
-.logfancy.alliance.ATL {
+.alliance-ATL {
   background-color: #16a34a;
   color: white;
 }
 
 #button_buy_ALLIANCE_LAX,
-.logfancy.alliance.LAX {
+.alliance-LAX {
   background-color: #d97706;
   color: white;
 }
 
 #button_buy_ALLIANCE_DFW,
-.logfancy.alliance.DFW {
+.alliance-DFW {
   background-color: #7e22ce;
   color: white;
 }
 
 #button_buy_ALLIANCE_ORD,
-.logfancy.alliance.ORD {
+.alliance-ORD {
   background-color: #b91c1c;
   color: white;
 }
@@ -113,6 +117,7 @@
 }
 
 .icon.weather.FAST {
+  animation: wind 4s linear infinite;
   background-image: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="24" height="24" viewBox="0 0 24 24"%3E%3Cg fill="white"%3E%3Cpath fill-rule="evenodd" d="M6.25 5.5A3.25 3.25 0 1 1 9.5 8.75H3a.75.75 0 0 1 0-1.5h6.5A1.75 1.75 0 1 0 7.75 5.5v.357a.75.75 0 1 1-1.5 0V5.5Z" clip-rule="evenodd"%2F%3E%3Cpath d="M3.25 14a.75.75 0 0 1 .75-.75h14.5a4.25 4.25 0 1 1-4.25 4.25V17a.75.75 0 0 1 1.5 0v.5a2.75 2.75 0 1 0 2.75-2.75H4a.75.75 0 0 1-.75-.75Z" opacity=".4"%2F%3E%3Cpath d="M14.25 7.5a4.25 4.25 0 1 1 4.25 4.25H2a.75.75 0 0 1 0-1.5h16.5a2.75 2.75 0 1 0-2.75-2.75V8a.75.75 0 0 1-1.5 0v-.5Z" opacity=".7"%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E');
 }
 
@@ -130,11 +135,23 @@
   width: 100%;
 }
 
-.marker.node {
-  background: black;
+.move.node {
+  no-animation: ping 4s cubic-bezier(0, 0, 0.2, 1) infinite;
   border-radius: 100%;
-  height: 1em;
-  width: 1em;
+  box-shadow: 4px 4px 0px rgb(0 0 0 / 0.25), 0px 0px 3px white;
+  cursor: pointer;
+  font-size: 2cqw;
+  font-weight: bold;
+  height: 5%;
+  line-height: 2.5cqw;
+  text-align: center;
+  width: 2.5%;
+}
+
+.marker.node {
+  border-radius: 100%;
+  height: 1%;
+  width: 0.5%;
 }
 
 .node {
@@ -144,257 +161,257 @@
   transform: translate(-50%, -50%);
 }
 
-.node.ATL {
+.node.node-ATL {
   left: 68.9%;
   top: 63.5%;
 }
 
-.node.ATL-DEN-1 {
+.node.node-ATLDEN1 {
   left: 61.6%;
   top: 58.7%;
 }
 
-.node.ATL-DEN-2 {
+.node.node-ATLDEN2 {
   left: 53.5%;
   top: 54.1%;
 }
 
-.node.ATL-DEN-3 {
+.node.node-ATLDEN3 {
   left: 44.5%;
   top: 48.9%;
 }
 
-.node.ATL-DFW-1 {
+.node.node-ATLDFW1 {
   left: 62.7%;
   top: 66%;
 }
 
-.node.ATL-DFW-2 {
+.node.node-ATLDFW2 {
   left: 55.9%;
   top: 68.3%;
 }
 
-.node.ATL-JFK-1 {
+.node.node-ATLJFK1 {
   left: 75.7%;
   top: 58.2%;
 }
 
-.node.ATL-JFK-2 {
+.node.node-ATLJFK2 {
   left: 81.7%;
   top: 48.2%;
 }
 
-.node.ATL-MIA-1 {
+.node.node-ATLMIA1 {
   left: 72.3%;
   top: 74.7%;
 }
 
-.node.ATL-ORD-1 {
+.node.node-ATLORD1 {
   left: 69.3%;
   top: 50.3%;
 }
 
-.node.ATL-ORD-2 {
+.node.node-ATLORD2 {
   left: 67.4%;
   top: 39.6%;
 }
 
-.node.DEN {
+.node.node-DEN {
   left: 36.5%;
   top: 44.4%;
 }
 
-.node.DEN-DFW-1 {
+.node.node-DENDFW1 {
   left: 40.8%;
   top: 52.5%;
 }
 
-.node.DEN-DFW-2 {
+.node.node-DENDFW2 {
   left: 45.4%;
   top: 61%;
 }
 
-.node.DEN-LAX-1 {
+.node.node-DENLAX1 {
   left: 29.5%;
   top: 52.5%;
 }
 
-.node.DEN-LAX-2 {
+.node.node-DENLAX2 {
   left: 23.2%;
   top: 60%;
 }
 
-.node.DEN-ORD-1 {
+.node.node-DENORD1 {
   left: 42.4%;
   top: 40.8%;
 }
 
-.node.DEN-ORD-2 {
+.node.node-DENORD2 {
   left: 52.7%;
   top: 35.7%;
 }
 
-.node.DEN-SEA-1 {
+.node.node-DENSEA1 {
   left: 27.8%;
   top: 35.2%;
 }
 
-.node.DEN-SEA-2 {
+.node.node-DENSEA2 {
   left: 18.1%;
   top: 24.8%;
 }
 
-.node.DEN-SFO-1 {
+.node.node-DENSFO1 {
   left: 27.2%;
   top: 47.7%;
 }
 
-.node.DEN-SFO-2 {
+.node.node-DENSFO2 {
   left: 17.8%;
   top: 51.3%;
 }
 
-.node.DFW {
+.node.node-DFW {
   left: 50.2%;
   top: 69.9%;
 }
 
-.node.DFW-LAX-1 {
+.node.node-DFWLAX1 {
   left: 42.5%;
   top: 69.2%;
 }
 
-.node.DFW-LAX-2 {
+.node.node-DFWLAX2 {
   left: 33.7%;
   top: 68.6%;
 }
 
-.node.DFW-LAX-3 {
+.node.node-DFWLAX3 {
   left: 25%;
   top: 68.4%;
 }
 
-.node.DFW-MIA-1 {
+.node.node-DFWMIA1 {
   left: 57.2%;
   top: 75.3%;
 }
 
-.node.DFW-MIA-2 {
+.node.node-DFWMIA2 {
   left: 63.6%;
   top: 79.8%;
 }
 
-.node.DFW-MIA-3 {
+.node.node-DFWMIA3 {
   left: 69.7%;
   top: 83.9%;
 }
 
-.node.JFK {
+.node.node-JFK {
   left: 84.9%;
   top: 35.2%;
 }
 
-.node.JFK-ORD-1 {
+.node.node-JFKORD2 {
   left: 70.7%;
   top: 32.7%;
 }
 
-.node.JFK-ORD-2 {
+.node.node-JFKORD1 {
   left: 78.2%;
   top: 34.1%;
 }
 
-.node.JFK-SEA-1 {
+.node.node-JFKSEA1 {
   left: 70.6%;
   top: 19.9%;
 }
 
-.node.JFK-SEA-2 {
+.node.node-JFKSEA2 {
   left: 56.5%;
   top: 10.9%;
 }
 
-.node.JFK-SEA-3 {
+.node.node-JFKSEA3 {
   left: 40.7%;
   top: 7.6%;
 }
 
-.node.JFK-SEA-4 {
+.node.node-JFKSEA4 {
   left: 26.1%;
   top: 9.2%;
 }
 
-.node.LAX {
+.node.node-LAX {
   left: 17.1%;
   top: 68.6%;
 }
 
-.node.LAX-MIA-1 {
+.node.node-LAXMIA1 {
   left: 28.5%;
   top: 74.7%;
 }
 
-.node.LAX-MIA-2 {
+.node.node-LAXMIA2 {
   left: 40%;
   top: 79.8%;
 }
 
-.node.LAX-MIA-3 {
+.node.node-LAXMIA3 {
   left: 51.4%;
   top: 84.2%;
 }
 
-.node.LAX-MIA-4 {
+.node.node-LAXMIA4 {
   left: 62.3%;
   top: 86.7%;
 }
 
-.node.LAX-SFO-1 {
+.node.node-LAXSFO1 {
   left: 13.4%;
   top: 61.4%;
 }
 
-.node.MIA {
+.node.node-MIA {
   left: 76.3%;
   top: 88.7%;
 }
 
-.node.ORD {
+.node.node-ORD {
   left: 62.9%;
   top: 32.7%;
 }
 
-.node.ORD-SEA-1 {
+.node.node-ORDSEA1 {
   left: 49.7%;
   top: 28.5%;
 }
 
-.node.ORD-SEA-2 {
+.node.node-ORDSEA2 {
   left: 37.1%;
   top: 24.2%;
 }
 
-.node.ORD-SEA-3 {
+.node.node-ORDSEA3 {
   left: 22.6%;
   top: 19.2%;
 }
 
-.node.SEA {
+.node.node-SEA {
   left: 8.8%;
   top: 15%;
 }
 
-.node.SEA-SFO-1 {
+.node.node-SEASFO1 {
   left: 9%;
   top: 27.6%;
 }
 
-.node.SEA-SFO-2 {
+.node.node-SEASFO2 {
   left: 9.5%;
   top: 38.8%;
 }
 
-.node.SFO {
+.node.node-SFO {
   left: 10.2%;
   top: 54.1%;
 }
@@ -406,6 +423,7 @@
   height: 10%;
   justify-content: center;
   width: 5%;
+  transition: all 1s ease-out;
 }
 
 .plane.node .planebody {
@@ -414,7 +432,7 @@
   position: absolute;
   width: 100%;
   z-index: 1;
-  transition: transform 1s ease-in-out;
+  transition: transform 500ms ease-out;
 }
 
 .plane.node .planestats {
@@ -452,7 +470,7 @@
   align-items: center;
   background-image: linear-gradient(0deg, #1a237e, #01579b);
   border-radius: 100%;
-  box-shadow: 4px 4px 0px rgb(0 0 0 / 0.25), 0px 0px 3px rgb(0 0 0 / 1);
+  box-shadow: 4px 4px 0px rgb(0 0 0 / 0.25), 0px 0px 3px black;
   display: flex;
   height: 8%;
   justify-content: center;
@@ -462,4 +480,25 @@
 .weather.node .icon {
   height: 85%;
   width: 85%;
+}
+
+@keyframes ping {
+  75%,
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+@keyframes wind {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  20% {
+    transform: rotate(3deg);
+  }
+  50% {
+    transform: rotate(-3deg);
+  }
 }

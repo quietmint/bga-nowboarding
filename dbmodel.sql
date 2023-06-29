@@ -16,7 +16,8 @@ CREATE TABLE `pax` (
     `destination` VARCHAR(50) NOT NULL,
     `location` VARCHAR(50) DEFAULT NULL,
     `player_id` INT(10) DEFAULT NULL,
-    PRIMARY KEY (`pax_id`)
+    PRIMARY KEY (`pax_id`),
+    INDEX (`status`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8 AUTO_INCREMENT = 1;
 
 CREATE TABLE `plane` (
@@ -35,14 +36,14 @@ CREATE TABLE `plane` (
         'ORD',
         'SEA'
     ) DEFAULT NULL,
+    `debt` INT(2) NOT NULL DEFAULT '0',
     `origin` VARCHAR(50) DEFAULT NULL,
     `location` VARCHAR(50) DEFAULT NULL,
-    `extra_speed` TINYINT(1) DEFAULT NULL,
-    `extra_seat` TINYINT(1) DEFAULT NULL,
-    `cash` INT(2) NOT NULL DEFAULT '0',
+    `temp_speed` TINYINT(1) DEFAULT NULL,
+    `temp_seat` TINYINT(1) DEFAULT NULL,
     `speed` INT(2) NOT NULL DEFAULT '3',
     `speed_remain` INT(2) NOT NULL DEFAULT '3',
-    `seats` INT(2) NOT NULL DEFAULT '1',
+    `seat` INT(2) NOT NULL DEFAULT '1',
     PRIMARY KEY (`player_id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
 

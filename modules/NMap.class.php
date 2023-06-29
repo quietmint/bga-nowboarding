@@ -24,7 +24,7 @@ class NMap extends APP_GameClass implements JsonSerializable
         $this->addRoute('LAX', 'MIA', 4, 'LAX');
         $this->addRoute('LAX', 'SFO', 1, null);
 
-        if ($playerCount >= 4) {
+        if ($playerCount >= 1) {
             // 4-5 player map with Seattle
             $this->addRoute('SEA', 'DEN', 2, 'SEA');
             $this->addRoute('SEA', 'JFK', 4, 'SEA');
@@ -59,7 +59,7 @@ class NMap extends APP_GameClass implements JsonSerializable
     {
         $a = min($port1, $port2);
         $z = max($port1, $port2);
-        $routeId = "$a-$z";
+        $routeId = "$a$z";
         if (!array_key_exists($a, $this->nodes)) {
             $this->addPort($a);
         }
@@ -88,10 +88,10 @@ class NMap extends APP_GameClass implements JsonSerializable
         return $portNode;
     }
 
-    protected function addHop(string $nodeId, ?string $alliance): NNodeHop
+    protected function addHop(string $routeId, ?string $alliance): NNodeHop
     {
-        $count = count($this->routes[$nodeId]) + 1;
-        $hopNode = new NNodeHop("$nodeId-$count", $alliance, null);
+        $count = count($this->routes[$routeId]) + 1;
+        $hopNode = new NNodeHop("$routeId$count", $alliance, null);
         $this->nodes[$hopNode->id] = &$hopNode;
         return $hopNode;
     }
@@ -100,33 +100,24 @@ class NMap extends APP_GameClass implements JsonSerializable
 
     public function getPossibleMoves(NPlane $plane): array
     {
-        $max = 9; //$plane->speedRemain;
-        $start = $this->nodes[$plane->location];
+        $fuelMax = $plane->speedRemain;
         $visited = [];
         $best = [];
-        self::debug("getPossibleMoves start: node={$start->id} // ");
-        $queue = [[
-            'fuel' => 0,
-            'node' => $start,
-            'path' => "/$start->id/",
-        ]];
+        $start = new NMove(0, $this->nodes[$plane->location], []);
+        self::debug("getPossibleMoves start: $start // ");
+        $queue = [$start];
         while (!empty($queue)) {
             $next_queue = [];
-            foreach ($queue as $q) {
-                $fuel = $q['fuel'];
-                $node = $q['node'];
-                $path = $q['path'];
-                $visited[$path] = true;
-                if (!array_key_exists($node->id, $best) || $best[$node->id]['fuel'] > $fuel) {
-                    self::debug("getPossibleMoves best: node={$node->id}, fuel={$fuel}, path={$path} // ");
-                    $best[$node->id] = [
-                        'fuel' => $fuel,
-                        'path' => $path,
-                    ];
+            foreach ($queue as $move) {
+                $pathString = $move->getPathString();
+                $visited[$pathString] = true;
+                if (!array_key_exists($move->location, $best) || $best[$move->location]->fuel > $move->fuel) {
+                    self::debug("getPossibleMoves best: $move // ");
+                    $best[$move->location] = $move;
                 }
-                foreach ($this->getConnectionsFuel($node, $q['fuel']) as $c) {
+                foreach ($this->getConnectionsFuel($move->node, $move->fuel) as $c) {
                     // check fuel
-                    if ($c['fuel'] > $max) {
+                    if ($c['fuel'] > $fuelMax) {
                         continue;
                     }
                     // check alliance
@@ -134,15 +125,15 @@ class NMap extends APP_GameClass implements JsonSerializable
                         continue;
                     }
                     // check path overlap
-                    if (strpos($path, "/" . $c['node']->id . "/") !== false) {
+                    if (in_array($c['node']->id, $move->path)) {
                         continue;
                     }
-                    $c['path'] = $path . $c['node']->id . "/";
+                    $c['path'] = $pathString . $c['node']->id . "/";
                     // check path visited
                     if (array_key_exists($c['path'], $visited)) {
                         continue;
                     }
-                    $next_queue[] = $c;
+                    $next_queue[] = new NMove($c['fuel'], $c['node'], $move->path);
                 }
             }
             $queue = $next_queue;
@@ -152,7 +143,7 @@ class NMap extends APP_GameClass implements JsonSerializable
         return $best;
     }
 
-    private function getConnectionsFuel(NNode $node, int $distance): array
+    private function getConnectionsFuel(NNode $node, int $fuelSoFar): array
     {
         $out = [];
         $weatherSpeed = 0;
@@ -160,7 +151,7 @@ class NMap extends APP_GameClass implements JsonSerializable
             $weatherSpeed = N_REF_WEATHER_SPEED[$node->weather];
         }
         foreach ($node->connections as $cNode) {
-            $fuel = $distance + $weatherSpeed + 1;
+            $fuel = $fuelSoFar + $weatherSpeed + 1;
             $alliance = null;
             if ($cNode instanceof NNodeHop) {
                 $alliance = $cNode->alliance;

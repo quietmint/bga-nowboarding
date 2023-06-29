@@ -65,4 +65,14 @@ class action_nowboarding extends APP_GameAction
     $this->game->flightEnd();
     self::ajaxResponse();
   }
+
+  public function move()
+  {
+    self::setAjaxMode();
+    self::checkVersion();
+    $this->game->checkAction('move');
+    $location = self::getArg('location', AT_alphanum, true);
+    $this->game->move($location);
+    self::ajaxResponse();
+  }
 }

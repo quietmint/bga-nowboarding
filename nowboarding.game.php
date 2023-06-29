@@ -3,6 +3,7 @@
 require_once(APP_GAMEMODULE_PATH . 'module/table/table.game.php');
 require_once('modules/constants.inc.php');
 require_once('modules/NMap.class.php');
+require_once('modules/NMove.class.php');
 require_once('modules/NNode.class.php');
 require_once('modules/NNodeHop.class.php');
 require_once('modules/NNodePort.class.php');
@@ -11,13 +12,10 @@ require_once('modules/NPlane.class.php');
 
 class NowBoarding extends Table
 {
-    public static $instance = null;
-
     function __construct()
     {
         parent::__construct();
-        self::$instance = $this;
-        self::initGameStateLabels([]);
+        $this->initGameStateLabels([]);
     }
 
     protected function getGameName(): string
@@ -31,12 +29,12 @@ class NowBoarding extends Table
         // Create players and planes
         foreach ($players as $player_id => $player) {
             $sql = "INSERT INTO player (player_id, player_color, player_canal, player_name, player_avatar) VALUES ($player_id, '000000', '" . $player['player_canal'] . "', '" . addslashes($player['player_name']) . "', '" . addslashes($player['player_avatar']) . "')";
-            self::DbQuery($sql);
+            $this->DbQuery($sql);
 
             $sql = "INSERT INTO plane (player_id) VALUES ($player_id)";
-            self::DbQuery($sql);
+            $this->DbQuery($sql);
         }
-        self::reloadPlayersBasicInfos();
+        $this->reloadPlayersBasicInfos();
 
         // Create weather tokens
         $playerCount = count($players);
@@ -48,8 +46,8 @@ class NowBoarding extends Table
             $weatherCount = 3;
         }
         for ($i = 0; $i < $weatherCount; $i++) {
-            self::DbQuery("INSERT INTO weather (token) VALUES ('FAST')");
-            self::DbQuery("INSERT INTO weather (token) VALUES ('SLOW')");
+            $this->DbQuery("INSERT INTO weather (token) VALUES ('FAST')");
+            $this->DbQuery("INSERT INTO weather (token) VALUES ('SLOW')");
         }
 
         // Create passengers
@@ -59,13 +57,13 @@ class NowBoarding extends Table
     {
         $gameVersion = $this->gamestate->table_globals[N_OPTION_VERSION];
         if ($clientVersion != $gameVersion) {
-            throw new BgaVisibleSystemException(self::_("A new version of this game is now available. Please reload the page (F5)."));
+            throw new BgaVisibleSystemException($this->_("A new version of this game is now available. Please reload the page (F5)."));
         }
     }
 
     protected function getAllDatas(): array
     {
-        $players = self::getCollectionFromDb("SELECT player_id id, player_score score FROM player");
+        $players = $this->getCollectionFromDb("SELECT player_id id, player_score score FROM player");
         $data = [
             'map' => $this->getMap(),
             'planes' => $this->getPlanesByIds(),
@@ -87,9 +85,9 @@ class NowBoarding extends Table
 
     /*
      * SETUP
-     * Each player builds their plane (private parallel states follow) 
+     * Each player builds their plane 
      */
-    function stBuild()
+    function stInitPrivate()
     {
         $this->gamestate->setAllPlayersMultiactive();
         $this->gamestate->initializePrivateStateForAllActivePlayers();
@@ -101,15 +99,15 @@ class NowBoarding extends Table
      */
     function stBuildAlliance(int $playerId): void
     {
-        self::DbQuery("UPDATE plane SET `alliance` = NULL, `alliances` = NULL, `location` = NULL WHERE `player_id` = $playerId");
-        self::DbQuery("UPDATE player SET `player_color` = '000000' WHERE `player_id` = $playerId");
-        self::reloadPlayersBasicInfos();
+        $this->DbQuery("UPDATE plane SET `alliance` = NULL, `alliances` = NULL, `location` = NULL WHERE `player_id` = $playerId");
+        $this->DbQuery("UPDATE player SET `player_color` = '000000' WHERE `player_id` = $playerId");
+        $this->reloadPlayersBasicInfos();
     }
 
     function argBuildAlliance(int $playerId): array
     {
         $buys = [];
-        $claimed = self::getObjectListFromDB("SELECT `alliance` FROM plane WHERE `alliance` IS NOT NULL AND `player_id` != $playerId", true);
+        $claimed = $this->getObjectListFromDB("SELECT `alliance` FROM plane WHERE `alliance` IS NOT NULL AND `player_id` != $playerId", true);
         $possible = array_diff(array_keys(N_REF_ALLIANCE_COLOR), $claimed);
         foreach ($possible as $alliance) {
             $buys[] = [
@@ -127,13 +125,13 @@ class NowBoarding extends Table
      */
     function stBuildAlliance2(int $playerId): void
     {
-        self::DbQuery("UPDATE plane SET `cash` = 7, `alliances` = `alliance` WHERE `player_id` = $playerId");
+        $this->DbQuery("UPDATE plane SET `debt` = -7, `alliances` = `alliance` WHERE `player_id` = $playerId");
     }
 
     function argBuildAlliance2(int $playerId): array
     {
         $buys = [];
-        $claimed = self::getObjectListFromDB("SELECT `alliance` FROM plane WHERE `player_id` = $playerId", true);
+        $claimed = $this->getObjectListFromDB("SELECT `alliance` FROM plane WHERE `player_id` = $playerId", true);
         $possible = array_diff(array_keys(N_REF_ALLIANCE_COLOR), $claimed);
         foreach ($possible as $alliance) {
             $buys[] = [
@@ -151,7 +149,7 @@ class NowBoarding extends Table
      */
     function stBuildUpgrade(int $playerId): void
     {
-        self::DbQuery("UPDATE plane SET `cash` = 5, `seats` = 1, `speed` = 3 WHERE `player_id` = $playerId");
+        $this->DbQuery("UPDATE plane SET `debt` = -5, `seat` = 1, `speed` = 3 WHERE `player_id` = $playerId");
     }
 
     function argBuildUpgrade(int $playerId): array
@@ -174,52 +172,156 @@ class NowBoarding extends Table
 
     /*
      * SETUP #4
-     * Prepares passengers and weather
+     * Prepare passengers and weather
      */
     function stShuffle()
     {
-        $this->gamestate->nextState('preflight');
+        $this->gamestate->nextState('prepare');
     }
 
     /*
-     * PHASE 2: PRE-FLIGHT
+     * PREPARE
+     * Reset planes
      * Add passengers
      * Players purchase upgrades
      */
-    function stMultiactive()
+    function stPrepare()
     {
         $this->gamestate->setAllPlayersMultiactive();
+        $this->gamestate->initializePrivateStateForAllActivePlayers();
+        $this->DbQuery("UPDATE plane SET `speed_remain` = `speed`");
+        $planes = $this->getPlanesByIds();
+        $this->notifyAllPlayers('prepare', clienttranslate('Prepare for the next round'), [
+            'planes' => array_values($planes)
+        ]);
     }
 
-    function argPreflight(): array
+    function argPreparePrivate(int $playerId): array
     {
-        return [];
+        $plane = $this->getPlane($playerId);
+        $buys = [];
+
+        // Alliances?
+        $debt = $plane->debt;
+        $cash = $plane->cash - $debt;
+        $cost = 7;
+        if ($cash >= $cost) {
+            $claimed = $this->getObjectListFromDB("SELECT `alliance` FROM plane WHERE `player_id` = $playerId", true);
+            $possible = array_diff(array_keys(N_REF_ALLIANCE_COLOR), $claimed);
+            foreach ($possible as $alliance) {
+                $buys[] = [
+                    'type' => 'ALLIANCE',
+                    'alliance' => $alliance,
+                    'cost' => $cost,
+                ];
+            }
+        }
+
+        // Seat?
+        if ($plane->seat < 5) {
+            $seat = $plane->seat + 1;
+            $cost = N_REF_SEAT_COST[$seat];
+            if ($cash >= $cost) {
+                $buys[] = [
+                    'type' => 'SEAT',
+                    'seat' => $seat,
+                    'cost' => $cost,
+                ];
+            }
+        }
+
+        // Speed?
+        if ($plane->speed < 9) {
+            $speed = $plane->speed + 1;
+            $cost = N_REF_SPEED_COST[$speed];
+            if ($cash >= $cost) {
+                $buys[] = [
+                    'type' => 'SPEED',
+                    'speed' => $speed,
+                    'cost' => $cost,
+                ];
+            }
+        }
+
+        // Temp Seat?
+        $cost = 2;
+        if ($cash >= $cost && $plane->tempSeat == false && $this->getOwnerName("temp_seat = 1") == null) {
+            $buys[] = [
+                'type' => 'TEMP_SEAT',
+                'cost' => $cost,
+            ];
+        }
+
+        // Temp Speed?
+        $cost = 1;
+        if ($cash >= $cost && $plane->tempSpeed == false && $this->getOwnerName("temp_speed = 1") == null) {
+            $buys[] = [
+                'type' => 'TEMP_SPEED',
+                'cost' => $cost,
+            ];
+        }
+
+        $args = [
+            'buys' => $buys,
+            'cash' => $cash,
+        ];
+        if ($debt > 0) {
+            $args['debt'] = $debt;
+        }
+        return $args;
+
+
+        // $change = [];
+        // $cash = [1, 2, 3, 4, 4, 5, 5];
+        // $count = count($cash);
+        // $goal = 8;
+        // $bestOverpaid = null;
+        // $bestPerm = null;
+        // foreach ($this->generatePermutations($cash) as $perm) {
+        //     $paid = [];
+        //     $sum = 0;
+        //     for ($i = $count - 1; $sum < $goal && $i >= 0; $i--) {
+        //         $paid[] = $perm[$i];
+        //         $sum += $perm[$i];
+        //     }
+        //     $change[] = $paid;
+        //     $overpaid = $sum - $goal;
+        //     if ($bestOverpaid == null || $overpaid < $bestOverpaid) {
+        //         self::debug("found overpaid=$overpaid, paid=" . join(',', $paid) . " for goal=$goal // ");
+        //         $bestOverpaid = $overpaid;
+        //         $bestPerm = $paid;
+        //     }
+        //     if ($overpaid == 0) {
+        //         break;
+        //     }
+        // }
     }
 
     /*
-     * PHASE 3: FLIGHT
+     * FLIGHT
      * Players transport passengers
      */
 
-    function argFlight(): array
+    function argFlyPrivate(int $playerId): array
     {
         $map = $this->getMap();
-        $plane = $this->getPlane(2305327);
+        $plane = $this->getPlane($playerId);
         return [
-            'dropPassenger' => [],
-            'move' => $map->getPossibleMoves($plane),
-            'pickPassenger' => [],
+            'moves' => $map->getPossibleMoves($plane),
+            'paxDrop' => [],
+            'paxPickup' => [],
         ];
     }
 
     /*
-     * PHASE 4: MAINTENANCE
+     * MAINTENANCE
      * Add anger and complaints
      */
 
     function stMaintenance(): void
     {
-        $this->gamestate->nextState('preflight');
+
+        $this->gamestate->nextState('prepare');
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -229,7 +331,9 @@ class NowBoarding extends Table
     function buildReset(): void
     {
         $playerId = $this->getCurrentPlayerId();
-        $this->notifyAllPlayers('buildReset', '${player_name} restarts their turn', [
+        $plane = $this->getPlane($playerId);
+        $this->notifyAllPlayers('buildReset', clienttranslate('${player_name} restarts their turn'), [
+            'plane' => $plane,
             'player_id' => $playerId,
             'player_name' => $this->getCurrentPlayerName(),
         ]);
@@ -239,7 +343,7 @@ class NowBoarding extends Table
 
     function buy(string $type, ?string $alliance): void
     {
-        $playerId = self::getCurrentPlayerId();
+        $playerId = $this->getCurrentPlayerId();
         $plane = $this->getPlane($playerId);
         if ($type == 'ALLIANCE') {
             if ($plane->alliance == null) {
@@ -249,79 +353,33 @@ class NowBoarding extends Table
             }
         } else if ($type == 'SEAT') {
             $this->buySeat($plane);
+        } else if ($type == 'TEMP_SEAT') {
+            $this->buyTempSeat($plane);
         } else if ($type == 'SPEED') {
             $this->buySpeed($plane);
+        } else if ($type == 'TEMP_SPEED') {
+            $this->buyTempSpeed($plane);
+        } else {
+            throw new BgaVisibleSystemException("Invalid buy type: $type");
         }
-
-        // $args = [];
-        // if ($type == 'COLOR') {
-        //     $plane->buyColor($color);
-        //     $msg = '${player_name} joins the ${colorFancy} alliance';
-        //     $args = [
-        //         'i18n' => ['colorFancy'],
-        //         'colorFancy' => $color,
-        //     ];
-        //     if ($state['name'] == 'build' && $plane->getColorsCount() == 1) {
-        //         // The player's color was just assigned
-        //         $args['plane'] = $plane;
-        //         self::reloadPlayersBasicInfos();
-        //     }
-        // } else if ($type == 'EXTRA_SEAT') {
-        //     $plane->buyExtraSeat();
-        //     $msg = '${player_name} borrows the temporary seat';
-        // } else if ($type == 'EXTRA_SPEED') {
-        //     $plane->buyExtraSpeed();
-        //     $msg = '${player_name} borrows the temporary engine';
-        // } else if ($type == 'SEAT') {
-        //     $plane->buySeat();
-        //     $msg = '${player_name} upgrades to ${seat} seats';
-        //     $args = [
-        //         'seat' => $plane->getSeats(),
-        //     ];
-        // } else if ($type == 'SPEED') {
-        //     $plane->buySpeed();
-        //     $msg = '${player_name} upgrades to ${speed} engines';
-        //     $args = [
-        //         'speed' => $plane->getSpeed(),
-        //     ];
-        // } else {
-        //     throw new BgaVisibleSystemException("Unknown purchase type: $type");
-        // }
-
-        // $args['player_id'] = $playerId;
-        // $args['player_name'] = $plane->getName();
-        // $this->notifyAllPlayers('buy', $msg, $args);
-
-        // // Refresh state arguments
-        // $argFunction = "arg" . ucfirst($state['name']);
-        // $args = $this->$argFunction();
-        // $this->notifyAllPlayers('stateArgs', '', $args);
-
-        // // Give extra time
-        // $this->giveExtraTime($playerId);
-
-        // // Automatically proceed when build is complete
-        // if ($state['name'] == 'build' && empty($args[$playerId]['buys'])) {
-        //     $this->gamestate->setPlayerNonMultiactive($playerId, 'shuffle');
-        // }
     }
 
     private function buyAlliancePrimary(NPlane $plane, string $alliance): void
     {
-        $owner = self::getUniqueValueFromDB("SELECT 1 FROM plane WHERE `alliance` = '$alliance' LIMIT 1");
+        $owner = $this->getOwnerName("alliance = '$alliance'");
         if ($owner != null) {
-            throw new BgaUserException("Another player already selected $alliance as their starting alliance. Choose again.");
+            throw new BgaUserException(sprintf($this->_("%s already selected the %s alliance"), $owner, $alliance));
         }
 
         $color = N_REF_ALLIANCE_COLOR[$alliance];
-        self::DbQuery("UPDATE plane SET `alliance` = '$alliance', `alliances` = '$alliance', `location` = '$alliance' WHERE `player_id` = {$plane->id}");
-        self::DbQuery("UPDATE player SET `player_color` = '$color' WHERE `player_id` = {$plane->id}");
-        self::reloadPlayersBasicInfos();
+        $this->DbQuery("UPDATE plane SET `alliance` = '$alliance', `alliances` = '$alliance', `location` = '$alliance' WHERE `player_id` = {$plane->id}");
+        $this->DbQuery("UPDATE player SET `player_color` = '$color' WHERE `player_id` = {$plane->id}");
+        $this->reloadPlayersBasicInfos();
 
-        $this->notifyAllPlayers('alliance', '${player_name} joins the ${allianceFancy} alliance', [
-            'alliance' => $alliance,
+        $this->notifyAllPlayers('buyAlliancePrimary', clienttranslate('${player_name} joins the ${allianceFancy} alliance'), [
             'allianceFancy' => $alliance,
             'color' => $color,
+            'plane' => $plane,
             'player_id' => $plane->id,
             'player_name' => $plane->name,
         ]);
@@ -333,103 +391,182 @@ class NowBoarding extends Table
     private function buyAlliance(NPlane $plane, string $alliance): void
     {
         if (in_array($alliance, $plane->alliances)) {
-            throw new BgaUserException("You're already a member of the $alliance alliance");
+            throw new BgaUserException(sprintf($this->_("Already joined the %s alliance"), $alliance));
         }
         $cost = 7;
-        if ($plane->cash < $cost) {
-            throw new BgaUserException("\${$plane->cash} is not enough to join an alliance (cost: \${$cost})");
+        $cash = $plane->cash - $plane->debt;
+        if ($cash < $cost) {
+            throw new BgaUserException(sprintf($this->_("Insufficient funds (%s) to purchase %s alliance for %s"), "\${$cash}", $alliance, "\${$cost}"));
         }
 
-        $plane->cash -= $cost;
+        $plane->debt += $cost;
         $plane->alliances[] = $alliance;
         $alliances = join(',', $plane->alliances);
-        self::DbQuery("UPDATE plane SET `cash` = {$plane->cash}, `alliances` = '$alliances' WHERE `player_id` = {$plane->id}");
+        $this->DbQuery("UPDATE plane SET `debt` = {$plane->debt}, `alliances` = '$alliances' WHERE `player_id` = {$plane->id}");
 
-        $this->notifyAllPlayers('alliance', '${player_name} joins alliance ${allianceFancy}', [
-            'alliance' => $alliance,
+        $this->notifyAllPlayers('buyAlliance', clienttranslate('${player_name} joins the ${allianceFancy} alliance'), [
             'allianceFancy' => $alliance,
+            'plane' => $plane,
             'player_id' => $plane->id,
             'player_name' => $plane->name,
         ]);
 
         $state = $this->gamestate->state();
-        $this->gamestate->nextPrivateState($plane->id, $state['name'] == 'purchase' ? 'purchase' : 'buildUpgrade');
+        $this->gamestate->nextPrivateState($plane->id, $state['name'] == 'prepare' ? 'preparePrivate' : 'buildUpgrade');
     }
 
     private function buySeat(NPlane $plane): void
     {
-        if ($plane->seats >= 5) {
-            throw new BgaUserException("Maximum seats is 5");
+        if ($plane->seat >= 5) {
+            throw new BgaUserException($this->_("Maximum seats is 5"));
         }
-        $cost = N_REF_SEAT_COST[$plane->seats + 1];
-        if ($plane->cash < $cost) {
-            throw new BgaUserException("\${$plane->cash} is not enough to purchase seat {$plane->seats} (cost: \${$cost})");
+        $cost = N_REF_SEAT_COST[$plane->seat + 1];
+        $cash = $plane->cash - $plane->debt;
+        if ($cash < $cost) {
+            throw new BgaUserException(sprintf($this->_("Insufficient funds (%s) to purchase seat %d for %s"), "\${$cash}", "\${$cost}"));
         }
 
-        $plane->cash -= $cost;
-        $plane->seats++;
-        self::DbQuery("UPDATE plane SET `cash` = {$plane->cash}, `seats` = {$plane->seats} WHERE `player_id` = {$plane->id}");
+        $plane->debt += $cost;
+        $plane->seat++;
+        $plane->seatRemain++;
+        $this->DbQuery("UPDATE plane SET `debt` = {$plane->debt}, `seat` = {$plane->seat} WHERE `player_id` = {$plane->id}");
 
-        $this->notifyAllPlayers('seats', '${player_name} upgrades seats to ${seatFancy}', [
-            'seat' => $plane->seats,
-            'seatFancy' => $plane->seats,
+        $this->notifyAllPlayers('buy', clienttranslate('${player_name} upgrades seats to ${seatFancy}'), [
+            'plane' => $plane,
+            'player_id' => $plane->id,
+            'player_name' => $plane->name,
+            'seatFancy' => $plane->seat,
+        ]);
+
+        $state = $this->gamestate->state();
+        if ($state['name'] == 'prepare') {
+            $this->gamestate->nextPrivateState($plane->id, 'preparePrivate');
+        } else {
+            $this->gamestate->setPlayerNonMultiactive($plane->id, 'buildComplete');
+        }
+    }
+
+    private function buyTempSeat(NPlane $plane): void
+    {
+        $owner = $this->getOwnerName("temp_seat = 1");
+        if ($owner != null) {
+            throw new BgaUserException(sprintf($this->_("%s already owns the temporary seat"), $owner));
+        }
+        $cost = 2;
+        $cash = $plane->cash - $plane->debt;
+        if ($cash < $cost) {
+            throw new BgaUserException(sprintf($this->_("Insufficient funds (%s) to purchase the temporary seat for %s"), "\${$cash}", $plane->seat, "\${$cost}"));
+        }
+
+        $plane->debt += $cost;
+        $plane->tempSeat = true;
+        $this->DbQuery("UPDATE plane SET `debt` = {$plane->debt}, `temp_seat` = 1 WHERE `player_id` = {$plane->id}");
+
+        $this->notifyAllPlayers('buy', clienttranslate('${player_name} purchases the temporary seat'), [
+            'plane' => $plane,
             'player_id' => $plane->id,
             'player_name' => $plane->name,
         ]);
 
-        $state = $this->gamestate->state();
-        if ($state['name'] == 'purchase') {
-            $this->gamestate->nextPrivateState($plane->id, 'purchase');
-        } else {
-            // $this->gamestate->unsetPrivateState($plane->id);
-            $this->gamestate->setPlayerNonMultiactive($plane->id, 'buildComplete');
-        }
+        $this->gamestate->nextPrivateState($plane->id, 'preparePrivate');
     }
 
     private function buySpeed(NPlane $plane): void
     {
         if ($plane->speed >= 9) {
-            throw new BgaUserException("Maximum speed is 9");
+            throw new BgaUserException($this->_("Maximum speed is 9"));
         }
         $cost = N_REF_SPEED_COST[$plane->speed + 1];
-        if ($plane->cash < $cost) {
-            throw new BgaUserException("\${$plane->cash} is not enough to purchase speed {$plane->speed} (cost: \${$cost})");
+        $cash = $plane->cash - $plane->debt;
+        if ($cost < $cost) {
+            throw new BgaUserException(sprintf($this->_("Insufficient funds (%s) to purchase speed %d for %s"), "\${$cash}", $plane->speed, "\${$cost}"));
         }
 
-        $plane->cash -= $cost;
+        $plane->debt += $cost;
         $plane->speed++;
-        self::DbQuery("UPDATE plane SET `cash` = {$plane->cash}, `speed` = {$plane->speed} WHERE `player_id` = {$plane->id}");
+        $plane->speedRemain = $plane->speed;
+        $this->DbQuery("UPDATE plane SET `debt` = {$plane->debt}, `speed` = {$plane->speed}, `speed_remain` = {$plane->speedRemain} WHERE `player_id` = {$plane->id}");
 
-        $this->notifyAllPlayers('seats', '${player_name} upgrades speed to ${speedFancy}', [
-            'speed' => $plane->speed,
-            'speedFancy' => $plane->speed,
+        $this->notifyAllPlayers('buy', clienttranslate('${player_name} upgrades speed to ${speedFancy}'), [
+            'plane' => $plane,
             'player_id' => $plane->id,
             'player_name' => $plane->name,
+            'speedFancy' => $plane->speed,
         ]);
 
         $state = $this->gamestate->state();
-        if ($state['name'] == 'purchase') {
-            $this->gamestate->nextPrivateState($plane->id, 'purchase');
+        if ($state['name'] == 'prepare') {
+            $this->gamestate->nextPrivateState($plane->id, 'preparePrivate');
         } else {
-            // $this->gamestate->unsetPrivateState($plane->id);
             $this->gamestate->setPlayerNonMultiactive($plane->id, 'buildComplete');
         }
     }
 
+    private function buyTempSpeed(NPlane $plane): void
+    {
+        $owner = $this->getOwnerName("temp_speed = 1");
+        if ($owner != null) {
+            throw new BgaUserException(sprintf($this->_("%s already owns the temporary speed"), $owner));
+        }
+        $cost = 1;
+        $cash = $plane->cash - $plane->debt;
+        if ($cash < $cost) {
+            throw new BgaUserException(sprintf($this->_("Insufficient funds (%s) to purchase the temporary speed for %s"), "\${$cash}", "\${$cost}"));
+        }
+
+        $plane->debt += $cost;
+        $plane->tempSpeed = true;
+        $this->DbQuery("UPDATE plane SET `debt` = {$plane->debt}, `temp_speed` = 1 WHERE `player_id` = {$plane->id}");
+
+        $this->notifyAllPlayers('buy', clienttranslate('${player_name} purchases the temporary speed'), [
+            'plane' => $plane,
+            'player_id' => $plane->id,
+            'player_name' => $plane->name,
+        ]);
+
+        $this->gamestate->nextPrivateState($plane->id, 'preparePrivate');
+    }
+
     function flightBegin(): void
     {
-        $playerId = self::getCurrentPlayerId();
-        $this->gamestate->setPlayerNonMultiactive($playerId, 'flight');
+        $playerId = $this->getCurrentPlayerId();
+        $this->gamestate->setPlayerNonMultiactive($playerId, 'fly');
     }
 
     function flightEnd(): void
     {
-        $playerId = self::getCurrentPlayerId();
+        $playerId = $this->getCurrentPlayerId();
         $this->gamestate->setPlayerNonMultiactive($playerId, 'maintenance');
     }
 
-    function move(string $nodeId): void
+    function move(string $location): void
     {
+        $playerId = $this->getCurrentPlayerId();
+        $plane = $this->getPlane($playerId);
+        $map = $this->getMap();
+        $possible = $map->getPossibleMoves($plane);
+        if (!array_key_exists($location, $possible)) {
+            throw new BgaVisibleSystemException("Player {$plane->id} cannot move to $location");
+        }
+
+        $move = $possible[$location];
+        $plane->origin = $move->getOrigin(); // $plane->location;
+        $plane->location = $location;
+        $plane->speedRemain -= $move->fuel;
+        $this->DbQuery("UPDATE plane SET `location` = '{$plane->location}', `origin` = '{$plane->origin}', `speed_remain` = {$plane->speedRemain} WHERE `player_id` = {$plane->id}");
+
+        $this->notifyAllPlayers('move', clienttranslate('${player_name} flys to ${locationFancy}'), [
+            'locationFancy' => $plane->location,
+            'plane' => $plane,
+            'player_id' => $plane->id,
+            'player_name' => $plane->name,
+        ]);
+
+        if ($plane->speedRemain > 0) {
+            $this->gamestate->nextPrivateState($plane->id, 'flyPrivate');
+        } else {
+            $this->gamestate->setPlayerNonMultiactive($plane->id, 'maintenance');
+        }
     }
 
     function pickPassenger(int $paxId): void
@@ -447,7 +584,7 @@ class NowBoarding extends Table
     function getMap(): NMap
     {
         $playerCount = $this->getPlayersNumber();
-        $dbrows = self::getObjectListFromDB("SELECT * FROM weather");
+        $dbrows = $this->getObjectListFromDB("SELECT * FROM weather");
         return new NMap($playerCount, $dbrows);
     }
 
@@ -461,15 +598,24 @@ class NowBoarding extends Table
         $sql = <<<SQL
 SELECT
   p.*,
-  p.seats - (
+  p.seat - (
     SELECT
       COUNT(1)
     FROM
       `pax` x
     WHERE
-      x.player_id = p.player_id
-      AND x.status = 'SEAT'
-  ) AS seats_remain,
+      x.status = 'SEAT'
+      AND x.player_id = p.player_id
+  ) AS seat_remain,
+  (
+    SELECT
+      SUM(cash)
+    FROM
+      `pax` x
+    WHERE
+      x.status = 'CASH'
+      AND x.player_id = p.player_id
+  ) AS cash,
   b.player_name
 FROM
   `plane` p
@@ -480,9 +626,21 @@ SQL;
         }
         return array_map(function ($dbrow) {
             return new NPlane($dbrow);
-        }, self::getCollectionFromDb($sql));
+        }, $this->getCollectionFromDb($sql));
     }
 
+    function getOwnerName(string $sqlWhere): ?string
+    {
+        return $this->getUniqueValueFromDB(<<<SQL
+SELECT
+  b.`player_name`
+FROM
+  `plane` p
+  JOIN `player` b ON (b.player_id = p.player_id)
+WHERE $sqlWhere
+LIMIT 1
+SQL);
+    }
 
     function getPax(int $paxId): NPax
     {
@@ -497,7 +655,48 @@ SQL;
         }
         return array_map(function ($dbrow) {
             return new NPax($dbrow);
-        }, self::getCollectionFromDb($sql));
+        }, $this->getCollectionFromDb($sql));
+    }
+
+    public function generatePermutations(array $array): Generator
+    {
+        // https://en.wikipedia.org/wiki/Permutation#Generation_in_lexicographic_order
+        // Sort the array and this is the first permutation
+        sort($array);
+        $y = 1;
+        yield $array;
+
+        $count = count($array);
+        do {
+            // Find the largest index k where a[k] < a[k + 1]
+            // End when no such index exists
+            $found = false;
+            for ($k = $count - 2; $k >= 0; $k--) {
+                $kvalue = $array[$k];
+                $knext = $array[$k + 1];
+                if ($kvalue < $knext) {
+                    // Find the largest index l greater than k where a[k] < a[l]
+                    for ($l = $count - 1; $l > $k; $l--) {
+                        $lvalue = $array[$l];
+                        if ($kvalue < $lvalue) {
+                            // Swap a[k] and a[l]
+                            [$array[$k], $array[$l]] = [$array[$l], $array[$k]];
+
+                            // Reverse the array from a[k + 1] through the end
+                            $reverse = array_reverse(array_slice($array, $k + 1));
+                            array_splice($array, $k + 1, $count, $reverse);
+                            $y++;
+                            yield $array;
+
+                            // Restart with the new array to find the next permutation
+                            $found = true;
+                            break 2;
+                        }
+                    }
+                }
+            }
+        } while ($found);
+        self::debug("generatePermutations completed: $y iterations for count=$count // ");
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -568,14 +767,14 @@ SQL;
         //            // ! important ! Use DBPREFIX_<table_name> for all tables
         //
         //            $sql = "ALTER TABLE DBPREFIX_xxxxxxx ....";
-        //            self::applyDbUpgradeToAllDB( $sql );
+        //            $this->applyDbUpgradeToAllDB( $sql );
         //        }
         //        if( $from_version <= 1405061421 )
         //        {
         //            // ! important ! Use DBPREFIX_<table_name> for all tables
         //
         //            $sql = "CREATE TABLE DBPREFIX_xxxxxxx ....";
-        //            self::applyDbUpgradeToAllDB( $sql );
+        //            $this->applyDbUpgradeToAllDB( $sql );
         //        }
         //        // Please add your future database scheme changes here
         //

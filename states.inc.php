@@ -14,7 +14,7 @@ $machinestates = [
 
     N_STATE_BUILD => [
         'name' => 'build',
-        'action' => 'stBuild',
+        'action' => 'stInitPrivate',
         'description' => clienttranslate('Wait for others to finish'),
         'descriptionmyturn' => '',
         'initialprivate' => N_STATE_BUILD_ALLIANCE,
@@ -79,32 +79,53 @@ $machinestates = [
         'action' => 'stShuffle',
         'description' => '',
         'transitions' => [
-            'preflight' => N_STATE_PREFLIGHT,
+            'prepare' => N_STATE_PREPARE,
         ],
         'type' => 'game',
     ],
 
-    N_STATE_PREFLIGHT => [
-        'name' => 'preflight',
-        'action' => 'stMultiactive',
-        'args' => 'argPreflight',
-        'description' => clienttranslate('Wait for others to finish'),
-        'descriptionmyturn' => clienttranslate('Discuss plans and purchase upgrades before the round begins'),
+    N_STATE_PREPARE => [
+        'name' => 'prepare',
+        'action' => 'stPrepare',
+        'description' => clienttranslate('Wait for others to prepare'),
+        'descriptionmyturn' => '',
+        'initialprivate' => N_STATE_PREPARE_PRIVATE,
+        'transitions' => [
+            'fly' => N_STATE_FLY,
+        ],
+        'type' => 'multipleactiveplayer',
+    ],
+
+    N_STATE_PREPARE_PRIVATE => [
+        'name' => 'preparePrivate',
+        'args' => 'argPreparePrivate',
+        'descriptionmyturn' => clienttranslate('Prepare for the next round'),
         'possibleactions' => [
             'begin',
             'buy',
         ],
         'transitions' => [
-            'flight' => N_STATE_FLIGHT,
+            'fly' => N_STATE_FLY,
+            'preparePrivate' => N_STATE_PREPARE_PRIVATE,
+        ],
+        'type' => 'private',
+    ],
+
+    N_STATE_FLY => [
+        'name' => 'fly',
+        'action' => 'stInitPrivate',
+        'description' => clienttranslate('Wait for others to finish'),
+        'descriptionmyturn' => '',
+        'initialprivate' => N_STATE_FLY_PRIVATE,
+        'transitions' => [
+            'maintenance' => N_STATE_MAINTENANCE,
         ],
         'type' => 'multipleactiveplayer',
     ],
 
-    N_STATE_FLIGHT => [
-        'name' => 'flight',
-        'action' => 'stMultiactive',
-        'args' => 'argFlight',
-        'description' => clienttranslate('Wait for others to finish'),
+    N_STATE_FLY_PRIVATE => [
+        'name' => 'flyPrivate',
+        'args' => 'argFlyPrivate',
         'descriptionmyturn' => clienttranslate('Go! Go! Go!'),
         'possibleactions' => [
             'dropPassenger',
@@ -113,9 +134,9 @@ $machinestates = [
             'pickPassenger',
         ],
         'transitions' => [
-            'maintenance' => N_STATE_MAINTENANCE,
+            'flyPrivate' => N_STATE_FLY_PRIVATE,
         ],
-        'type' => 'multipleactiveplayer',
+        'type' => 'private',
     ],
 
     N_STATE_MAINTENANCE => [
@@ -124,7 +145,7 @@ $machinestates = [
         'description' => '',
         'transitions' => [
             'end' => N_STATE_END,
-            'preflight' => N_STATE_PREFLIGHT,
+            'prepare' => N_STATE_PREPARE,
         ],
         'type' => 'game',
     ],
