@@ -1,13 +1,12 @@
 CREATE TABLE `pax` (
     `pax_id` INT(3) NOT NULL AUTO_INCREMENT,
-    `order` INT(3) NOT NULL,
     `status` ENUM(
         'QUEUE',
         'PORT',
         'SEAT',
-        'EXTRA_SEAT',
+        'TEMP_SEAT',
         'CASH',
-        'DONE',
+        'SPENT',
         'COMPLAINT'
     ) NOT NULL DEFAULT 'QUEUE',
     `anger` INT(1) NOT NULL DEFAULT '0',

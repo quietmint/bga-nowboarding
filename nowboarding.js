@@ -178,7 +178,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
               let moveCount = 0;
               for (const m in args.moves) {
                 const move = args.moves[m];
-                const el = dojo.place(`<div id="move-${move.location}" class="move node node-${move.location} alliance-${alliance}">${move.fuel}</div>`, "NMap");
+                const el = dojo.place(`<div id="move-${move.location}" class="move node node-${move.location} alliance-gradient-${alliance}">${move.fuel}</div>`, "NMap");
                 if (el) {
                   moveCount++;
                   dojo.connect(el, "onclick", (e) => {

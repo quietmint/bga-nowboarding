@@ -51,6 +51,104 @@ class NowBoarding extends Table
         }
 
         // Create passengers
+        $pax = [
+            ['ATL', 'DEN', 2],
+            ['ATL', 'DFW', 2],
+            ['ATL', 'LAX', 4],
+            ['ATL', 'MIA', 1],
+            ['ATL', 'ORD', 2],
+            ['ATL', 'SFO', 4],
+            ['DEN', 'ATL', 2],
+            ['DEN', 'DFW', 2],
+            ['DEN', 'LAX', 2],
+            ['DEN', 'MIA', 3],
+            ['DEN', 'ORD', 2],
+            ['DEN', 'ORD', 2],
+            ['DEN', 'SFO', 2],
+            ['DFW', 'ATL', 2],
+            ['DFW', 'DEN', 2],
+            ['DFW', 'LAX', 2],
+            ['DFW', 'MIA', 2],
+            ['DFW', 'ORD', 3],
+            ['DFW', 'SFO', 3],
+            ['LAX', 'ATL', 4],
+            ['LAX', 'DEN', 2],
+            ['LAX', 'DFW', 2],
+            ['LAX', 'MIA', 3],
+            ['LAX', 'ORD', 3],
+            ['LAX', 'SFO', 1],
+            ['MIA', 'ATL', 1],
+            ['MIA', 'DEN', 3],
+            ['MIA', 'DFW', 2],
+            ['MIA', 'LAX', 3],
+            ['MIA', 'ORD', 3],
+            ['MIA', 'SFO', 4],
+            ['MIA', 'SFO', 4],
+            ['ORD', 'ATL', 2],
+            ['ORD', 'DEN', 2],
+            ['ORD', 'DFW', 3],
+            ['ORD', 'LAX', 3],
+            ['ORD', 'MIA', 3],
+            ['ORD', 'SFO', 3],
+            ['SFO', 'ATL', 4],
+            ['SFO', 'DFW', 3],
+            ['SFO', 'LAX', 1],
+            ['SFO', 'MIA', 4],
+            ['SFO', 'ORD', 3],
+        ];
+
+        if ($playerCount >= 3) {
+            // Include JFK with 3+ players
+            $pax += [
+                ['ATL', 'JFK', 2],
+                ['DEN', 'JFK', 3],
+                ['JFK', 'ATL', 2],
+                ['JFK', 'DEN', 2],
+                ['JFK', 'DFW', 3],
+                ['JFK', 'LAX', 5],
+                ['JFK', 'LAX', 5],
+                ['JFK', 'MIA', 3],
+                ['JFK', 'ORD', 2],
+                ['JFK', 'SFO', 4],
+                ['LAX', 'JFK', 5],
+                ['LAX', 'JFK', 5],
+                ['MIA', 'JFK', 3],
+                ['ORD', 'JFK', 2],
+                ['SFO', 'JFK', 4],
+            ];
+        }
+
+        if ($playerCount >= 4) {
+            // Include SEA with 4+ players
+            $pax += [
+                ['ATL', 'SEA', 4],
+                ['DEN', 'SEA', 2],
+                ['DFW', 'SEA', 3],
+                ['JFK', 'SEA', 3],
+                ['LAX', 'SEA', 3],
+                ['MIA', 'SEA', 5],
+                ['ORD', 'SEA', 2],
+                ['SEA', 'ATL', 4],
+                ['SEA', 'DEN', 2],
+                ['SEA', 'DFW', 3],
+                ['SEA', 'JFK', 3],
+                ['SEA', 'LAX', 3],
+                ['SEA', 'MIA', 5],
+                ['SEA', 'ORD', 2],
+                ['SEA', 'SFO', 2],
+                ['SFO', 'SEA', 2],
+                ['SFO', 'SEA', 2],
+            ];
+        }
+
+        $paxCount = 10;
+        shuffle($pax);
+        array_splice($pax, $paxCount);
+        foreach ($pax as $p) {
+            [$destination, $origin, $cash] = $p;
+            $sql = "INSERT INTO pax (`destination`, `origin`, `cash`) VALUES ('$destination', '$origin', $cash)";
+            $this->DbQuery($sql);
+        }
     }
 
     function checkVersion(int $clientVersion): void
@@ -562,7 +660,7 @@ class NowBoarding extends Table
             'player_name' => $plane->name,
         ]);
 
-        if ($plane->speedRemain > 0) {
+        if ($plane->speedRemain > 0 && !empty($map->getPossibleMoves($plane))) {
             $this->gamestate->nextPrivateState($plane->id, 'flyPrivate');
         } else {
             $this->gamestate->setPlayerNonMultiactive($plane->id, 'maintenance');

@@ -7,7 +7,6 @@ class NPax extends APP_GameClass implements JsonSerializable
     public int $cash;
     public string $destination;
     public ?string $location;
-    public int $order;
     public string $origin;
     public ?int $playerId;
     public string $status;
@@ -19,7 +18,6 @@ class NPax extends APP_GameClass implements JsonSerializable
         $this->cash = intval($dbrow['cash']);
         $this->destination = $dbrow['destination'];
         $this->location = $dbrow['location'];
-        $this->order = intval($dbrow['order']);
         $this->origin = $dbrow['origin'];
         $this->playerId = $dbrow['player_id'] == null ? null : intval($dbrow['player_id']);
         $this->status = $dbrow['status'];
@@ -38,7 +36,6 @@ class NPax extends APP_GameClass implements JsonSerializable
             'cash' => $this->cash,
             'destination' => $this->destination,
             'location' => $this->location,
-            'order' => $this->order,
             'origin' => $this->origin,
             'playerId' => $this->playerId,
             'status' => $this->status,
