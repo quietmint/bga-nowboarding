@@ -6,7 +6,7 @@ class NMap extends APP_GameClass implements JsonSerializable
     public array $routes = [];
     public array $weather = [];
 
-    public function __construct(int $playerCount, array $dbrows)
+    public function __construct(int $playerCount, array $weather)
     {
         // Build the map
         $this->addRoute('ATL', 'DEN', 3, null);
@@ -35,23 +35,14 @@ class NMap extends APP_GameClass implements JsonSerializable
             $this->addRoute('ORD', 'SFO', 4, 'ORD');
         }
 
-        // Add weather
-        foreach ($dbrows as $dbrow) {
-            $weatherId = intval($dbrow['weather_id']);
-            $token = $dbrow['token'];
-            $nodeId = $dbrow['location'];
-            if ($nodeId != null) {
-                $node = $this->nodes[$nodeId];
-                $node->weather = $token;
-                $this->weather[$weatherId] = $node;
-            }
-        }
+        $this->weather = $weather;
     }
 
     public function jsonSerialize(): array
     {
         return [
-            'nodes' => $this->nodes,
+            'nodes' => array_keys($this->nodes),
+            'weather' => $this->weather,
         ];
     }
 
@@ -107,7 +98,7 @@ class NMap extends APP_GameClass implements JsonSerializable
         self::debug("getPossibleMoves start: $start // ");
         $queue = [$start];
         while (!empty($queue)) {
-            $next_queue = [];
+            $nextQueue = [];
             foreach ($queue as $move) {
                 $pathString = $move->getPathString();
                 $visited[$pathString] = true;
@@ -133,13 +124,20 @@ class NMap extends APP_GameClass implements JsonSerializable
                     if (array_key_exists($c['path'], $visited)) {
                         continue;
                     }
-                    $next_queue[] = new NMove($c['fuel'], $c['node'], $move->path);
+                    $nextQueue[] = new NMove($c['fuel'], $c['node'], $move->path);
                 }
             }
-            $queue = $next_queue;
+            $queue = $nextQueue;
         }
         self::debug("getPossibleMoves complete: " . count($visited) . " iterations // ");
+        // Remove your current location
         unset($best[$plane->location]);
+        // Remove fast weather
+        foreach ($this->weather as $location => $type) {
+            if ($type == 'FAST' && array_key_exists($location, $best)) {
+                unset($best[$location]);
+            }
+        }
         return $best;
     }
 
@@ -147,8 +145,9 @@ class NMap extends APP_GameClass implements JsonSerializable
     {
         $out = [];
         $weatherSpeed = 0;
-        if ($node instanceof NNodeHop) {
-            $weatherSpeed = N_REF_WEATHER_SPEED[$node->weather];
+        if (array_key_exists($node->id, $this->weather)) {
+            $weatherToken = $this->weather[$node->id];
+            $weatherSpeed = N_REF_WEATHER_SPEED[$weatherToken];
         }
         foreach ($node->connections as $cNode) {
             $fuel = $fuelSoFar + $weatherSpeed + 1;

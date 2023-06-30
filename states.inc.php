@@ -22,7 +22,7 @@ $machinestates = [
             'buildReset',
         ],
         'transitions' => [
-            'buildComplete' => N_STATE_SHUFFLE,
+            'buildComplete' => N_STATE_BUILD_COMPLETE,
         ],
         'type' => 'multipleactiveplayer',
     ],
@@ -74,9 +74,9 @@ $machinestates = [
         'type' => 'private',
     ],
 
-    N_STATE_SHUFFLE => [
-        'name' => 'shuffle',
-        'action' => 'stShuffle',
+    N_STATE_BUILD_COMPLETE => [
+        'name' => 'buildComplete',
+        'action' => 'stBuildComplete',
         'description' => '',
         'transitions' => [
             'prepare' => N_STATE_PREPARE,
@@ -91,7 +91,7 @@ $machinestates = [
         'descriptionmyturn' => '',
         'initialprivate' => N_STATE_PREPARE_PRIVATE,
         'transitions' => [
-            'fly' => N_STATE_FLY,
+            'reveal' => N_STATE_REVEAL,
         ],
         'type' => 'multipleactiveplayer',
     ],
@@ -105,10 +105,19 @@ $machinestates = [
             'buy',
         ],
         'transitions' => [
-            'fly' => N_STATE_FLY,
             'preparePrivate' => N_STATE_PREPARE_PRIVATE,
         ],
         'type' => 'private',
+    ],
+
+    N_STATE_REVEAL => [
+        'name' => 'reveal',
+        'action' => 'stReveal',
+        'description' => '',
+        'transitions' => [
+            'fly' => N_STATE_FLY,
+        ],
+        'type' => 'game',
     ],
 
     N_STATE_FLY => [
@@ -128,10 +137,10 @@ $machinestates = [
         'args' => 'argFlyPrivate',
         'descriptionmyturn' => clienttranslate('Go! Go! Go!'),
         'possibleactions' => [
-            'dropPassenger',
+            'deplane',
             'end',
+            'enplane',
             'move',
-            'pickPassenger',
         ],
         'transitions' => [
             'flyPrivate' => N_STATE_FLY_PRIVATE,

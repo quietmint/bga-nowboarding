@@ -3,13 +3,11 @@
 class NNodeHop extends NNode implements JsonSerializable
 {
     public ?string $alliance;
-    public ?string $weather;
 
-    public function __construct(string $id, ?string $alliance, ?string $weather)
+    public function __construct(string $id, ?string $alliance)
     {
         parent::__construct($id);
         $this->alliance = $alliance;
-        $this->weather = $weather;
     }
 
     public function __toString(): string
@@ -22,7 +20,6 @@ class NNodeHop extends NNode implements JsonSerializable
         return parent::jsonSerialize() + [
             'alliance' => $this->alliance,
             'type' => 'HOP',
-            'weather' => $this->weather,
         ];
     }
 }

@@ -1,46 +1,67 @@
 define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], function (dojo, declare) {
   return declare("bgagame.nowboarding", ebg.core.gamegui, {
-    constructor() {},
+    constructor() {
+      dojo.place("loader_mask", "overall-content", "before");
+    },
 
     setup(gamedatas) {
-      console.log("🐣 Setup", this.gamedatas);
+      console.log("🐣 Setup", gamedatas);
 
-      dojo.place(`<link rel="stylesheet" type="text/css" href="https://studio.boardgamearena.com:8084/data/themereleases/current/games/nowboarding/999999-9999/nowboarding.css?${Date.now()}"/>`, document.head, "last");
+      dojo.place(`<link rel="stylesheet" type="text/css" href="https://studio.boardgamearena.com:8084/data/themereleases/current/games/nowboarding/999999-9999/dev.css?${Date.now()}"/>`, document.head, "last");
 
       // Setup map
-      for (let nodeId in gamedatas.map.nodes) {
-        var node = gamedatas.map.nodes[nodeId];
-        dojo.place(`<div id="node-${nodeId}" class="marker node node-${nodeId}"></div>`, "NMap");
-        if (node.weather) {
-          this.createWeather(node);
+      const manifestContainers = {
+        DEN: ".grid-top",
+        JFK: ".grid-top",
+        ORD: ".grid-top",
+        SEA: ".grid-left",
+        SFO: ".grid-left",
+        LAX: ".grid-left",
+        DFW: ".grid-bottom",
+        ATL: ".grid-bottom",
+        MIA: ".grid-bottom",
+      };
+      const gameEl = document.getElementById("nowboarding");
+      for (const node of gamedatas.map.nodes) {
+        dojo.place(`<div id="node-${node}" class="marker node node-${node}"></div>`, "NMap");
+        if (node.length == 3 && manifestContainers[node]) {
+          const containerEl = gameEl.querySelector(manifestContainers[node]);
+          this.renderManifest(containerEl, "afterbegin", node);
         }
+      }
+      for (const location in gamedatas.map.weather) {
+        const token = gamedatas.map.weather[location];
+        this.createWeather(location, token);
       }
 
       // Setup planes
       if (gamedatas.planes) {
-        for (let planeId in gamedatas.planes) {
-          let plane = gamedatas.planes[planeId];
+        for (const planeId in gamedatas.planes) {
+          const plane = gamedatas.planes[planeId];
           if (plane.location) {
             this.createPlane(plane);
           }
+          this.renderManifest(`player_board_${planeId}`, "beforeend", `seat-${planeId}`);
+          this.renderManifest(`player_board_${planeId}`, "beforeend", `cash-${planeId}`);
         }
       }
 
       // Setup pax
-
-      // Setup player boards
-      for (var player_id in gamedatas.players) {
-        var player = gamedatas.players[player_id];
+      if (gamedatas.pax) {
+        for (const paxId in gamedatas.pax) {
+          const pax = gamedatas.pax[paxId];
+          this.renderPax(pax);
+        }
       }
 
       // Setup notifications
       dojo.subscribe("buildReset", this, "onNotify");
-      dojo.subscribe("buy", this, "onNotify");
-      dojo.subscribe("buyAlliance", this, "onNotify");
-      dojo.subscribe("buyAlliancePrimary", this, "onNotify");
+      dojo.subscribe("buildPrimary", this, "onNotify");
       dojo.subscribe("move", this, "onNotify");
       this.notifqueue.setSynchronous("move", 1000);
-      dojo.subscribe("prepare", this, "onNotify");
+      dojo.subscribe("pax", this, "onNotify");
+      dojo.subscribe("planes", this, "onNotify");
+      dojo.subscribe("weather", this, "onNotify");
 
       // Setup preferences
       this.setupPrefs();
@@ -108,13 +129,16 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     format_string_recursive: function (log, args) {
       if (log && args && !args.processed) {
         if (args.allianceFancy) {
-          args.allianceFancy = `<span class="logfancy alliance alliance-${args.allianceFancy}"><i class="icon alliance ${args.allianceFancy}"></i> ${args.allianceFancy}</span>`;
+          args.allianceFancy = `<span class="logfancy alliance alliance-${args.allianceFancy}"><i class="icon logo logo-${args.allianceFancy}"></i> ${args.allianceFancy}</span>`;
         }
         if (args.seatFancy) {
           args.seatFancy = `<span class="logfancy seat"><i class="icon seat"></i> ${args.seatFancy}</span>`;
         }
         if (args.speedFancy) {
           args.speedFancy = `<span class="logfancy speed"><i class="icon speed"></i> ${args.speedFancy}</span>`;
+        }
+        if (args.locationFancy) {
+          args.locationFancy = `<b>${args.locationFancy}</b>`;
         }
         args.processed = true;
       }
@@ -132,7 +156,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
       if (!this.is_spectator) {
         if (this.isCurrentPlayerActive()) {
-          if (args && args.buys && args.buys.length > 0) {
+          if (args?.buys?.length > 0) {
             let buys = args.buys;
             for (let i in buys) {
               let buy = buys[i];
@@ -173,7 +197,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           if (stateName == "flyPrivate") {
             // Update the possible moves
             this.deleteMoves();
-            if (args && args.moves) {
+            if (args?.moves) {
               let alliance = this.gamedatas.planes[this.player_id].alliance;
               let moveCount = 0;
               for (const m in args.moves) {
@@ -207,18 +231,10 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       console.log(`💬 Notify ${notif.type}`, notif.args);
       if (notif.type == "buildReset") {
         this.deletePlane(notif.args.plane);
-      } else if (notif.type == "buyAlliancePrimary") {
-        // Assign player color
-        this.gamedatas.players[notif.args.player_id].color = notif.args.color;
-        dojo.query(`#player_name_${notif.args.player_id} a`).style({
-          color: `#${notif.args.color}`,
-        });
+      } else if (notif.type == "buildPrimary") {
         // Create plane
+        this.gamedatas.players[notif.args.player_id].color = notif.args.color;
         this.createPlane(notif.args.plane);
-      } else if (notif.type == "buyAlliance") {
-        // TODO update player panel
-      } else if (notif.type == "buy") {
-        this.updatePlane(notif.args.plane);
       } else if (notif.type == "move") {
         if (notif.args.player_id == this.player_id) {
           // Erase possible moves
@@ -227,9 +243,21 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         this.rotatePlane(notif.args.plane);
         this.movePlane(notif.args.plane);
         this.updatePlane(notif.args.plane);
-      } else if (notif.type == "prepare") {
+      } else if (notif.type == "pax") {
+        for (const paxId in notif.args.pax) {
+          const pax = notif.args.pax[paxId];
+          this.gamedatas.pax[paxId] = pax;
+          this.renderPax(pax);
+        }
+      } else if (notif.type == "planes") {
         for (const plane of notif.args.planes) {
           this.updatePlane(plane);
+        }
+      } else if (notif.type == "weather") {
+        this.deleteWeather();
+        for (const location in notif.args.weather) {
+          const token = notif.args.weather[location];
+          this.createWeather(location, token);
         }
       }
     },
@@ -238,6 +266,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       console.log("Preference changed", id, value);
     },
 
+    // Utilities
     // ----------------------------------------------------------------------
 
     takeAction(action, data) {
@@ -249,9 +278,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           delete data.lock;
         } else {
           data.lock = true;
-          // if (this.isInterfaceLocked()) {
-          //   throw `Take action ${action} ignored by interface lock`;
-          // }
         }
         for (const key in data) {
           if (Array.isArray(data[key])) {
@@ -281,28 +307,79 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       });
     },
 
-    createWeather(node) {
-      var weatherIcon = node.weather == "FAST" ? "wind" : "storm";
-      console.log(`🌦️ Create weather ${weatherIcon} at ${node.id}`);
-      dojo.place(`<div id="weather-${node.id}" class="weather node node-${node.id}"><i class="icon weather ${node.weather}"></i></div>`, "NMap");
+    takePaxAction(paxId) {
+      const pax = this.gamedatas.pax[paxId];
+      console.log(`takePaxAction ${pax.id} ${pax.status} ${pax.location}`, pax);
+      if (pax.status == "PORT") {
+        this.takeAction("enplane", { paxId: pax.id });
+      } else if (pax.status == "SEAT" || pax.status == "TEMP_SEAT") {
+        this.takeAction("deplane", { paxId: pax.id });
+      }
     },
 
-    deleteWeather(node) {
+    swapClass(el, toRemove, toAdd) {
+      if (typeof el == "string") {
+        el = document.getElementById(el);
+      }
+      if (toRemove) {
+        const classList = [...el.classList];
+        classList.forEach((className) => {
+          if (className.startsWith(toRemove)) {
+            el.classList.remove(className);
+          }
+        });
+      }
+      if (toAdd) {
+        el.classList.add(toAdd);
+      }
+    },
+
+    getRotation(plane) {
+      if (!plane.location || !plane.origin) {
+        return null;
+      }
+      const locationPos = dojo.position(`node-${plane.location}`);
+      const originPos = dojo.position(`node-${plane.origin}`);
+      if (!locationPos || !originPos) {
+        return null;
+      }
+      let rotation = (Math.atan2(locationPos.y - originPos.y, locationPos.x - originPos.x) * 180) / Math.PI + 90;
+      // Normalize the rotation to between -180 +180
+      if (rotation < -180) {
+        rotation += 360;
+      } else if (rotation > 180) {
+        rotation -= 360;
+      }
+      return rotation;
+    },
+
+    // Rendering
+    // ----------------------------------------------------------------------
+
+    createWeather(location, token) {
+      console.log(`🌦️ Create weather ${token} at ${location}`);
+      dojo.place(`<div id="weather-${location}" class="weather node node-${location}"><i class="icon weather weather-${token}"></i></div>`, "NMap");
+    },
+
+    deleteWeather(weather) {
       console.log(`❌ Delete weather`);
+      dojo.query("#NMap .weather.node").forEach((el) => dojo.destroy(el));
     },
 
     createPlane(plane) {
       console.log(`✈️ Create plane ${plane.id} (${plane.alliance}) at ${plane.location}`);
+      let style = "";
+      const rotation = this.getRotation(plane);
+      if (rotation) {
+        style = `transform: rotate(${rotation}deg)`;
+      }
       dojo.place(
-        `<div id="plane-${plane.id}" class="plane ${plane.alliance} node node-${plane.location}">
-          <div class="planebody icon plane ${plane.alliance}"></div>
-          <div class="planestats"></div>
+        `<div id="plane-${plane.id}" class="plane node node-${plane.location}">
+          <div class="planebody icon plane plane-${plane.alliance}" style="${style}"></div>
         </div>`,
         "NMap"
       );
-      if (plane.origin != null) {
-        this.rotatePlane(plane);
-      }
+      this.swapClass(`overall_player_board_${plane.id}`, "alliance-", `alliance-${plane.alliance}`);
     },
 
     deletePlane(plane) {
@@ -312,29 +389,11 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
     movePlane(plane) {
       console.log(`✈️ Move plane ${plane.id} (${plane.alliance}) to ${plane.location}`);
-      let el = document.getElementById(`plane-${plane.id}`);
-      let classList = [...el.classList];
-      classList.forEach((className) => {
-        if (className.startsWith("node-")) {
-          el.classList.remove(className);
-        }
-      });
-      el.classList.add(`node-${plane.location}`);
+      this.swapClass(`plane-${plane.id}`, "node-", `node-${plane.location}`);
     },
 
     rotatePlane(plane) {
-      let locationPos = dojo.position(`node-${plane.location}`);
-      let originPos = dojo.position(`node-${plane.origin}`);
-      let rotation = (Math.atan2(locationPos.y - originPos.y, locationPos.x - originPos.x) * 180) / Math.PI + 90;
-      // Normalize the rotation to between -180 +180
-      if (rotation < -180) {
-        console.warn(`rotation ${rotation} is too low`);
-        rotation += 360;
-      } else if (rotation > 180) {
-        console.warn(`rotation ${rotation} is too high`);
-        rotation -= 360;
-      }
-
+      const rotation = this.getRotation(plane);
       console.log(`⤴️ Rotate plane ${plane.id} (${plane.alliance}) to ${rotation}deg`);
       dojo
         .query(`#plane-${plane.id} .planebody`)
@@ -345,6 +404,10 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     },
 
     updatePlane(plane) {
+      console.log(`✈️ Update plane ${plane.id} (${plane.alliance})`);
+      let el = document.getElementById(`plane-${plane.id}`);
+      if (el == null) {
+      }
       // console.log(`💵 Update plane ${plane.id} (${plane.alliance}) to ${plane.speedRemain} speed remaining, ${plane.seatRemain} seats remaining`);
       // dojo.query(`#plane-${plane.id} .planestats`).at(0).text(`${plane.speedRemain}/${plane.seatRemain}`);
     },
@@ -352,6 +415,112 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     deleteMoves() {
       console.log(`❌ Delete possible moves`);
       dojo.query("#NMap .move.node").forEach((el) => dojo.destroy(el));
+    },
+
+    renderManifest(parentEl, position, manifestId) {
+      if (typeof parentEl == "string") {
+        parentEl = document.getElementById(parentEl);
+      }
+      parentEl.insertAdjacentHTML(position, `<div id="manifest-${manifestId}" class="manifest"><div class="location">${manifestId}</div></div>`);
+    },
+
+    renderPax(pax) {
+      console.log(`🧑 Render pax ${pax.id}`);
+
+      // Determine where it is
+      let paxEl = document.getElementById(`pax-${pax.id}`);
+
+      // Determine where it belongs
+      let manifestEl = null;
+      if (pax.status == "SECRET" || pax.status == "PORT") {
+        // At the airport
+        manifestEl = document.getElementById(`manifest-${pax.location}`);
+      } else if (pax.status == "SEAT" || pax.status == "TEMP_SEAT") {
+        // In transit
+        manifestEl = document.getElementById(`manifest-seat-${pax.playerId}`);
+      } else if (pax.status == "CASH") {
+        // In wallet
+        manifestEl = document.getElementById(`manifest-wallet-${pax.playerId}`);
+      }
+
+      if (paxEl && !manifestEl) {
+        // Delete old pax
+        this.deletePax(pax);
+        return;
+      }
+
+      if (!paxEl && manifestEl) {
+        // Create new pax
+        console.log("Welcome, new passenger!");
+        manifestEl.insertAdjacentHTML(
+          "beforeend",
+          `<div id="pax-${pax.id}" class="pax">
+    <div class="vip"></div>
+    <div class="nameplate">
+        <div class="barcode">NOWBOARDING</div>
+        <div class="cash box"></div>
+        <div class="origin"></div>
+        <div class="arrow">»</div>
+        <div class="destination"></div>
+        <div class="anger box"><div class="ping"></div><div class="icon anger"></div> <span></span></div>
+    </div>
+</div>`
+        );
+        paxEl = document.getElementById(`pax-${pax.id}`);
+        paxEl.addEventListener("click", () => this.takePaxAction(pax.id));
+      }
+
+      // Update the attributes
+      const vipEl = paxEl.querySelector(".vip");
+      const cashEl = paxEl.querySelector(".cash");
+      const originEl = paxEl.querySelector(".origin");
+      const destinationEl = paxEl.querySelector(".destination");
+      const angerEl = paxEl.querySelector(".anger.box");
+      const angerIconEl = angerEl.querySelector(".icon");
+      const angerSpanEl = angerEl.querySelector("span");
+      vipEl.textContent = "VIP//CELEBRITY-IN-EMERGENCY";
+      if (pax.status == "SECRET") {
+        paxEl.classList.add("SECRET");
+        cashEl.innerHTML = `<div class="icon spinner"></div>`;
+        originEl.textContent = `${pax.origin}//WLCOME ABRD`;
+      } else {
+        paxEl.classList.remove("SECRET");
+        cashEl.textContent = `$${pax.cash}`;
+        originEl.textContent = pax.origin;
+        destinationEl.textContent = pax.destination;
+        this.swapClass(angerEl, "anger-", `anger-${pax.anger}`);
+        this.swapClass(angerIconEl, "anger-", `anger-${pax.anger}`);
+        angerSpanEl.textContent = pax.anger;
+      }
+
+      // Move to the correct manifest (if necessary)
+      this.movePax(pax, paxEl, manifestEl);
+    },
+
+    movePax(pax, paxEl, manifestEl) {
+      if (paxEl.parentElement == manifestEl) {
+        // Already correct, nothing to do
+        return;
+      }
+      console.log(`🧑 Move pax ${pax.id} to ${manifestEl.id}`);
+      manifestEl.appendChild(paxEl);
+    },
+
+    createPax(pax) {
+      if (pax.status == "SECRET" || pax.status == "PORT") {
+        // At the airport
+      } else if (pax.status == "SEAT" || pax.status == "TEMP_SEAT") {
+        // In transit
+      } else if (pax.status == "CASH") {
+        // In wallet
+      } else {
+        // Don't render
+      }
+    },
+
+    deletePax(pax) {
+      console.log(`❌ Delete passenger ${pax.id} (${pax.status})`);
+      dojo.destroy(`pax-${pax.id}`);
     },
   });
 });

@@ -1,0 +1,996 @@
+:root {
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+  --color-slate-950: #020617;
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+  --color-gray-950: #030712;
+  --color-zinc-50: #fafafa;
+  --color-zinc-100: #f4f4f5;
+  --color-zinc-200: #e4e4e7;
+  --color-zinc-300: #d4d4d8;
+  --color-zinc-400: #a1a1aa;
+  --color-zinc-500: #71717a;
+  --color-zinc-600: #52525b;
+  --color-zinc-700: #3f3f46;
+  --color-zinc-800: #27272a;
+  --color-zinc-900: #18181b;
+  --color-zinc-950: #09090b;
+  --color-neutral-50: #fafafa;
+  --color-neutral-100: #f5f5f5;
+  --color-neutral-200: #e5e5e5;
+  --color-neutral-300: #d4d4d4;
+  --color-neutral-400: #a3a3a3;
+  --color-neutral-500: #737373;
+  --color-neutral-600: #525252;
+  --color-neutral-700: #404040;
+  --color-neutral-800: #262626;
+  --color-neutral-900: #171717;
+  --color-neutral-950: #0a0a0a;
+  --color-stone-50: #fafaf9;
+  --color-stone-100: #f5f5f4;
+  --color-stone-200: #e7e5e4;
+  --color-stone-300: #d6d3d1;
+  --color-stone-400: #a8a29e;
+  --color-stone-500: #78716c;
+  --color-stone-600: #57534e;
+  --color-stone-700: #44403c;
+  --color-stone-800: #292524;
+  --color-stone-900: #1c1917;
+  --color-stone-950: #0c0a09;
+  --color-red-50: #fef2f2;
+  --color-red-100: #fee2e2;
+  --color-red-200: #fecaca;
+  --color-red-300: #fca5a5;
+  --color-red-400: #f87171;
+  --color-red-500: #ef4444;
+  --color-red-600: #dc2626;
+  --color-red-700: #b91c1c;
+  --color-red-800: #991b1b;
+  --color-red-900: #7f1d1d;
+  --color-red-950: #450a0a;
+  --color-orange-50: #fff7ed;
+  --color-orange-100: #ffedd5;
+  --color-orange-200: #fed7aa;
+  --color-orange-300: #fdba74;
+  --color-orange-400: #fb923c;
+  --color-orange-500: #f97316;
+  --color-orange-600: #ea580c;
+  --color-orange-700: #c2410c;
+  --color-orange-800: #9a3412;
+  --color-orange-900: #7c2d12;
+  --color-orange-950: #431407;
+  --color-amber-50: #fffbeb;
+  --color-amber-100: #fef3c7;
+  --color-amber-200: #fde68a;
+  --color-amber-300: #fcd34d;
+  --color-amber-400: #fbbf24;
+  --color-amber-500: #f59e0b;
+  --color-amber-600: #d97706;
+  --color-amber-700: #b45309;
+  --color-amber-800: #92400e;
+  --color-amber-900: #78350f;
+  --color-amber-950: #451a03;
+  --color-yellow-50: #fefce8;
+  --color-yellow-100: #fef9c3;
+  --color-yellow-200: #fef08a;
+  --color-yellow-300: #fde047;
+  --color-yellow-400: #facc15;
+  --color-yellow-500: #eab308;
+  --color-yellow-600: #ca8a04;
+  --color-yellow-700: #a16207;
+  --color-yellow-800: #854d0e;
+  --color-yellow-900: #713f12;
+  --color-yellow-950: #422006;
+  --color-lime-50: #f7fee7;
+  --color-lime-100: #ecfccb;
+  --color-lime-200: #d9f99d;
+  --color-lime-300: #bef264;
+  --color-lime-400: #a3e635;
+  --color-lime-500: #84cc16;
+  --color-lime-600: #65a30d;
+  --color-lime-700: #4d7c0f;
+  --color-lime-800: #3f6212;
+  --color-lime-900: #365314;
+  --color-lime-950: #1a2e05;
+  --color-green-50: #f0fdf4;
+  --color-green-100: #dcfce7;
+  --color-green-200: #bbf7d0;
+  --color-green-300: #86efac;
+  --color-green-400: #4ade80;
+  --color-green-500: #22c55e;
+  --color-green-600: #16a34a;
+  --color-green-700: #15803d;
+  --color-green-800: #166534;
+  --color-green-900: #14532d;
+  --color-green-950: #052e16;
+  --color-emerald-50: #ecfdf5;
+  --color-emerald-100: #d1fae5;
+  --color-emerald-200: #a7f3d0;
+  --color-emerald-300: #6ee7b7;
+  --color-emerald-400: #34d399;
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #059669;
+  --color-emerald-700: #047857;
+  --color-emerald-800: #065f46;
+  --color-emerald-900: #064e3b;
+  --color-emerald-950: #022c22;
+  --color-teal-50: #f0fdfa;
+  --color-teal-100: #ccfbf1;
+  --color-teal-200: #99f6e4;
+  --color-teal-300: #5eead4;
+  --color-teal-400: #2dd4bf;
+  --color-teal-500: #14b8a6;
+  --color-teal-600: #0d9488;
+  --color-teal-700: #0f766e;
+  --color-teal-800: #115e59;
+  --color-teal-900: #134e4a;
+  --color-teal-950: #042f2e;
+  --color-cyan-50: #ecfeff;
+  --color-cyan-100: #cffafe;
+  --color-cyan-200: #a5f3fc;
+  --color-cyan-300: #67e8f9;
+  --color-cyan-400: #22d3ee;
+  --color-cyan-500: #06b6d4;
+  --color-cyan-600: #0891b2;
+  --color-cyan-700: #0e7490;
+  --color-cyan-800: #155e75;
+  --color-cyan-900: #164e63;
+  --color-cyan-950: #083344;
+  --color-sky-50: #f0f9ff;
+  --color-sky-100: #e0f2fe;
+  --color-sky-200: #bae6fd;
+  --color-sky-300: #7dd3fc;
+  --color-sky-400: #38bdf8;
+  --color-sky-500: #0ea5e9;
+  --color-sky-600: #0284c7;
+  --color-sky-700: #0369a1;
+  --color-sky-800: #075985;
+  --color-sky-900: #0c4a6e;
+  --color-sky-950: #082f49;
+  --color-blue-50: #eff6ff;
+  --color-blue-100: #dbeafe;
+  --color-blue-200: #bfdbfe;
+  --color-blue-300: #93c5fd;
+  --color-blue-400: #60a5fa;
+  --color-blue-500: #3b82f6;
+  --color-blue-600: #2563eb;
+  --color-blue-700: #1d4ed8;
+  --color-blue-800: #1e40af;
+  --color-blue-900: #1e3a8a;
+  --color-blue-950: #172554;
+  --color-indigo-50: #eef2ff;
+  --color-indigo-100: #e0e7ff;
+  --color-indigo-200: #c7d2fe;
+  --color-indigo-300: #a5b4fc;
+  --color-indigo-400: #818cf8;
+  --color-indigo-500: #6366f1;
+  --color-indigo-600: #4f46e5;
+  --color-indigo-700: #4338ca;
+  --color-indigo-800: #3730a3;
+  --color-indigo-900: #312e81;
+  --color-indigo-950: #1e1b4b;
+  --color-violet-50: #f5f3ff;
+  --color-violet-100: #ede9fe;
+  --color-violet-200: #ddd6fe;
+  --color-violet-300: #c4b5fd;
+  --color-violet-400: #a78bfa;
+  --color-violet-500: #8b5cf6;
+  --color-violet-600: #7c3aed;
+  --color-violet-700: #6d28d9;
+  --color-violet-800: #5b21b6;
+  --color-violet-900: #4c1d95;
+  --color-violet-950: #2e1065;
+  --color-purple-50: #faf5ff;
+  --color-purple-100: #f3e8ff;
+  --color-purple-200: #e9d5ff;
+  --color-purple-300: #d8b4fe;
+  --color-purple-400: #c084fc;
+  --color-purple-500: #a855f7;
+  --color-purple-600: #9333ea;
+  --color-purple-700: #7e22ce;
+  --color-purple-800: #6b21a8;
+  --color-purple-900: #581c87;
+  --color-purple-950: #3b0764;
+  --color-fuchsia-50: #fdf4ff;
+  --color-fuchsia-100: #fae8ff;
+  --color-fuchsia-200: #f5d0fe;
+  --color-fuchsia-300: #f0abfc;
+  --color-fuchsia-400: #e879f9;
+  --color-fuchsia-500: #d946ef;
+  --color-fuchsia-600: #c026d3;
+  --color-fuchsia-700: #a21caf;
+  --color-fuchsia-800: #86198f;
+  --color-fuchsia-900: #701a75;
+  --color-fuchsia-950: #4a044e;
+  --color-pink-50: #fdf2f8;
+  --color-pink-100: #fce7f3;
+  --color-pink-200: #fbcfe8;
+  --color-pink-300: #f9a8d4;
+  --color-pink-400: #f472b6;
+  --color-pink-500: #ec4899;
+  --color-pink-600: #db2777;
+  --color-pink-700: #be185d;
+  --color-pink-800: #9d174d;
+  --color-pink-900: #831843;
+  --color-pink-950: #500724;
+  --color-rose-50: #fff1f2;
+  --color-rose-100: #ffe4e6;
+  --color-rose-200: #fecdd3;
+  --color-rose-300: #fda4af;
+  --color-rose-400: #fb7185;
+  --color-rose-500: #f43f5e;
+  --color-rose-600: #e11d48;
+  --color-rose-700: #be123c;
+  --color-rose-800: #9f1239;
+  --color-rose-900: #881337;
+  --color-rose-950: #4c0519;
+}
+
+html {
+  background: #3089c0;
+}
+
+#loader_mask {
+  position: fixed;
+  height: 100vh;
+}
+
+#loader_mask_background {
+  display: none;
+}
+
+#overall-content.gamestate_prepare #generalactions.newline {
+  display: block;
+  margin-top: 5px;
+}
+
+.player-board {
+  background-color: var(--color-slate-600);
+  color: white;
+}
+
+.player-board .player-name a {
+  color: white !important;
+}
+
+.bgabutton .icon {
+  display: block;
+  font-size: 40px;
+  margin: auto;
+}
+
+.logfancy {
+  background-color: var(--color-neutral-200);
+  border-radius: 4px;
+  display: inline-block;
+  font-size: 18px;
+  font-weight: bold;
+  padding: 0 6px;
+  vertical-align: middle;
+}
+
+.logfancy .icon {
+  vertical-align: -2px;
+}
+
+#button_buy_ALLIANCE_SEA,
+.alliance-SEA {
+  background-color: var(--color-blue-700);
+  color: white;
+}
+
+.alliance-gradient-SEA {
+  background: linear-gradient(-30deg, var(--color-blue-900), var(--color-blue-700));
+  color: white;
+}
+
+#button_buy_ALLIANCE_ATL,
+.alliance-ATL {
+  background-color: var(--color-green-600);
+  color: white;
+}
+
+.alliance-gradient-ATL {
+  background: linear-gradient(-30deg, var(--color-green-800), var(--color-green-600));
+  color: white;
+}
+
+#button_buy_ALLIANCE_LAX,
+.alliance-LAX {
+  background-color: var(--color-amber-600);
+  color: white;
+}
+
+.alliance-gradient-LAX {
+  background: linear-gradient(-30deg, var(--color-amber-800), var(--color-amber-600));
+  color: white;
+}
+
+#button_buy_ALLIANCE_DFW,
+.alliance-DFW {
+  background-color: var(--color-purple-700);
+  color: white;
+}
+
+.alliance-gradient-DFW {
+  background: linear-gradient(-30deg, var(--color-purple-900), var(--color-purple-700));
+  color: white;
+}
+
+#button_buy_ALLIANCE_ORD,
+.alliance-ORD {
+  background-color: var(--color-red-700);
+  color: white;
+}
+
+.alliance-gradient-ORD {
+  background: linear-gradient(-30deg, var(--color-red-900), var(--color-red-700));
+  color: white;
+}
+
+.icon {
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100%;
+  display: inline-block;
+  height: 1em;
+  line-height: 100%;
+  vertical-align: middle;
+  width: 1em;
+}
+
+.icon.logo-SEA {
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="512" height="512" viewBox="0 0 512 512"%3E%3Cpath fill="white" d="M329.2 317.16c-3 82.09-78.09 146-78.09 146L192 439.73c-27.57-11-37.86-28.56-50.31-55.49l-.06-.12l94.49 27.2l-57.73-27.64c-41.53-19.88-58.87-47.12-76.76-89.55l134.47 52l-126.2-76.23c-28.67-17.32-37.15-36.68-51.25-67.06l161.16 68.74l-79-51.51C55.6 166.5 47.95 135.26 18.88 72.57l181 113.86c51.5 32.38 131.55 69.93 129.32 130.73zM493.12 216.5c0 6.87-17.51 20.85-20.35 20.62c-3.7-.31-46.27-27.85-61.93-35.68c-15-7.49-59.39 1.27-64.19-42.81c-11 28 10.77 90.21 27.84 120.18c35.42 62.17-25.71 146.59-101.8 186A304.54 304.54 0 0 0 302 430.4a252.08 252.08 0 0 0 28.5-49.52c9-21.2 14-42.44 14.73-63.13a85.52 85.52 0 0 0-10.78-44.35c-6.49-12-15.74-23.4-28.28-34.93c-21.84-20.09-50-36.91-74.92-51.74l-1.16-.69c-5.83-11-8.63-21.26-4.81-29.76c26.71-59.41 100.93-93.52 166.18-86.86c21.2-25.48 41.89-22.08 41.89-22.08l-11.9 25.33s20-11.19 23.11-7.29l-16.48 30.7L442 114.61s51.12 95.57 51.12 101.89zm-73.8-99.92a9.47 9.47 0 1 0-9.47 9.47a9.47 9.47 0 0 0 9.48-9.48z"%2F%3E%3C%2Fsvg%3E');
+}
+
+.icon.logo-ATL {
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="512" height="512" viewBox="0 0 512 512"%3E%3Cpath fill="white" d="M464.932 21.29C274.485 132.043-106.076-.603 69.61 354.474c11.676-12.52 24.432-24.32 37.908-35.48C67.722 262.93 54.24 199.74 90.232 154.392c-8.058 41.812 10.656 93.947 47.094 141.673a680.672 680.672 0 0 1 18.23-12.662c10.623-7.123 21.434-13.967 32.294-20.576c-39.13-48.68-51.65-106.296-7.61-146.414c-13.92 45.353 3.117 91.37 36.944 129.17c17.7-10.1 35.226-19.632 51.978-28.648c-34.28-38.035-47.893-86.045-9.226-120.44c-16.994 38.647.948 78.153 32.75 107.777c8.61-4.647 16.946-9.188 24.85-13.595c11.313-7.012 22.352-14.307 32.98-22.016c-27.643-27.05-38.643-67.445 2.504-88.78c-19.482 26.625-7.21 56.638 15.572 74.905c31.87-25.927 58.968-56.626 77.308-95.932c-7.773 45.32-28.388 79.65-55.957 108.272c28.69 11.048 62.472 4.036 75.99-39.15c-9.714 74.018-57.36 78.104-94.42 56.668c-16.333 14.264-34.34 27.185-53.087 39.593c47.863 30.855 109.968 41.123 142.123 8.13c-29.384 68.29-110.973 51.34-167.126 7.144c-15.316 10.506-31.402 21.544-47.444 33.152c55.11 43.938 133.57 69.352 202.166 55.34c-65.948 54.125-165.335 22.79-230.382-34.147c-7.38 5.78-14.64 11.68-21.68 17.713c-8.618 7.387-16.886 14.97-24.684 22.725c59.03 57.24 143.643 100.245 234.204 96.922c-85.83 40.44-190.386-1.646-259.903-68.238c-9.28 11.84-17.164 24.022-23.136 36.52a156.785 156.785 0 0 0-4.126 9.418C584.836 697.405 502.94 124.374 464.932 21.288zm-227.2 234.314c-24.016 13.397-48.39 27.648-71.77 43.324C94.374 346.923 33.86 406.27 23.024 485.322c5.26 3.375 14.588 7.464 26.88 9.916c13.06 2.605 29.48 3.515 47.915 1.71c-12.04-37.794-7.385-73.55 7.88-105.505c16.808-35.178 45.69-66.18 78.222-94.062c17.278-14.808 35.602-28.676 53.81-41.776z"%2F%3E%3C%2Fsvg%3E');
+}
+
+.icon.logo-LAX {
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="512" height="512" viewBox="0 0 512 512"%3E%3Cpath fill="white" d="m253.352 19.617l-52.18 115.475l27.2.002l-24.257 74.123l-65.638.156l6.18-19.02L18.69 204.286l93.718 85.324l7.63-23.48l53.017 38.708l-21.047 65.28l-15.735-11.43l-25.652 124.097l110.103-62.744l-21.946-15.942l55.584-40.213l60.472 43.748l-17.08 12.408l110.102 62.745l-25.65-124.098l-23.638 17.172l-22.898-71.022l53.016-38.707l7.628 23.48l93.717-85.323l-125.966-13.935l6.18 19.02l-65.64-.155l-24.256-74.12l25.205.003l-52.2-115.483zm-5.317 115.48h12.654l30.373 92.747l85.253.217l6.288 19.352l-68.854 50.29l28.914 89.712l-11.94 8.674l-76.363-55.233l-71.475 51.698l-14.977-10.88l27.065-83.972l-68.856-50.288l6.287-19.35l85.256-.218l30.375-92.748zm6.338 41.76l-13.69 41.81a60.046 60.046 0 0 1 13.614-1.575c4.74 0 9.347.57 13.777 1.615l-13.7-41.85zm-.076 58.93a41.476 41.476 0 0 0-41.62 41.617a41.476 41.476 0 0 0 41.62 41.617c23.096 0 41.617-18.52 41.617-41.616s-18.52-41.617-41.617-41.617zm-51.518 10.336l-43.878.104l35.336 25.794a59.833 59.833 0 0 1 8.54-25.897zm103.032 0a59.827 59.827 0 0 1 8.55 26.006l35.482-25.903l-44.03-.104zm-5.888 70.61c-5.968 6.912-13.462 12.47-21.96 16.12l35.413 25.606l-13.453-41.726zm-91.143.13l-13.41 41.596l35.353-25.565c-8.484-3.628-15.97-9.155-21.942-16.032z"%2F%3E%3C%2Fsvg%3E');
+}
+
+.icon.logo-DFW {
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="512" height="512" viewBox="0 0 512 512"%3E%3Cpath fill="white" d="M377 67.5c-29.1.42-59.1 23.22-68.2 91.7c-1.7 12.6-8.4 24.8-18.2 36.5c7.1-3 14.1-4.8 21-4.8c5 0 9.8.9 14.5 2.9c19.1 8.4 30.9 19.7 36.4 32.5s4.3 26.1.7 37.6c-3.6 11.4-9.6 21.4-15.1 28.9c-5.4 7.6-9.6 12.1-12.2 14.4c-33.6 30.6-94.9 37.4-148.2 38.7c-43.3 1.7-86.3-3-129.12-8.2c0 0-31.13 10-41.99 14.5c51.99 15.9 96.11 11 139.61 4.3c52 17.3 165.8 31.6 241.1-37.2c37.6-30.9 36.2-86.1 17.5-152.2l25.9-53C438 91.95 408 67.04 377 67.5zm24.9 33c4.4 0 8 3.6 8 8s-3.6 8-8 8s-8-3.6-8-8s3.6-8 8-8zm57.6 14.6L442.7 145c6.2-.1 12.3-.4 16.9-1.1c13.7-3 22-8.5 35.8-8.3c-6.7-11.4-19.1-17.8-35.9-20.5zm-148.6 93.6c-4.5.2-9.8 1.7-16.5 5c-11.2 5.4-25.3 15.4-42.9 28.3c-30.5 22.4-71.6 53.3-129.6 84.3c17.4 1.1 40.4 2.1 65.4 1.6c51.8-1.2 110.5-10.4 136.5-34.1h.1c-.1.1 4.9-5 9.6-11.5c4.7-6.5 9.8-15.1 12.5-23.8c2.8-8.8 3.3-17.3 0-25.1c-3.4-7.9-10.8-16-27.1-23c-1.6-.8-3.3-1.2-5-1.5c-1-.1-2-.2-3-.2zm-2 173c-6.1 1.5-12.1 2.7-18 3.6v38.1c-5.8-.1-11.8 0-18 .5v-36.8c-6.1.4-12.1.5-18 .4V426c-4.3.7-8.6 1.5-13 2.5v16h104c-8-10.1-21-16.4-37-19.2z"%2F%3E%3C%2Fsvg%3E');
+}
+
+.icon.logo-ORD {
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="512" height="512" viewBox="0 0 512 512"%3E%3Cpath fill="white" d="M256 23C127.4 23 23 127.4 23 256s104.4 233 233 233s233-104.4 233-233S384.6 23 256 23zm-33.7 20.63C190 66.85 163.6 92.25 143.2 119H90.26C122.9 79.54 169.4 51.95 222.3 43.63zm67.4 0c52.9 8.32 99.4 35.91 132 75.37h-52.9c-20.4-26.75-46.8-52.15-79.1-75.37zm-60.2 16.98C219 80.42 210 99.85 202.5 119h-36.3c17.1-20.39 38.2-40 63.3-58.39zm53 0c25.1 18.39 46.2 38 63.3 58.39h-36.3c-7.5-19.15-16.5-38.58-27-58.39zM247 65.99V119h-25.1c7-17.3 15.4-34.95 25.1-53.01zm18 0c9.7 18.06 18.1 35.71 25.1 53.01H265V65.99zM76.89 137h53.51c-9.8 15-17.8 30.4-23.9 46H53.71c5.89-16.3 13.71-31.8 23.18-46zm75.21 0h43.8c-5.4 15.5-9.6 30.8-12.9 46h-57.1c6.7-15.6 15.5-30.9 26.2-46zm62.8 0H247v46h-45.6c3.4-15.2 7.9-30.5 13.5-46zm50.1 0h32.1c5.6 15.5 10.1 30.8 13.5 46H265v-46zm51.1 0h43.8c10.7 15.1 19.5 30.4 26.2 46H329c-3.3-15.2-7.5-30.5-12.9-46zm65.5 0h53.5c9.5 14.2 17.3 29.7 23.2 46h-52.8c-6.1-15.6-14.1-31-23.9-46zM48.1 201h52.1c-4.63 15.2-7.5 30.6-8.64 46H41.2c.65-15.8 3.01-31.2 6.9-46zm70.9 0h60.5c-2.5 15.4-3.9 30.7-4.4 46h-65.5c1.2-15.3 4.4-30.7 9.4-46zm78.8 0H247v46h-53.9c.5-15.3 2-30.6 4.7-46zm67.2 0h49.2c2.7 15.4 4.2 30.7 4.7 46H265v-46zm67.5 0H393c5 15.3 8.2 30.7 9.4 46h-65.5c-.5-15.3-1.9-30.6-4.4-46zm79.3 0h52.1c3.9 14.8 6.2 30.2 6.9 46h-50.4c-1.1-15.4-4-30.8-8.6-46zM41.2 265h49.83c.23 15.5 2.24 30.9 6.02 46H48.1c-3.89-14.8-6.25-30.2-6.9-46zm67.8 0h66.1c.5 15.3 1.9 30.6 4.4 46h-63.9c-4.1-15.2-6.3-30.6-6.6-46zm84.1 0H247v46h-49.2c-2.7-15.4-4.2-30.7-4.7-46zm71.9 0h53.9c-.5 15.3-2 30.6-4.7 46H265v-46zm71.9 0H403c-.3 15.4-2.5 30.8-6.6 46h-63.9c2.5-15.4 3.9-30.7 4.4-46zm84.1 0h49.8c-.7 15.8-3 31.2-6.9 46H415c3.7-15.1 5.7-30.5 6-46zM53.71 329h48.69c5.4 15.7 12.8 31.1 22.1 46H76.89c-9.47-14.2-17.29-29.7-23.18-46zm67.69 0H183c3.3 15.2 7.5 30.5 12.9 46h-50c-10.4-14.9-18.5-30.3-24.5-46zm80 0H247v46h-32.1c-5.6-15.5-10.1-30.8-13.5-46zm63.6 0h45.6c-3.4 15.2-7.9 30.5-13.5 46H265v-46zm64 0h61.6c-6 15.7-14.1 31.1-24.5 46h-50c5.4-15.5 9.6-30.8 12.9-46zm80.6 0h48.7c-5.9 16.3-13.7 31.8-23.2 46h-47.6c9.3-14.9 16.7-30.3 22.1-46zM90.26 393h46.64c20.3 27.1 47.3 52.3 80.9 74.6c-51-9.1-95.8-36.3-127.54-74.6zm69.34 0h42.9c7.9 20.4 17.6 41 29 62.1c-29.3-18.9-53.2-39.8-71.9-62.1zm62.3 0H247v53c-9.7-18-18.1-35.7-25.1-53zm43.1 0h25.1c-7 17.3-15.4 35-25.1 53v-53zm44.5 0h42.9c-18.7 22.3-42.6 43.2-71.9 62.1c11.4-21.1 21.1-41.7 29-62.1zm65.6 0h46.6c-31.7 38.3-76.5 65.5-127.5 74.6c33.6-22.3 60.6-47.5 80.9-74.6z"%2F%3E%3C%2Fsvg%3E');
+}
+
+.icon.plane-ATL {
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="256" height="256" viewBox="0 0 256 256"%3E%3Cpath fill="%2316a34a" d="M240 136v32a8 8 0 0 1-8 8a7.61 7.61 0 0 1-1.57-.16L156 161v23.73l17.66 17.65A8 8 0 0 1 176 208v24a8 8 0 0 1-11 7.43l-37-14.81l-37 14.81A8 8 0 0 1 80 232v-24a8 8 0 0 1 2.34-5.66L100 184.69V161l-74.43 14.84A7.61 7.61 0 0 1 24 176a8 8 0 0 1-8-8v-32a8 8 0 0 1 4.42-7.16L100 89.06V44a28 28 0 0 1 56 0v45.06l79.58 39.78A8 8 0 0 1 240 136Z"%2F%3E%3C%2Fsvg%3E');
+}
+
+.icon.plane-DFW {
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="256" height="256" viewBox="0 0 256 256"%3E%3Cpath fill="%237e22ce" d="M240 136v32a8 8 0 0 1-8 8a7.61 7.61 0 0 1-1.57-.16L156 161v23.73l17.66 17.65A8 8 0 0 1 176 208v24a8 8 0 0 1-11 7.43l-37-14.81l-37 14.81A8 8 0 0 1 80 232v-24a8 8 0 0 1 2.34-5.66L100 184.69V161l-74.43 14.84A7.61 7.61 0 0 1 24 176a8 8 0 0 1-8-8v-32a8 8 0 0 1 4.42-7.16L100 89.06V44a28 28 0 0 1 56 0v45.06l79.58 39.78A8 8 0 0 1 240 136Z"%2F%3E%3C%2Fsvg%3E');
+}
+
+.icon.plane-SEA {
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="256" height="256" viewBox="0 0 256 256"%3E%3Cpath fill="%231d4ed8" d="M240 136v32a8 8 0 0 1-8 8a7.61 7.61 0 0 1-1.57-.16L156 161v23.73l17.66 17.65A8 8 0 0 1 176 208v24a8 8 0 0 1-11 7.43l-37-14.81l-37 14.81A8 8 0 0 1 80 232v-24a8 8 0 0 1 2.34-5.66L100 184.69V161l-74.43 14.84A7.61 7.61 0 0 1 24 176a8 8 0 0 1-8-8v-32a8 8 0 0 1 4.42-7.16L100 89.06V44a28 28 0 0 1 56 0v45.06l79.58 39.78A8 8 0 0 1 240 136Z"%2F%3E%3C%2Fsvg%3E');
+}
+
+.icon.plane-ORD {
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="256" height="256" viewBox="0 0 256 256"%3E%3Cpath fill="%23b91c1c" d="M240 136v32a8 8 0 0 1-8 8a7.61 7.61 0 0 1-1.57-.16L156 161v23.73l17.66 17.65A8 8 0 0 1 176 208v24a8 8 0 0 1-11 7.43l-37-14.81l-37 14.81A8 8 0 0 1 80 232v-24a8 8 0 0 1 2.34-5.66L100 184.69V161l-74.43 14.84A7.61 7.61 0 0 1 24 176a8 8 0 0 1-8-8v-32a8 8 0 0 1 4.42-7.16L100 89.06V44a28 28 0 0 1 56 0v45.06l79.58 39.78A8 8 0 0 1 240 136Z"%2F%3E%3C%2Fsvg%3E');
+}
+
+.icon.plane-LAX {
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="256" height="256" viewBox="0 0 256 256"%3E%3Cpath fill="%23d97706" d="M240 136v32a8 8 0 0 1-8 8a7.61 7.61 0 0 1-1.57-.16L156 161v23.73l17.66 17.65A8 8 0 0 1 176 208v24a8 8 0 0 1-11 7.43l-37-14.81l-37 14.81A8 8 0 0 1 80 232v-24a8 8 0 0 1 2.34-5.66L100 184.69V161l-74.43 14.84A7.61 7.61 0 0 1 24 176a8 8 0 0 1-8-8v-32a8 8 0 0 1 4.42-7.16L100 89.06V44a28 28 0 0 1 56 0v45.06l79.58 39.78A8 8 0 0 1 240 136Z"%2F%3E%3C%2Fsvg%3E');
+}
+
+.icon.seat {
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="512" height="512" viewBox="0 0 512 512"%3E%3Cpath fill="currentColor" d="M256 29c-17.3 0-34.7 1.98-48.1 5.68c-13.4 3.69-22 9.64-23.8 13.35c-29 57.97-30.9 130.57-31 178.97h205.8c-.1-48.4-2-121-31-178.97c-1.8-3.71-10.4-9.66-23.8-13.35C290.7 30.98 273.3 29 256 29zM48 167v18h48v-18zm368 0v18h48v-18zM71 204v68.8l31.2 20.8c1.6-6 4.2-11.6 7.3-16.7L89 263.2V204zm352 0v59.2l-20.5 13.7c3.1 5.1 5.7 10.7 7.3 16.7l31.2-20.8V204zm-190 41v14h46v-14zm-100.9 32c-6.2 6.9-11.9 16.4-13.2 24.5c-1.5 8.7-.2 15.1 11.4 21.5h251.4c11.6-6.4 12.9-12.8 11.4-21.5c-1.3-8.1-7-17.6-13.2-24.5zM247 341v32l-121.2 30.3l4.4 17.4L247 391.5V420c2.9-.6 5.9-1 9-1c3.1 0 6.1.4 9 1v-28.5l116.8 29.2l4.4-17.4L265 373v-32zm-119 96c-12.8 0-23 10.2-23 23s10.2 23 23 23s23-10.2 23-23s-10.2-23-23-23zm128 0c-12.8 0-23 10.2-23 23s10.2 23 23 23s23-10.2 23-23s-10.2-23-23-23zm128 0c-12.8 0-23 10.2-23 23s10.2 23 23 23s23-10.2 23-23s-10.2-23-23-23z"%2F%3E%3C%2Fsvg%3E');
+}
+
+.icon.speed {
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="512" height="512" viewBox="0 0 512 512"%3E%3Cpath fill="currentColor" d="M256 54.28c-124.603 0-226 101.398-226 226c0 47.864 14.975 92.293 40.465 128.876l29.79-19.86a188.963 188.963 0 0 1-32.696-84.577H96v-18H66.115c-.07-2.14-.115-4.284-.115-6.44c0-45.378 15.816-86.97 42.236-119.598l17.4 17.4l12.727-12.727l-18.133-18.132C152.735 114.057 197.335 92.8 247 90.498v29.22h18V90.5c49.665 2.302 94.265 23.56 126.77 56.725l-18.133 18.132l12.726 12.727l17.4-17.4c26.42 32.63 42.237 74.22 42.237 119.6c0 2.154-.044 4.3-.115 6.437H416v18h28.44a188.957 188.957 0 0 1-32.694 84.575l29.79 19.86C467.025 372.574 482 328.146 482 280.282c0-124.602-101.397-226-226-226zm15.83 66.23a144 160 0 0 1 74.608 100.062l49.966-17.568a160 160 0 0 0-4.3-7.012l-5.135 5.153l-30.368-30.29l-5.76-5.746l7.85-7.874a160 160 0 0 0-86.862-36.726zm156.15 89.844l-175.332 60.6C240.505 272.618 231 283.155 231 295.72c0 13.7 11.3 25 25 25c6.77 0 12.95-2.764 17.473-7.208L427.98 210.354zm-16.513 32.322l-60.713 40.72a144 160 0 0 1-56.6 108.323h76.057a160 160 0 0 0 39.763-68.572H398.48v-52.515h17.022a160 160 0 0 0-4.035-27.957zM128 421.72v36h256v-36H128z"%2F%3E%3C%2Fsvg%3E');
+}
+
+.icon.weather-FAST {
+  animation: wind 4s linear infinite;
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="24" height="24" viewBox="0 0 24 24"%3E%3Cg fill="%23E0F2FE"%3E%3Cpath fill-rule="evenodd" d="M6.25 5.5A3.25 3.25 0 1 1 9.5 8.75H3a.75.75 0 0 1 0-1.5h6.5A1.75 1.75 0 1 0 7.75 5.5v.357a.75.75 0 1 1-1.5 0V5.5Z" clip-rule="evenodd"%2F%3E%3Cpath d="M3.25 14a.75.75 0 0 1 .75-.75h14.5a4.25 4.25 0 1 1-4.25 4.25V17a.75.75 0 0 1 1.5 0v.5a2.75 2.75 0 1 0 2.75-2.75H4a.75.75 0 0 1-.75-.75Z" opacity=".4"%2F%3E%3Cpath d="M14.25 7.5a4.25 4.25 0 1 1 4.25 4.25H2a.75.75 0 0 1 0-1.5h16.5a2.75 2.75 0 1 0-2.75-2.75V8a.75.75 0 0 1-1.5 0v-.5Z" opacity=".7"%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E');
+}
+
+.icon.weather-SLOW {
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="24" height="24" viewBox="0 0 24 24"%3E%3Cg fill="%23FFEDD5"%3E%3Cpath fill-rule="evenodd" d="M10.854 14.51a.75.75 0 0 1-.079 1.058L8.02 17.943h2.266a.75.75 0 0 1 .49 1.318L6.49 22.953a.75.75 0 1 1-.98-1.136l2.756-2.374H6a.75.75 0 0 1-.49-1.319l4.286-3.692a.75.75 0 0 1 1.058.079Zm4.676.46a.75.75 0 0 1 0 1.06l-2 2a.75.75 0 0 1-1.06-1.06l2-2a.75.75 0 0 1 1.06 0Zm2 3.5a.75.75 0 0 1 0 1.06l-2 2a.75.75 0 0 1-1.06-1.06l2-2a.75.75 0 0 1 1.06 0Zm-4 1a.75.75 0 0 1 0 1.06l-2 2a.75.75 0 0 1-1.06-1.06l2-2a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd"%2F%3E%3Cpath d="M16.286 19C19.442 19 22 16.472 22 13.353c0-2.472-1.607-4.573-3.845-5.338C17.837 5.194 15.415 3 12.476 3C9.32 3 6.762 5.528 6.762 8.647c0 .69.125 1.35.354 1.962a4.351 4.351 0 0 0-.83-.08C3.919 10.53 2 12.426 2 14.765C2 17.104 3.919 19 6.286 19h10Z" opacity=".5"%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E');
+}
+
+#nowboarding {
+  width: 100%;
+  display: grid;
+  grid:
+    "left top" 130px
+    "left map" auto
+    "left bottom" 130px
+    / 240px auto;
+}
+
+.grid-left {
+  grid-area: left;
+  flex-direction: column;
+}
+.grid-top {
+  grid-area: top;
+}
+.grid-bottom {
+  grid-area: bottom;
+}
+
+.grid-left, .grid-top, .grid-bottom {
+  display: flex;
+  justify-content: space-evenly;
+}
+
+#manifest-SEA {
+  order: 1;
+}
+#manifest-SFO {
+  order: 2;
+}
+#manifest-LAX {
+  order: 3;
+}
+
+#manifest-DEN {
+  order: 1;
+}
+#manifest-ORD {
+  order: 2;
+}
+#manifest-JFK {
+  order: 3;
+}
+
+#manifest-DFW {
+  order: 1;
+}
+#manifest-ATL {
+  order: 2;
+}
+#manifest-MIA {
+  order: 3;
+}
+
+.map {
+  grid-area: map;
+  aspect-ratio: 2 / 1;
+  background-image: url(img/board.png);
+  background-repeat: no-repeat;
+  background-size: contain;
+  container-type: inline-size;
+  position: relative;
+  width: 100%;
+}
+
+.move.node {
+  border-radius: 100%;
+  box-shadow: 3px 4px 0px rgb(0 0 0 / 0.25), 0px 0px 3px white;
+  cursor: pointer;
+  font-size: 2cqw;
+  font-weight: bold;
+  height: 5%;
+  line-height: 2.5cqw;
+  text-align: center;
+  width: 2.5%;
+}
+
+.marker.node {
+  border-radius: 100%;
+  height: 1%;
+  width: 0.5%;
+}
+
+.node {
+  background-repeat: no-repeat;
+  background-size: contain;
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+
+.node.node-ATL {
+  left: 68.9%;
+  top: 63.5%;
+}
+
+.node.node-ATLDEN1 {
+  left: 61.6%;
+  top: 58.7%;
+}
+
+.node.node-ATLDEN2 {
+  left: 53.5%;
+  top: 54.1%;
+}
+
+.node.node-ATLDEN3 {
+  left: 44.5%;
+  top: 48.9%;
+}
+
+.node.node-ATLDFW1 {
+  left: 62.7%;
+  top: 66%;
+}
+
+.node.node-ATLDFW2 {
+  left: 55.9%;
+  top: 68.3%;
+}
+
+.node.node-ATLJFK1 {
+  left: 75.7%;
+  top: 58.2%;
+}
+
+.node.node-ATLJFK2 {
+  left: 81.7%;
+  top: 48.2%;
+}
+
+.node.node-ATLMIA1 {
+  left: 72.3%;
+  top: 74.7%;
+}
+
+.node.node-ATLORD1 {
+  left: 69.3%;
+  top: 50.3%;
+}
+
+.node.node-ATLORD2 {
+  left: 67.4%;
+  top: 39.6%;
+}
+
+.node.node-DEN {
+  left: 36.5%;
+  top: 44.4%;
+}
+
+.node.node-DENDFW1 {
+  left: 40.8%;
+  top: 52.5%;
+}
+
+.node.node-DENDFW2 {
+  left: 45.4%;
+  top: 61%;
+}
+
+.node.node-DENLAX1 {
+  left: 29.5%;
+  top: 52.5%;
+}
+
+.node.node-DENLAX2 {
+  left: 23.2%;
+  top: 60%;
+}
+
+.node.node-DENORD1 {
+  left: 42.4%;
+  top: 40.8%;
+}
+
+.node.node-DENORD2 {
+  left: 52.7%;
+  top: 35.7%;
+}
+
+.node.node-DENSEA1 {
+  left: 27.8%;
+  top: 35.2%;
+}
+
+.node.node-DENSEA2 {
+  left: 18.1%;
+  top: 24.8%;
+}
+
+.node.node-DENSFO1 {
+  left: 27.2%;
+  top: 47.7%;
+}
+
+.node.node-DENSFO2 {
+  left: 17.8%;
+  top: 51.3%;
+}
+
+.node.node-DFW {
+  left: 50.2%;
+  top: 69.9%;
+}
+
+.node.node-DFWLAX1 {
+  left: 42.5%;
+  top: 69.2%;
+}
+
+.node.node-DFWLAX2 {
+  left: 33.7%;
+  top: 68.6%;
+}
+
+.node.node-DFWLAX3 {
+  left: 25%;
+  top: 68.4%;
+}
+
+.node.node-DFWMIA1 {
+  left: 57.2%;
+  top: 75.3%;
+}
+
+.node.node-DFWMIA2 {
+  left: 63.6%;
+  top: 79.8%;
+}
+
+.node.node-DFWMIA3 {
+  left: 69.7%;
+  top: 83.9%;
+}
+
+.node.node-JFK {
+  left: 84.9%;
+  top: 35.2%;
+}
+
+.node.node-JFKORD2 {
+  left: 70.7%;
+  top: 32.7%;
+}
+
+.node.node-JFKORD1 {
+  left: 78.2%;
+  top: 34.1%;
+}
+
+.node.node-JFKSEA1 {
+  left: 70.6%;
+  top: 19.9%;
+}
+
+.node.node-JFKSEA2 {
+  left: 56.5%;
+  top: 10.9%;
+}
+
+.node.node-JFKSEA3 {
+  left: 40.7%;
+  top: 7.6%;
+}
+
+.node.node-JFKSEA4 {
+  left: 26.1%;
+  top: 9.2%;
+}
+
+.node.node-LAX {
+  left: 17.1%;
+  top: 68.6%;
+}
+
+.node.node-LAXMIA1 {
+  left: 28.5%;
+  top: 74.7%;
+}
+
+.node.node-LAXMIA2 {
+  left: 40%;
+  top: 79.8%;
+}
+
+.node.node-LAXMIA3 {
+  left: 51.4%;
+  top: 84.2%;
+}
+
+.node.node-LAXMIA4 {
+  left: 62.3%;
+  top: 86.7%;
+}
+
+.node.node-LAXSFO1 {
+  left: 13.4%;
+  top: 61.4%;
+}
+
+.node.node-MIA {
+  left: 76.3%;
+  top: 88.7%;
+}
+
+.node.node-ORD {
+  left: 62.9%;
+  top: 32.7%;
+}
+
+.node.node-ORDSEA1 {
+  left: 49.7%;
+  top: 28.5%;
+}
+
+.node.node-ORDSEA2 {
+  left: 37.1%;
+  top: 24.2%;
+}
+
+.node.node-ORDSEA3 {
+  left: 22.6%;
+  top: 19.2%;
+}
+
+.node.node-SEA {
+  left: 8.8%;
+  top: 15%;
+}
+
+.node.node-SEASFO1 {
+  left: 9%;
+  top: 27.6%;
+}
+
+.node.node-SEASFO2 {
+  left: 9.5%;
+  top: 38.8%;
+}
+
+.node.node-SFO {
+  left: 10.2%;
+  top: 54.1%;
+}
+
+.plane.node {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  height: 10%;
+  justify-content: center;
+  width: 5%;
+  transition: all 1s ease-out;
+}
+
+.plane.node .planebody {
+  filter: drop-shadow(4px 4px 0px rgb(0 0 0 / 0.25)) drop-shadow(0px 0px 2px rgb(0 0 0 / 1));
+  height: 100%;
+  position: absolute;
+  width: 100%;
+  z-index: 1;
+  transition: transform 500ms ease-out;
+}
+
+.test.node {
+  left: 50%;
+  top: 50%;
+  background: blue;
+}
+
+#testview {
+  text-align: center;
+  font-size: 18px;
+  padding: 6px;
+}
+
+.manifest {
+  background: rgb(255 255 255 / 0.25);
+  border: 4px dashed rgb(255 255 255 / 0.25);
+  margin: 10px;
+  min-height: 125px;
+  padding: 4px;
+  position: relative;
+  width: 240px;
+}
+
+.manifest .location {
+  bottom: 0;
+  color: rgb(255 255 255 / 0.5);
+  font-family: Consolas, monospace;
+  font-size: 64px;
+  font-weight: bold;
+  margin: auto;
+  opacity: 0.5;
+  position: absolute;
+  text-align: center;
+  width: 100%;
+}
+
+.pax {
+  cursor: pointer;
+  font-family: Consolas, monospace;
+  background: linear-gradient(45deg, var(--color-sky-800), var(--color-sky-800) 80%, transparent 80%);
+  margin-bottom: 2px;
+}
+
+.vip {
+  color: var(--color-amber-400);
+  font-size: 12px;
+  font-weight: bold;
+  height: 12px;
+  line-height: 12px;
+  padding-left: 6px;
+  text-transform: uppercase;
+  text-shadow: 1px 1px var(--color-slate-700);
+}
+
+.nameplate {
+  align-items: center;
+  background: white;
+  border-top: 2px solid var(--color-sky-800);
+  border-bottom: 2px solid var(--color-sky-800);
+  color: var(--color-slate-700);
+  display: flex;
+  font-size: 16px;
+  line-height: 24px;
+  justify-content: space-between;
+  position: relative;
+}
+
+.nameplate > div {
+  z-index: 1;
+}
+
+.nameplate .barcode {
+  color: var(--color-sky-800);
+  font-family: "Libre Barcode 128";
+  font-size: 64px;
+  height: 24px;
+  line-height: 1;
+  opacity: 0.2;
+  overflow: hidden;
+  position: absolute;
+  top: 0;
+  z-index: 0;
+}
+
+.nameplate .destination {
+  font-size: 150%;
+  font-weight: bold;
+}
+
+.nameplate .box {
+  align-items: center;
+  background-color: var(--color-sky-800);
+  border-left: 2px solid var(--color-sky-800);
+  border-right: 2px solid var(--color-sky-800);
+  color: white;
+  display: flex;
+  font-size: 18px;
+  font-weight: bold;
+  height: 24px;
+  justify-content: space-evenly;
+  text-align: center;
+  width: 15%;
+}
+
+.nameplate .box.anger {
+  position: relative;
+  width: 20%;
+}
+
+.nameplate .box.anger-1 {
+  background-color: var(--color-lime-600);
+}
+
+.nameplate .box.anger-2 {
+  background-color: var(--color-amber-500);
+}
+
+.nameplate .box.anger-3 {
+  background-color: var(--color-red-500);
+}
+
+.pax.SECRET {
+  background: linear-gradient(45deg, var(--color-slate-700), var(--color-slate-700) 80%, transparent 80%);
+}
+
+.pax.SECRET .nameplate,
+.pax.SECRET .nameplate .box {
+  background: var(--color-slate-700);
+  border-color: var(--color-slate-700);
+  color: white;
+}
+
+.pax.SECRET .barcode {
+  color: black;
+  opacity: 0.5;
+}
+
+.pax.SECRET .box.anger,
+.pax.SECRET .destination {
+  display: none;
+}
+
+.box.anger.anger-3 .ping {
+  animation: ping 4s cubic-bezier(0, 0, 0.2, 1) infinite;
+  background-color: inherit;
+  height: 100%;
+  position: absolute;
+  width: 100%;
+  z-index: -1;
+}
+
+.icon.anger {
+  filter: drop-shadow(1px 1px 1px black);
+  font-size: 120%;
+}
+
+.icon.anger.anger-0 {
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="24" height="24" viewBox="0 0 24 24"%3E%3Cpath fill="white" d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10a10 10 0 0 0 10-10A10 10 0 0 0 12 2M7 9.5C7 8.7 7.7 8 8.5 8s1.5.7 1.5 1.5S9.3 11 8.5 11S7 10.3 7 9.5m5 7.73c-1.75 0-3.29-.73-4.19-1.81L9.23 14c.45.72 1.52 1.23 2.77 1.23s2.32-.51 2.77-1.23l1.42 1.42c-.9 1.08-2.44 1.81-4.19 1.81M15.5 11c-.8 0-1.5-.7-1.5-1.5S14.7 8 15.5 8s1.5.7 1.5 1.5s-.7 1.5-1.5 1.5Z"%2F%3E%3C%2Fsvg%3E');
+}
+.icon.anger.anger-1 {
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="24" height="24" viewBox="0 0 24 24"%3E%3Cpath fill="white" d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10a10 10 0 0 0 10-10A10 10 0 0 0 12 2M7 9.5A1.5 1.5 0 0 1 8.5 8A1.5 1.5 0 0 1 10 9.5A1.5 1.5 0 0 1 8.5 11A1.5 1.5 0 0 1 7 9.5m9 6.5H8v-2h8v2m-.5-5A1.5 1.5 0 0 1 14 9.5A1.5 1.5 0 0 1 15.5 8A1.5 1.5 0 0 1 17 9.5a1.5 1.5 0 0 1-1.5 1.5Z"%2F%3E%3C%2Fsvg%3E');
+}
+.icon.anger.anger-2 {
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="24" height="24" viewBox="0 0 24 24"%3E%3Cpath fill="white" d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2M8.5 8A1.5 1.5 0 1 1 7 9.5A1.54 1.54 0 0 1 8.5 8m8.5 8h-4a4 4 0 0 0-3.47 2L7.8 17a6 6 0 0 1 5.2-3h4m-1.5-3A1.5 1.5 0 1 1 17 9.5a1.54 1.54 0 0 1-1.5 1.5Z"%2F%3E%3C%2Fsvg%3E');
+}
+.icon.anger.anger-3 {
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="24" height="24" viewBox="0 0 24 24"%3E%3Cpath fill="white" d="M12 2C6.47 2 2 6.5 2 12s4.47 10 10 10c5.5 0 10-4.5 10-10S17.5 2 12 2m3.5 6c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5m-7 0c.83 0 1.5.67 1.5 1.5S9.33 11 8.5 11S7 10.33 7 9.5S7.67 8 8.5 8m-1.61 9c.8-2.04 2.78-3.5 5.11-3.5s4.31 1.46 5.11 3.5H6.89Z"%2F%3E%3C%2Fsvg%3E');
+}
+
+.icon.spinner {
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="24" height="24" viewBox="0 0 24 24"%3E%3Cg fill="white"%3E%3Cpath fill-rule="evenodd" d="M12 19a7 7 0 1 0 0-14a7 7 0 0 0 0 14Zm0 3c5.523 0 10-4.477 10-10S17.523 2 12 2S2 6.477 2 12s4.477 10 10 10Z" clip-rule="evenodd" opacity=".2"%2F%3E%3Cpath d="M2 12C2 6.477 6.477 2 12 2v3a7 7 0 0 0-7 7H2Z"%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E');
+  animation: spinner 4s linear infinite;
+}
+
+.weather.node {
+  align-items: center;
+  background-image: linear-gradient(-30deg, #1a237e, #01579b);
+  border-radius: 100%;
+  box-shadow: 3px 4px 0px rgb(0 0 0 / 0.25), 0px 0px 3px white;
+  display: flex;
+  height: 8%;
+  justify-content: center;
+  width: 4%;
+}
+
+.weather.node .icon {
+  height: 85%;
+  width: 85%;
+}
+
+@keyframes ping {
+  33%,
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+@keyframes spinner {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes wind {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  20% {
+    transform: rotate(3deg);
+  }
+  50% {
+    transform: rotate(-3deg);
+  }
+}

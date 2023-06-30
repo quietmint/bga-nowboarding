@@ -75,4 +75,24 @@ class action_nowboarding extends APP_GameAction
     $this->game->move($location);
     self::ajaxResponse();
   }
+
+  public function enplane()
+  {
+    self::setAjaxMode();
+    self::checkVersion();
+    $this->game->checkAction('enplane');
+    $paxId = self::getArg('paxId', AT_int, true);
+    $this->game->enplane($paxId);
+    self::ajaxResponse();
+  }
+
+  public function deplane()
+  {
+    self::setAjaxMode();
+    self::checkVersion();
+    $this->game->checkAction('deplane');
+    $paxId = self::getArg('paxId', AT_int, true);
+    $this->game->deplane($paxId);
+    self::ajaxResponse();
+  }
 }

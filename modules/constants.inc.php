@@ -6,12 +6,13 @@ const N_STATE_BUILD = 2;
 const N_STATE_BUILD_ALLIANCE = 21;
 const N_STATE_BUILD_ALLIANCE2 = 22;
 const N_STATE_BUILD_UPGRADE = 23;
-const N_STATE_SHUFFLE = 3;
+const N_STATE_BUILD_COMPLETE = 3;
 const N_STATE_PREPARE = 4;
 const N_STATE_PREPARE_PRIVATE = 41;
-const N_STATE_FLY = 5;
-const N_STATE_FLY_PRIVATE = 51;
-const N_STATE_MAINTENANCE = 6;
+const N_STATE_REVEAL = 5;
+const N_STATE_FLY = 6;
+const N_STATE_FLY_PRIVATE = 61;
+const N_STATE_MAINTENANCE = 7;
 const N_STATE_END = 99;
 
 // Options
@@ -24,6 +25,13 @@ const N_REF_ALLIANCE_COLOR = [
     'LAX' => 'd97706', // orange
     'ORD' => 'b91c1c', // red
     'SEA' => '1d4ed8', // blue
+];
+
+const N_REF_PAX_COUNTS = [
+    2 => ['MORNING' => 2 + 3, 'AFTERNOON' => 10, 'EVENING' => 27],
+    3 => ['MORNING' => 3 + 6, 'AFTERNOON' => 15, 'EVENING' => 32],
+    4 => ['MORNING' => 4 + 12, 'AFTERNOON' => 20, 'EVENING' => 35],
+    5 => ['MORNING' => 5 + 12, 'AFTERNOON' => 30, 'EVENING' => 24],
 ];
 
 const N_REF_SEAT_COST = [
@@ -43,7 +51,6 @@ const N_REF_SPEED_COST = [
 ];
 
 const N_REF_WEATHER_SPEED = [
-    null => 0,
     'FAST' => -1,
     'SLOW' => 1,
 ];

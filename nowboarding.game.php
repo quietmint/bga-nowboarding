@@ -1,14 +1,14 @@
 <?php
 
-require_once(APP_GAMEMODULE_PATH . 'module/table/table.game.php');
-require_once('modules/constants.inc.php');
-require_once('modules/NMap.class.php');
-require_once('modules/NMove.class.php');
-require_once('modules/NNode.class.php');
-require_once('modules/NNodeHop.class.php');
-require_once('modules/NNodePort.class.php');
-require_once('modules/NPax.class.php');
-require_once('modules/NPlane.class.php');
+require_once APP_GAMEMODULE_PATH . 'module/table/table.game.php';
+require_once 'modules/constants.inc.php';
+require_once 'modules/NMap.class.php';
+require_once 'modules/NMove.class.php';
+require_once 'modules/NNode.class.php';
+require_once 'modules/NNodeHop.class.php';
+require_once 'modules/NNodePort.class.php';
+require_once 'modules/NPax.class.php';
+require_once 'modules/NPlane.class.php';
 
 class NowBoarding extends Table
 {
@@ -27,6 +27,7 @@ class NowBoarding extends Table
     protected function setupNewGame($players, $options = [])
     {
         // Create players and planes
+        $playerCount = count($players);
         foreach ($players as $player_id => $player) {
             $sql = "INSERT INTO player (player_id, player_color, player_canal, player_name, player_avatar) VALUES ($player_id, '000000', '" . $player['player_canal'] . "', '" . addslashes($player['player_name']) . "', '" . addslashes($player['player_avatar']) . "')";
             $this->DbQuery($sql);
@@ -35,20 +36,6 @@ class NowBoarding extends Table
             $this->DbQuery($sql);
         }
         $this->reloadPlayersBasicInfos();
-
-        // Create weather tokens
-        $playerCount = count($players);
-        if ($playerCount == 2) {
-            $weatherCount = 1;
-        } else if ($playerCount == 3) {
-            $weatherCount = 2;
-        } else {
-            $weatherCount = 3;
-        }
-        for ($i = 0; $i < $weatherCount; $i++) {
-            $this->DbQuery("INSERT INTO weather (token) VALUES ('FAST')");
-            $this->DbQuery("INSERT INTO weather (token) VALUES ('SLOW')");
-        }
 
         // Create passengers
         $pax = [
@@ -62,7 +49,6 @@ class NowBoarding extends Table
             ['DEN', 'DFW', 2],
             ['DEN', 'LAX', 2],
             ['DEN', 'MIA', 3],
-            ['DEN', 'ORD', 2],
             ['DEN', 'ORD', 2],
             ['DEN', 'SFO', 2],
             ['DFW', 'ATL', 2],
@@ -83,7 +69,6 @@ class NowBoarding extends Table
             ['MIA', 'LAX', 3],
             ['MIA', 'ORD', 3],
             ['MIA', 'SFO', 4],
-            ['MIA', 'SFO', 4],
             ['ORD', 'ATL', 2],
             ['ORD', 'DEN', 2],
             ['ORD', 'DFW', 3],
@@ -91,6 +76,7 @@ class NowBoarding extends Table
             ['ORD', 'MIA', 3],
             ['ORD', 'SFO', 3],
             ['SFO', 'ATL', 4],
+            ['SFO', 'DEN', 2],
             ['SFO', 'DFW', 3],
             ['SFO', 'LAX', 1],
             ['SFO', 'MIA', 4],
@@ -102,15 +88,14 @@ class NowBoarding extends Table
             $pax += [
                 ['ATL', 'JFK', 2],
                 ['DEN', 'JFK', 3],
+                ['DFW', 'JFK', 3],
                 ['JFK', 'ATL', 2],
                 ['JFK', 'DEN', 2],
                 ['JFK', 'DFW', 3],
                 ['JFK', 'LAX', 5],
-                ['JFK', 'LAX', 5],
                 ['JFK', 'MIA', 3],
                 ['JFK', 'ORD', 2],
                 ['JFK', 'SFO', 4],
-                ['LAX', 'JFK', 5],
                 ['LAX', 'JFK', 5],
                 ['MIA', 'JFK', 3],
                 ['ORD', 'JFK', 2],
@@ -137,17 +122,18 @@ class NowBoarding extends Table
                 ['SEA', 'ORD', 2],
                 ['SEA', 'SFO', 2],
                 ['SFO', 'SEA', 2],
-                ['SFO', 'SEA', 2],
             ];
         }
 
-        $paxCount = 10;
         shuffle($pax);
-        array_splice($pax, $paxCount);
-        foreach ($pax as $p) {
-            [$destination, $origin, $cash] = $p;
-            $sql = "INSERT INTO pax (`destination`, `origin`, `cash`) VALUES ('$destination', '$origin', $cash)";
-            $this->DbQuery($sql);
+        $paxCounts = N_REF_PAX_COUNTS[$playerCount];
+        foreach ($paxCounts as $status => $count) {
+            $dayPax = array_splice($pax, $count * -1);
+            foreach ($dayPax as $x) {
+                [$destination, $origin, $cash] = $x;
+                $sql = "INSERT INTO pax (`status`, `destination`, `origin`, `cash`) VALUES ('$status', '$destination', '$origin', $cash)";
+                $this->DbQuery($sql);
+            }
         }
     }
 
@@ -164,6 +150,7 @@ class NowBoarding extends Table
         $players = $this->getCollectionFromDb("SELECT player_id id, player_score score FROM player");
         $data = [
             'map' => $this->getMap(),
+            'pax' => $this->filterPax($this->getPaxByStatus(['SECRET', 'PORT', 'SEAT', 'TEMP_SEAT', 'CASH'])),
             'planes' => $this->getPlanesByIds(),
             'players' => $players,
             'version' => intval($this->gamestate->table_globals[N_OPTION_VERSION]),
@@ -183,7 +170,7 @@ class NowBoarding extends Table
 
     /*
      * SETUP
-     * Each player builds their plane 
+     * Each player builds their plane
      */
     function stInitPrivate()
     {
@@ -270,10 +257,19 @@ class NowBoarding extends Table
 
     /*
      * SETUP #4
-     * Prepare passengers and weather
+     * Add weather
+     * Add starting passengers
      */
-    function stShuffle()
+    function stBuildComplete()
     {
+        $this->newWeather();
+        $planes = $this->getPlanesByIds();
+        $startingPax = [];
+        foreach ($planes as $plane) {
+            $x = $this->getPaxByStatus('MORNING', 1, $plane->alliance)[0];
+            $startingPax[] = $x;
+        }
+        $this->newPax($startingPax);
         $this->gamestate->nextState('prepare');
     }
 
@@ -289,14 +285,14 @@ class NowBoarding extends Table
         $this->gamestate->initializePrivateStateForAllActivePlayers();
         $this->DbQuery("UPDATE plane SET `speed_remain` = `speed`");
         $planes = $this->getPlanesByIds();
-        $this->notifyAllPlayers('prepare', clienttranslate('Prepare for the next round'), [
+        $this->notifyAllPlayers('planes', clienttranslate('Prepare for the next round'), [
             'planes' => array_values($planes)
         ]);
     }
 
     function argPreparePrivate(int $playerId): array
     {
-        $plane = $this->getPlane($playerId);
+        $plane = $this->getPlaneById($playerId);
         $buys = [];
 
         // Alliances?
@@ -397,13 +393,27 @@ class NowBoarding extends Table
 
     /*
      * FLIGHT
+     * Reveal passengers and start the clock
      * Players transport passengers
      */
+
+    function stReveal(): void
+    {
+        $pax = $this->getPaxByStatus('SECRET');
+        foreach ($pax as $x) {
+            $x->status = 'PORT';
+            $this->DbQuery("UPDATE `pax` SET `status` = 'PORT' WHERE `pax_id` = {$x->id}");
+        }
+        $this->notifyAllPlayers('pax', 'stReveal', [
+            'pax' => $pax,
+        ]);
+        $this->gamestate->nextState('fly');
+    }
 
     function argFlyPrivate(int $playerId): array
     {
         $map = $this->getMap();
-        $plane = $this->getPlane($playerId);
+        $plane = $this->getPlaneById($playerId);
         return [
             'moves' => $map->getPossibleMoves($plane),
             'paxDrop' => [],
@@ -414,11 +424,31 @@ class NowBoarding extends Table
     /*
      * MAINTENANCE
      * Add anger and complaints
+     * Add new passengers
      */
 
     function stMaintenance(): void
     {
+        $pax = $this->getPaxByStatus('PORT');
+        foreach ($pax as $x) {
+            $x->anger++;
+            $this->DbQuery("UPDATE `pax` SET `anger` = {$x->anger} WHERE `pax_id` = {$x->id}");
+        }
+        $this->notifyAllPlayers('pax', clienttranslate('${count} passengers waiting in airports get angry'), [
+            'count' => count($pax),
+            'pax' => $pax,
+        ]);
 
+        $playerCount = $this->getPlayersNumber();
+        $paxCount = $playerCount;
+        $day = 'MORNING';
+        if ($day == 'MORNING') {
+            $paxCount--;
+        } else if (false == 'EVENING') {
+            $paxCount++;
+        }
+        $pax = $this->getPaxByStatus('QUEUE', $paxCount);
+        $this->newPax($pax);
         $this->gamestate->nextState('prepare');
     }
 
@@ -429,7 +459,7 @@ class NowBoarding extends Table
     function buildReset(): void
     {
         $playerId = $this->getCurrentPlayerId();
-        $plane = $this->getPlane($playerId);
+        $plane = $this->getPlaneById($playerId);
         $this->notifyAllPlayers('buildReset', clienttranslate('${player_name} restarts their turn'), [
             'plane' => $plane,
             'player_id' => $playerId,
@@ -442,7 +472,7 @@ class NowBoarding extends Table
     function buy(string $type, ?string $alliance): void
     {
         $playerId = $this->getCurrentPlayerId();
-        $plane = $this->getPlane($playerId);
+        $plane = $this->getPlaneById($playerId);
         if ($type == 'ALLIANCE') {
             if ($plane->alliance == null) {
                 $this->buyAlliancePrimary($plane, $alliance);
@@ -474,7 +504,7 @@ class NowBoarding extends Table
         $this->DbQuery("UPDATE player SET `player_color` = '$color' WHERE `player_id` = {$plane->id}");
         $this->reloadPlayersBasicInfos();
 
-        $this->notifyAllPlayers('buyAlliancePrimary', clienttranslate('${player_name} joins the ${allianceFancy} alliance'), [
+        $this->notifyAllPlayers('buildPrimary', clienttranslate('${player_name} joins the ${allianceFancy} alliance'), [
             'allianceFancy' => $alliance,
             'color' => $color,
             'plane' => $plane,
@@ -502,9 +532,9 @@ class NowBoarding extends Table
         $alliances = join(',', $plane->alliances);
         $this->DbQuery("UPDATE plane SET `debt` = {$plane->debt}, `alliances` = '$alliances' WHERE `player_id` = {$plane->id}");
 
-        $this->notifyAllPlayers('buyAlliance', clienttranslate('${player_name} joins the ${allianceFancy} alliance'), [
+        $this->notifyAllPlayers('planes', clienttranslate('${player_name} joins the ${allianceFancy} alliance'), [
             'allianceFancy' => $alliance,
-            'plane' => $plane,
+            'planes' => [$plane],
             'player_id' => $plane->id,
             'player_name' => $plane->name,
         ]);
@@ -529,8 +559,8 @@ class NowBoarding extends Table
         $plane->seatRemain++;
         $this->DbQuery("UPDATE plane SET `debt` = {$plane->debt}, `seat` = {$plane->seat} WHERE `player_id` = {$plane->id}");
 
-        $this->notifyAllPlayers('buy', clienttranslate('${player_name} upgrades seats to ${seatFancy}'), [
-            'plane' => $plane,
+        $this->notifyAllPlayers('planes', clienttranslate('${player_name} upgrades seats to ${seatFancy}'), [
+            'planes' => [$plane],
             'player_id' => $plane->id,
             'player_name' => $plane->name,
             'seatFancy' => $plane->seat,
@@ -560,8 +590,8 @@ class NowBoarding extends Table
         $plane->tempSeat = true;
         $this->DbQuery("UPDATE plane SET `debt` = {$plane->debt}, `temp_seat` = 1 WHERE `player_id` = {$plane->id}");
 
-        $this->notifyAllPlayers('buy', clienttranslate('${player_name} purchases the temporary seat'), [
-            'plane' => $plane,
+        $this->notifyAllPlayers('planes', clienttranslate('${player_name} purchases the temporary seat'), [
+            'planes' => [$plane],
             'player_id' => $plane->id,
             'player_name' => $plane->name,
         ]);
@@ -576,7 +606,7 @@ class NowBoarding extends Table
         }
         $cost = N_REF_SPEED_COST[$plane->speed + 1];
         $cash = $plane->cash - $plane->debt;
-        if ($cost < $cost) {
+        if ($cash < $cost) {
             throw new BgaUserException(sprintf($this->_("Insufficient funds (%s) to purchase speed %d for %s"), "\${$cash}", $plane->speed, "\${$cost}"));
         }
 
@@ -585,8 +615,8 @@ class NowBoarding extends Table
         $plane->speedRemain = $plane->speed;
         $this->DbQuery("UPDATE plane SET `debt` = {$plane->debt}, `speed` = {$plane->speed}, `speed_remain` = {$plane->speedRemain} WHERE `player_id` = {$plane->id}");
 
-        $this->notifyAllPlayers('buy', clienttranslate('${player_name} upgrades speed to ${speedFancy}'), [
-            'plane' => $plane,
+        $this->notifyAllPlayers('planes', clienttranslate('${player_name} upgrades speed to ${speedFancy}'), [
+            'planes' => [$plane],
             'player_id' => $plane->id,
             'player_name' => $plane->name,
             'speedFancy' => $plane->speed,
@@ -616,8 +646,8 @@ class NowBoarding extends Table
         $plane->tempSpeed = true;
         $this->DbQuery("UPDATE plane SET `debt` = {$plane->debt}, `temp_speed` = 1 WHERE `player_id` = {$plane->id}");
 
-        $this->notifyAllPlayers('buy', clienttranslate('${player_name} purchases the temporary speed'), [
-            'plane' => $plane,
+        $this->notifyAllPlayers('planes', clienttranslate('${player_name} purchases the temporary speed'), [
+            'planes' => [$plane],
             'player_id' => $plane->id,
             'player_name' => $plane->name,
         ]);
@@ -625,10 +655,51 @@ class NowBoarding extends Table
         $this->gamestate->nextPrivateState($plane->id, 'preparePrivate');
     }
 
+    function newWeather(): void
+    {
+        $map = $this->getMap();
+
+        // Delete old weather
+        $map->weather = [];
+        $this->DbQuery("DELETE FROM `weather`");
+
+        // Determine how many weather tokens to add
+        $playerCount = $this->getPlayersNumber();
+        $tokens = ['FAST', 'SLOW', 'FAST', 'SLOW', 'FAST', 'SLOW'];
+        if ($playerCount == 2) {
+            array_splice($tokens, 2);
+        } else if ($playerCount == 3) {
+            array_splice($tokens, 4);
+        }
+
+        // Select a different random route for each token
+        $locationFancy = [];
+        $routeIds = array_rand($map->routes, count($tokens));
+        foreach ($routeIds as $routeId) {
+            // Select a random node on the route
+            $route = $map->routes[$routeId];
+            $node = $route[array_rand($route)];
+            $token = array_pop($tokens);
+            $this->DbQuery("INSERT INTO weather (`location`, `token`) VALUES ('{$node->id}', '$token')");
+            $map->weather[$node->id] = $token;
+            $locationFancy[$token][] = substr_replace($routeId, '-', 3, 0);
+        }
+
+        $this->notifyAllPlayers('message', clienttranslate('Storms slow travel along ${locationFancy}'), [
+            'locationFancy' => join(', ', $locationFancy['SLOW']),
+        ]);
+        $this->notifyAllPlayers('message', clienttranslate('Tailwinds speed travel along ${locationFancy}'), [
+            'locationFancy' => join(', ', $locationFancy['FAST']),
+        ]);
+        $this->notifyAllPlayers('weather', '', [
+            'weather' => $map->weather,
+        ]);
+    }
+
     function flightBegin(): void
     {
         $playerId = $this->getCurrentPlayerId();
-        $this->gamestate->setPlayerNonMultiactive($playerId, 'fly');
+        $this->gamestate->setPlayerNonMultiactive($playerId, 'reveal');
     }
 
     function flightEnd(): void
@@ -640,7 +711,7 @@ class NowBoarding extends Table
     function move(string $location): void
     {
         $playerId = $this->getCurrentPlayerId();
-        $plane = $this->getPlane($playerId);
+        $plane = $this->getPlaneById($playerId);
         $map = $this->getMap();
         $possible = $map->getPossibleMoves($plane);
         if (!array_key_exists($location, $possible)) {
@@ -667,26 +738,33 @@ class NowBoarding extends Table
         }
     }
 
-    function pickPassenger(int $paxId): void
+    function enplane(int $paxId): void
     {
     }
 
-    function dropPassenger(int $paxId): void
+    function deplane(int $paxId): void
     {
     }
+
+
 
     //////////////////////////////////////////////////////////////////////////////
-    //////////// Utilities
+    //////////// Helpers
     ////////////
 
     function getMap(): NMap
     {
         $playerCount = $this->getPlayersNumber();
-        $dbrows = $this->getObjectListFromDB("SELECT * FROM weather");
-        return new NMap($playerCount, $dbrows);
+        $weather = $this->getWeather();
+        return new NMap($playerCount, $weather);
     }
 
-    function getPlane(int $playerId): NPlane
+    function getWeather(): array
+    {
+        return $this->getCollectionFromDb("SELECT `location`, `token` FROM `weather`", true);
+    }
+
+    function getPlaneById(int $playerId): NPlane
     {
         return $this->getPlanesByIds([$playerId])[$playerId];
     }
@@ -740,14 +818,14 @@ LIMIT 1
 SQL);
     }
 
-    function getPax(int $paxId): NPax
+    function getPaxById(int $paxId): NPax
     {
         return $this->getPaxByIds([$paxId])[$paxId];
     }
 
-    function getPaxByIds($ids = []): array
+    function getPaxByIds(array $ids = []): array
     {
-        $sql = "SELECT * FROM pax";
+        $sql = "SELECT * FROM `pax`";
         if (!empty($ids)) {
             $sql .= " WHERE `pax_id` IN (" . join(',', $ids) . ")";
         }
@@ -755,6 +833,52 @@ SQL);
             return new NPax($dbrow);
         }, $this->getCollectionFromDb($sql));
     }
+
+    function getPaxByStatus($status, ?int $limit = null, ?string $origin = null): array
+    {
+        if (is_array($status)) {
+            $status = join("', '", $status);
+        }
+        $sql = "SELECT * FROM `pax` WHERE `status` IN ('$status')";
+        if ($origin != null) {
+            $sql .= " AND `origin` = '$origin'";
+        }
+        $sql .= " ORDER BY `pax_id`";
+        if ($limit != null) {
+            $sql .= " LIMIT $limit";
+        }
+        return array_map(function ($dbrow) {
+            return new NPax($dbrow);
+        }, $this->getCollectionFromDb($sql));
+    }
+
+    function newPax(array $pax): void
+    {
+        foreach ($pax as $x) {
+            $x->status = 'SECRET';
+            $x->location = $x->origin;
+            $this->DbQuery("UPDATE `pax` SET `location` = '{$x->location}', `status` = 'SECRET' WHERE `pax_id` = {$x->id}");
+        }
+
+        $this->notifyAllPlayers('pax', clienttranslate('${count} passengers arrive at airports'), [
+            'count' => count($pax),
+            'pax' => $this->filterPax($pax),
+        ]);
+    }
+
+    function filterPax(array $pax): array
+    {
+        foreach ($pax as $x) {
+            if ($x->status == 'SECRET') {
+                $x->destination = null;
+            }
+        }
+        return $pax;
+    }
+
+    //////////////////////////////////////////////////////////////////////////////
+    //////////// Utilities
+    ////////////
 
     public function generatePermutations(array $array): Generator
     {
@@ -801,19 +925,6 @@ SQL);
     //////////// Zombie
     ////////////
 
-    /*
-        zombieTurn:
-        
-        This method is called each time it is the turn of a player who has quit the game (= "zombie" player).
-        You can do whatever you want in order to make sure the turn of this player ends appropriately
-        (ex: pass).
-        
-        Important: your zombie code will be called when the player leaves the game. This action is triggered
-        from the main site and propagated to the gameserver from a server, not from a browser.
-        As a consequence, there is no current player associated to this action. In your zombieTurn function,
-        you must _never_ use getCurrentPlayerId() or getCurrentPlayerName(), otherwise it will fail with a "Not logged" error message. 
-    */
-
     function zombieTurn($state, $active_player)
     {
         $statename = $state['name'];
@@ -842,42 +953,7 @@ SQL);
     ////////// DB upgrade
     //////////
 
-    /*
-        upgradeTableDb:
-        
-        You don't have to care about this until your game has been published on BGA.
-        Once your game is on BGA, this method is called everytime the system detects a game running with your old
-        Database scheme.
-        In this case, if you change your Database scheme, you just have to apply the needed changes in order to
-        update the game database and allow the game to continue to run with your new version.
-    
-    */
-
     function upgradeTableDb($from_version)
     {
-        // $from_version is the current version of this game database, in numerical form.
-        // For example, if the game was running with a release of your game named "140430-1345",
-        // $from_version is equal to 1404301345
-
-        // Example:
-        //        if( $from_version <= 1404301345 )
-        //        {
-        //            // ! important ! Use DBPREFIX_<table_name> for all tables
-        //
-        //            $sql = "ALTER TABLE DBPREFIX_xxxxxxx ....";
-        //            $this->applyDbUpgradeToAllDB( $sql );
-        //        }
-        //        if( $from_version <= 1405061421 )
-        //        {
-        //            // ! important ! Use DBPREFIX_<table_name> for all tables
-        //
-        //            $sql = "CREATE TABLE DBPREFIX_xxxxxxx ....";
-        //            $this->applyDbUpgradeToAllDB( $sql );
-        //        }
-        //        // Please add your future database scheme changes here
-        //
-        //
-
-
     }
 }

@@ -5,13 +5,13 @@ class NPax extends APP_GameClass implements JsonSerializable
     public int $id;
     public int $anger;
     public int $cash;
-    public string $destination;
+    public ?string $destination;
     public ?string $location;
     public string $origin;
     public ?int $playerId;
     public string $status;
 
-    protected function __construct(array $dbrow)
+    public function __construct(array $dbrow)
     {
         $this->id = intval($dbrow['pax_id']);
         $this->anger = intval($dbrow['anger']);
