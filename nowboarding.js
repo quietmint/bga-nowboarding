@@ -1,4 +1,5 @@
 define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], function (dojo, declare) {
+  let lastErrorCode = null;
   return declare("bgagame.nowboarding", ebg.core.gamegui, {
     constructor() {
       dojo.place("loader_mask", "overall-content", "before");
@@ -7,26 +8,28 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     setup(gamedatas) {
       console.log("🐣 Setup", gamedatas);
 
-      dojo.place(`<link rel="stylesheet" type="text/css" href="https://studio.boardgamearena.com:8084/data/themereleases/current/games/nowboarding/999999-9999/dev.css?${Date.now()}"/>`, document.head, "last");
+      // TODO!
+      dojo.place(`<link rel="stylesheet" type="text/css" href="https://studio.boardgamearena.com:8084/data/themereleases/current/games/nowboarding/999999-9999/index.css?${Date.now()}"/>`, document.head, "last");
 
       // Setup map
-      const manifestContainers = {
-        DEN: ".grid-top",
-        JFK: ".grid-top",
-        ORD: ".grid-top",
-        SEA: ".grid-left",
-        SFO: ".grid-left",
-        LAX: ".grid-left",
-        DFW: ".grid-bottom",
-        ATL: ".grid-bottom",
-        MIA: ".grid-bottom",
+      const playerCount = Object.keys(gamedatas.players).length;
+      this.gameEl = document.getElementById("NMap");
+      this.gameEl.classList.add(playerCount >= 4 ? "map45" : "map23");
+      const manifestContainer = {
+        SEA: "manifests-top",
+        SFO: "manifests-top",
+        DEN: "manifests-top",
+        ORD: "manifests-top",
+        JFK: "manifests-right",
+        ATL: "manifests-right",
+        LAX: "manifests-bottom",
+        DFW: "manifests-bottom",
+        MIA: "manifests-bottom",
       };
-      const gameEl = document.getElementById("nowboarding");
       for (const node of gamedatas.map.nodes) {
-        dojo.place(`<div id="node-${node}" class="marker node node-${node}"></div>`, "NMap");
-        if (node.length == 3 && manifestContainers[node]) {
-          const containerEl = gameEl.querySelector(manifestContainers[node]);
-          this.renderManifest(containerEl, "afterbegin", node);
+        dojo.place(`<div id="node-${node}" class="marker node node-${node}"></div>`, this.gameEl);
+        if (node.length == 3) {
+          this.renderManifest(node, manifestContainer[node]);
         }
       }
       for (const location in gamedatas.map.weather) {
@@ -41,8 +44,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           if (plane.location) {
             this.createPlane(plane);
           }
-          this.renderManifest(`player_board_${planeId}`, "beforeend", `seat-${planeId}`);
-          this.renderManifest(`player_board_${planeId}`, "beforeend", `cash-${planeId}`);
+          this.renderManifest(planeId, `player_board_${planeId}`);
         }
       }
 
@@ -88,16 +90,33 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         fetchNextUrl();
       });
 
-      // dojo.connect($("NMap"), "onclick", (e) => {
-      //   var pos = dojo.position("NMap");
+      function debounce(func, timeout) {
+        let timer;
+        return (...args) => {
+          clearTimeout(timer);
+          timer = setTimeout(() => {
+            func.apply(this, args);
+          }, timeout);
+        };
+      }
+
+      // const testEl = document.getElementById("testview");
+      // const testHandler = (e) => {
+      //   const pos = dojo.position("NMap");
       //   var x = Math.round((e.offsetX / pos.w) * 1000) / 10 + "%";
       //   var y = Math.round((e.offsetY / pos.h) * 1000) / 10 + "%";
       //   dojo.style("testpoint", {
       //     left: x,
       //     top: y,
       //   });
-      //   dojo.place("<b>left: " + x + "; top: " + y + ";</b>", "testview", "only");
-      // });
+      //   testEl.textContent = "left: " + x + "; top: " + y + ";";
+      //   if (e.type == "click") {
+      //     console.log(testEl.textContent);
+      //     navigator.clipboard.writeText(testEl.textContent);
+      //   }
+      // };
+      // this.gameEl.addEventListener("mousemove", debounce(testHandler, 50));
+      // this.gameEl.addEventListener("click", debounce(testHandler, 50));
     },
 
     setupPrefs() {
@@ -145,6 +164,17 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       return this.inherited(arguments);
     },
 
+    /* @Override */
+    showMessage: function (msg, type) {
+      if (type == "error") {
+        const lastErrorCode = msg.startsWith("!!!") ? msg.substring(3) : null;
+        if (lastErrorCode) {
+          return;
+        }
+      }
+      this.inherited(arguments);
+    },
+
     // ----------------------------------------------------------------------
 
     // onEnteringState(stateName, args) {},
@@ -157,14 +187,15 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       if (!this.is_spectator) {
         if (this.isCurrentPlayerActive()) {
           if (args?.buys?.length > 0) {
-            let buys = args.buys;
-            for (let i in buys) {
-              let buy = buys[i];
-              let id = "button_buy_" + buy.type;
+            const buys = args.buys;
+            for (const i in buys) {
+              const buy = buys[i];
+              const id = `button_buy_${i}`;
+              let cssClass = null;
               let txt = "";
               if (buy.type == "ALLIANCE") {
-                id += "_" + buy.alliance;
-                txt = `<div class="icon alliance ${buy.alliance}"></div>${buy.alliance} Alliance`;
+                cssClass = `alliance-${buy.alliance}`;
+                txt = `<div class="icon alliance logo-${buy.alliance}"></div>${buy.alliance} Alliance`;
               } else if (buy.type == "SEAT") {
                 txt = `<div class="icon seat"></div>Seat ${buy.seat}`;
               } else if (buy.type == "SPEED") {
@@ -187,6 +218,9 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
                 false,
                 "gray"
               );
+              if (cssClass) {
+                this.swapClass(id, "bgabutton_gray", cssClass);
+              }
             }
           }
 
@@ -198,17 +232,15 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
             // Update the possible moves
             this.deleteMoves();
             if (args?.moves) {
-              let alliance = this.gamedatas.planes[this.player_id].alliance;
+              const alliance = this.gamedatas.planes[this.player_id].alliance;
               let moveCount = 0;
-              for (const m in args.moves) {
-                const move = args.moves[m];
-                const el = dojo.place(`<div id="move-${move.location}" class="move node node-${move.location} alliance-gradient-${alliance}">${move.fuel}</div>`, "NMap");
-                if (el) {
-                  moveCount++;
-                  dojo.connect(el, "onclick", (e) => {
-                    this.takeAction("move", move);
-                  });
-                }
+              for (const i in args.moves) {
+                const move = args.moves[i];
+                const el = dojo.place(`<div id="move-${move.location}" class="move node node-${move.location} gradient-${alliance}">${move.fuel}</div>`, this.gameEl);
+                dojo.connect(el, "onclick", () => {
+                  this.takeAction("move", move);
+                });
+                moveCount++;
               }
               console.log(`🗺️ Add ${moveCount} possible moves`);
             }
@@ -234,6 +266,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       } else if (notif.type == "buildPrimary") {
         // Create plane
         this.gamedatas.players[notif.args.player_id].color = notif.args.color;
+        console.log("plane is ", JSON.stringify(notif.args.plane));
         this.createPlane(notif.args.plane);
       } else if (notif.type == "move") {
         if (notif.args.player_id == this.player_id) {
@@ -312,7 +345,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       console.log(`takePaxAction ${pax.id} ${pax.status} ${pax.location}`, pax);
       if (pax.status == "PORT") {
         this.takeAction("enplane", { paxId: pax.id });
-      } else if (pax.status == "SEAT" || pax.status == "TEMP_SEAT") {
+      } else if (pax.status == "SEAT") {
         this.takeAction("deplane", { paxId: pax.id });
       }
     },
@@ -322,10 +355,15 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         el = document.getElementById(el);
       }
       if (toRemove) {
+        if (typeof toRemove == "string") {
+          toRemove = [toRemove];
+        }
         const classList = [...el.classList];
         classList.forEach((className) => {
-          if (className.startsWith(toRemove)) {
-            el.classList.remove(className);
+          for (const c of toRemove) {
+            if (className.startsWith(c)) {
+              el.classList.remove(c);
+            }
           }
         });
       }
@@ -358,7 +396,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
     createWeather(location, token) {
       console.log(`🌦️ Create weather ${token} at ${location}`);
-      dojo.place(`<div id="weather-${location}" class="weather node node-${location}"><i class="icon weather weather-${token}"></i></div>`, "NMap");
+      dojo.place(`<div id="weather-${location}" class="weather node node-${location}"><i class="icon weather weather-${token}"></i></div>`, this.gameEl);
     },
 
     deleteWeather(weather) {
@@ -368,23 +406,22 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
     createPlane(plane) {
       console.log(`✈️ Create plane ${plane.id} (${plane.alliance}) at ${plane.location}`);
-      let style = "";
+      this.gamedatas.planes[plane.id] = plane;
       const rotation = this.getRotation(plane);
-      if (rotation) {
-        style = `transform: rotate(${rotation}deg)`;
-      }
+      let style = rotation ? `transform: rotate(${rotation}deg)` : "";
       dojo.place(
         `<div id="plane-${plane.id}" class="plane node node-${plane.location}">
-          <div class="planebody icon plane plane-${plane.alliance}" style="${style}"></div>
+          <div class="icon plane-${plane.alliance}" style="${style}"></div>
         </div>`,
-        "NMap"
+        this.gameEl
       );
       this.swapClass(`overall_player_board_${plane.id}`, "alliance-", `alliance-${plane.alliance}`);
     },
 
     deletePlane(plane) {
       console.log(`❌ Delete plane ${plane.id}`);
-      dojo.destroy("plane-" + plane.id);
+      dojo.destroy(`plane-${plane.id}`);
+      this.swapClass(`overall_player_board_${plane.id}`, "alliance-");
     },
 
     movePlane(plane) {
@@ -396,7 +433,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       const rotation = this.getRotation(plane);
       console.log(`⤴️ Rotate plane ${plane.id} (${plane.alliance}) to ${rotation}deg`);
       dojo
-        .query(`#plane-${plane.id} .planebody`)
+        .query(`#plane-${plane.id} .icon`)
         .at(0)
         .style({
           transform: `rotate(${rotation}deg)`,
@@ -405,6 +442,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
     updatePlane(plane) {
       console.log(`✈️ Update plane ${plane.id} (${plane.alliance})`);
+      this.gamedatas.planes[plane.id] = plane;
       let el = document.getElementById(`plane-${plane.id}`);
       if (el == null) {
       }
@@ -417,11 +455,14 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       dojo.query("#NMap .move.node").forEach((el) => dojo.destroy(el));
     },
 
-    renderManifest(parentEl, position, manifestId) {
-      if (typeof parentEl == "string") {
-        parentEl = document.getElementById(parentEl);
-      }
-      parentEl.insertAdjacentHTML(position, `<div id="manifest-${manifestId}" class="manifest"><div class="location">${manifestId}</div></div>`);
+    renderManifest(manifestId, parentEl) {
+      dojo.place(
+        `<div id="manifest-${manifestId}" class="manifest">
+  <div class="location">${manifestId}</div>
+  <div id="paxlist-${manifestId}" class="paxlist"></div>
+</div>`,
+        parentEl
+      );
     },
 
     renderPax(pax) {
@@ -434,13 +475,10 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       let manifestEl = null;
       if (pax.status == "SECRET" || pax.status == "PORT") {
         // At the airport
-        manifestEl = document.getElementById(`manifest-${pax.location}`);
-      } else if (pax.status == "SEAT" || pax.status == "TEMP_SEAT") {
+        manifestEl = document.getElementById(`paxlist-${pax.location}`);
+      } else if (pax.status == "SEAT") {
         // In transit
-        manifestEl = document.getElementById(`manifest-seat-${pax.playerId}`);
-      } else if (pax.status == "CASH") {
-        // In wallet
-        manifestEl = document.getElementById(`manifest-wallet-${pax.playerId}`);
+        manifestEl = document.getElementById(`paxlist-${pax.playerId}`);
       }
 
       if (paxEl && !manifestEl) {
@@ -455,15 +493,17 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         manifestEl.insertAdjacentHTML(
           "beforeend",
           `<div id="pax-${pax.id}" class="pax">
-    <div class="vip"></div>
-    <div class="nameplate">
-        <div class="barcode">NOWBOARDING</div>
-        <div class="cash box"></div>
-        <div class="origin"></div>
-        <div class="arrow">»</div>
-        <div class="destination"></div>
-        <div class="anger box"><div class="ping"></div><div class="icon anger"></div> <span></span></div>
-    </div>
+  <div class="anger">
+    <div class="ping"></div>
+    <div class="icon"></div>
+    <div class="count"></div>
+  </div>
+  <div class="vip"></div>
+  <div class="ticket">
+    <span class="origin"></span>
+    <span class="destination"></span>
+    <div class="cash"></div>
+  </div>
 </div>`
         );
         paxEl = document.getElementById(`pax-${pax.id}`);
@@ -471,26 +511,33 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       }
 
       // Update the attributes
+      const angerEl = paxEl.querySelector(".anger");
+      const angerIconEl = angerEl.querySelector(".icon");
+      const angerCountEl = angerEl.querySelector(".count");
       const vipEl = paxEl.querySelector(".vip");
-      const cashEl = paxEl.querySelector(".cash");
       const originEl = paxEl.querySelector(".origin");
       const destinationEl = paxEl.querySelector(".destination");
-      const angerEl = paxEl.querySelector(".anger.box");
-      const angerIconEl = angerEl.querySelector(".icon");
-      const angerSpanEl = angerEl.querySelector("span");
-      vipEl.textContent = "VIP//CELEBRITY-IN-EMERGENCY";
-      if (pax.status == "SECRET") {
-        paxEl.classList.add("SECRET");
-        cashEl.innerHTML = `<div class="icon spinner"></div>`;
-        originEl.textContent = `${pax.origin}//WLCOME ABRD`;
+      const cashEl = paxEl.querySelector(".cash");
+
+      const isVip = Math.random() >= 0.7;
+      if (isVip) {
+        vipEl.textContent = "VIP/FIRST IN LINE";
       } else {
-        paxEl.classList.remove("SECRET");
+        vipEl.textContent = "";
+      }
+      if (pax.status == "SECRET") {
+        paxEl.classList.add("is-secret");
+        angerIconEl.classList.add("spinner");
+        angerCountEl.textContent = "...";
+        originEl.textContent = _("WELCOME ABOARD");
+      } else {
+        paxEl.classList.remove("is-secret");
         cashEl.textContent = `$${pax.cash}`;
-        originEl.textContent = pax.origin;
+        originEl.textContent = `${pax.origin} » `;
         destinationEl.textContent = pax.destination;
         this.swapClass(angerEl, "anger-", `anger-${pax.anger}`);
-        this.swapClass(angerIconEl, "anger-", `anger-${pax.anger}`);
-        angerSpanEl.textContent = pax.anger;
+        this.swapClass(angerIconEl, ["spinner", "anger-"], `anger-${pax.anger}`);
+        angerCountEl.textContent = pax.anger;
       }
 
       // Move to the correct manifest (if necessary)
@@ -504,18 +551,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       }
       console.log(`🧑 Move pax ${pax.id} to ${manifestEl.id}`);
       manifestEl.appendChild(paxEl);
-    },
-
-    createPax(pax) {
-      if (pax.status == "SECRET" || pax.status == "PORT") {
-        // At the airport
-      } else if (pax.status == "SEAT" || pax.status == "TEMP_SEAT") {
-        // In transit
-      } else if (pax.status == "CASH") {
-        // In wallet
-      } else {
-        // Don't render
-      }
     },
 
     deletePax(pax) {

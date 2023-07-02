@@ -19,12 +19,12 @@ class NMap extends APP_GameClass implements JsonSerializable
         $this->addRoute('DEN', 'ORD', 2, 'ORD');
         $this->addRoute('DEN', 'SFO', 2, null);
         $this->addRoute('DFW', 'LAX', 3, null);
-        $this->addRoute('DFW', 'MIA', 3, 'DFW');
+        $this->addRoute('DFW', 'MIA', 2, 'DFW');
         $this->addRoute('JFK', 'ORD', 2, null);
         $this->addRoute('LAX', 'MIA', 4, 'LAX');
         $this->addRoute('LAX', 'SFO', 1, null);
 
-        if ($playerCount >= 1) {
+        if ($playerCount >= 4) {
             // 4-5 player map with Seattle
             $this->addRoute('SEA', 'DEN', 2, 'SEA');
             $this->addRoute('SEA', 'JFK', 4, 'SEA');
@@ -32,7 +32,7 @@ class NMap extends APP_GameClass implements JsonSerializable
             $this->addRoute('SEA', 'SFO', 2, null);
         } else {
             // 2-3 player map without Seattle
-            $this->addRoute('ORD', 'SFO', 4, 'ORD');
+            $this->addRoute('ORD', 'SFO', 3, 'ORD');
         }
 
         $this->weather = $weather;

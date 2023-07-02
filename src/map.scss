@@ -1,0 +1,153 @@
+.map {
+  aspect-ratio: 2 / 1;
+  background-repeat: no-repeat;
+  background-size: contain;
+  container-type: inline-size;
+  position: relative;
+  margin: 285px 225px 255px 0;
+  min-width: 1000px;
+}
+
+#manifests-top {
+  display: flex;
+  flex-direction: row;
+  height: 280px;
+  justify-content: space-evenly;
+  left: 0;
+  position: absolute;
+  right: -220px;
+  top: -275px;
+}
+
+#manifests-top .manifest {
+  flex-direction: column-reverse;
+}
+
+#manifests-right {
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  position: absolute;
+  right: -220px;
+  top: 0;
+}
+
+#manifests-bottom {
+  bottom: -245px;
+  display: flex;
+  flex-direction: row;
+  height: 280px;
+  justify-content: space-evenly;
+  left: 0;
+  position: absolute;
+  right: 0;
+}
+
+#manifest-SEA {
+  order: 1;
+}
+#manifest-SFO {
+  order: 2;
+}
+#manifest-DEN {
+  order: 3;
+}
+#manifest-ORD {
+  order: 4;
+}
+#manifest-JFK {
+  order: 1;
+}
+#manifest-ATL {
+  order: 2;
+}
+#manifest-LAX {
+  order: 1;
+}
+#manifest-DFW {
+  order: 2;
+}
+#manifest-MIA {
+  order: 3;
+}
+
+/*
+.node {
+  pointer-events: none;
+}*/
+
+.marker.node {
+  //background: black;
+  border-radius: 100%;
+  height: 2%;
+  width: 1%;
+}
+
+.move.node {
+  border-radius: 100%;
+  box-shadow: 3px 4px 0px rgb(0 0 0 / 0.25), 0px 0px 3px white;
+  cursor: pointer;
+  font-size: 2cqw;
+  font-weight: bold;
+  height: 5%;
+  line-height: 2.5cqw;
+  text-align: center;
+  width: 2.5%;
+}
+
+.node {
+  background-repeat: no-repeat;
+  background-size: contain;
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+
+.plane.node {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  height: 10%;
+  justify-content: center;
+  width: 5%;
+  transition: all 1s ease-out;
+  z-index: 5;
+}
+
+.plane.node .icon {
+  filter: drop-shadow(4px 4px 0px rgb(0 0 0 / 0.25)) drop-shadow(0px 0px 2px rgb(0 0 0 / 1));
+  height: 100%;
+  position: absolute;
+  width: 100%;
+  z-index: 1;
+  transition: transform 500ms ease-out;
+}
+
+.test.node {
+  //background: red;
+  left: 50%;
+  top: 50%;
+}
+
+#testview {
+  text-align: center;
+  font-size: 18px;
+  padding: 6px;
+}
+
+.weather.node {
+  align-items: center;
+  background-image: linear-gradient(-30deg, #1a237e, #01579b);
+  border-radius: 100%;
+  box-shadow: 3px 4px 0px rgb(0 0 0 / 0.25), 0px 0px 3px white;
+  display: flex;
+  height: 8%;
+  justify-content: center;
+  width: 4%;
+  z-index: 1;
+}
+
+.weather.node .icon {
+  height: 85%;
+  width: 85%;
+}

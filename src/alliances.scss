@@ -1,0 +1,51 @@
+@use "colors" as *;
+
+.alliance-ATL {
+  background-color: $color-green-600;
+  color: white !important;
+}
+
+.alliance-DFW {
+  background-color: $color-purple-700;
+  color: white !important;
+}
+
+.alliance-LAX {
+  background-color: $color-amber-600;
+  color: white !important;
+}
+
+.alliance-ORD {
+  background-color: $color-red-700;
+  color: white !important;
+}
+
+.alliance-SEA {
+  background-color: $color-blue-700;
+  color: white !important;
+}
+
+.gradient-ATL {
+  background: linear-gradient(-30deg, $color-green-800, $color-green-600);
+  color: white;
+}
+
+.gradient-DFW {
+  background: linear-gradient(-30deg, $color-purple-900, $color-purple-700);
+  color: white;
+}
+
+.gradient-LAX {
+  background: linear-gradient(-30deg, $color-amber-800, $color-amber-600);
+  color: white;
+}
+
+.gradient-ORD {
+  background: linear-gradient(-30deg, $color-red-900, $color-red-700);
+  color: white;
+}
+
+.gradient-SEA {
+  background: linear-gradient(-30deg, $color-blue-900, $color-blue-700);
+  color: white;
+}

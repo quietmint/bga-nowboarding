@@ -22,7 +22,7 @@ $machinestates = [
             'buildReset',
         ],
         'transitions' => [
-            'buildComplete' => N_STATE_BUILD_COMPLETE,
+            'maintenance' => N_STATE_MAINTENANCE,
         ],
         'type' => 'multipleactiveplayer',
     ],
@@ -74,11 +74,12 @@ $machinestates = [
         'type' => 'private',
     ],
 
-    N_STATE_BUILD_COMPLETE => [
-        'name' => 'buildComplete',
-        'action' => 'stBuildComplete',
+    N_STATE_MAINTENANCE => [
+        'name' => 'maintenance',
+        'action' => 'stMaintenance',
         'description' => '',
         'transitions' => [
+            'end' => N_STATE_END,
             'prepare' => N_STATE_PREPARE,
         ],
         'type' => 'game',
@@ -146,17 +147,6 @@ $machinestates = [
             'flyPrivate' => N_STATE_FLY_PRIVATE,
         ],
         'type' => 'private',
-    ],
-
-    N_STATE_MAINTENANCE => [
-        'name' => 'maintenance',
-        'action' => 'stMaintenance',
-        'description' => '',
-        'transitions' => [
-            'end' => N_STATE_END,
-            'prepare' => N_STATE_PREPARE,
-        ],
-        'type' => 'game',
     ],
 
     // BGA framework state, do not modify

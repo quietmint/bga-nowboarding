@@ -27,7 +27,6 @@ class NowBoarding extends Table
     protected function setupNewGame($players, $options = [])
     {
         // Create players and planes
-        $playerCount = count($players);
         foreach ($players as $player_id => $player) {
             $sql = "INSERT INTO player (player_id, player_color, player_canal, player_name, player_avatar) VALUES ($player_id, '000000', '" . $player['player_canal'] . "', '" . addslashes($player['player_name']) . "', '" . addslashes($player['player_avatar']) . "')";
             $this->DbQuery($sql);
@@ -36,105 +35,6 @@ class NowBoarding extends Table
             $this->DbQuery($sql);
         }
         $this->reloadPlayersBasicInfos();
-
-        // Create passengers
-        $pax = [
-            ['ATL', 'DEN', 2],
-            ['ATL', 'DFW', 2],
-            ['ATL', 'LAX', 4],
-            ['ATL', 'MIA', 1],
-            ['ATL', 'ORD', 2],
-            ['ATL', 'SFO', 4],
-            ['DEN', 'ATL', 2],
-            ['DEN', 'DFW', 2],
-            ['DEN', 'LAX', 2],
-            ['DEN', 'MIA', 3],
-            ['DEN', 'ORD', 2],
-            ['DEN', 'SFO', 2],
-            ['DFW', 'ATL', 2],
-            ['DFW', 'DEN', 2],
-            ['DFW', 'LAX', 2],
-            ['DFW', 'MIA', 2],
-            ['DFW', 'ORD', 3],
-            ['DFW', 'SFO', 3],
-            ['LAX', 'ATL', 4],
-            ['LAX', 'DEN', 2],
-            ['LAX', 'DFW', 2],
-            ['LAX', 'MIA', 3],
-            ['LAX', 'ORD', 3],
-            ['LAX', 'SFO', 1],
-            ['MIA', 'ATL', 1],
-            ['MIA', 'DEN', 3],
-            ['MIA', 'DFW', 2],
-            ['MIA', 'LAX', 3],
-            ['MIA', 'ORD', 3],
-            ['MIA', 'SFO', 4],
-            ['ORD', 'ATL', 2],
-            ['ORD', 'DEN', 2],
-            ['ORD', 'DFW', 3],
-            ['ORD', 'LAX', 3],
-            ['ORD', 'MIA', 3],
-            ['ORD', 'SFO', 3],
-            ['SFO', 'ATL', 4],
-            ['SFO', 'DEN', 2],
-            ['SFO', 'DFW', 3],
-            ['SFO', 'LAX', 1],
-            ['SFO', 'MIA', 4],
-            ['SFO', 'ORD', 3],
-        ];
-
-        if ($playerCount >= 3) {
-            // Include JFK with 3+ players
-            $pax += [
-                ['ATL', 'JFK', 2],
-                ['DEN', 'JFK', 3],
-                ['DFW', 'JFK', 3],
-                ['JFK', 'ATL', 2],
-                ['JFK', 'DEN', 2],
-                ['JFK', 'DFW', 3],
-                ['JFK', 'LAX', 5],
-                ['JFK', 'MIA', 3],
-                ['JFK', 'ORD', 2],
-                ['JFK', 'SFO', 4],
-                ['LAX', 'JFK', 5],
-                ['MIA', 'JFK', 3],
-                ['ORD', 'JFK', 2],
-                ['SFO', 'JFK', 4],
-            ];
-        }
-
-        if ($playerCount >= 4) {
-            // Include SEA with 4+ players
-            $pax += [
-                ['ATL', 'SEA', 4],
-                ['DEN', 'SEA', 2],
-                ['DFW', 'SEA', 3],
-                ['JFK', 'SEA', 3],
-                ['LAX', 'SEA', 3],
-                ['MIA', 'SEA', 5],
-                ['ORD', 'SEA', 2],
-                ['SEA', 'ATL', 4],
-                ['SEA', 'DEN', 2],
-                ['SEA', 'DFW', 3],
-                ['SEA', 'JFK', 3],
-                ['SEA', 'LAX', 3],
-                ['SEA', 'MIA', 5],
-                ['SEA', 'ORD', 2],
-                ['SEA', 'SFO', 2],
-                ['SFO', 'SEA', 2],
-            ];
-        }
-
-        shuffle($pax);
-        $paxCounts = N_REF_PAX_COUNTS[$playerCount];
-        foreach ($paxCounts as $status => $count) {
-            $dayPax = array_splice($pax, $count * -1);
-            foreach ($dayPax as $x) {
-                [$destination, $origin, $cash] = $x;
-                $sql = "INSERT INTO pax (`status`, `destination`, `origin`, `cash`) VALUES ('$status', '$destination', '$origin', $cash)";
-                $this->DbQuery($sql);
-            }
-        }
     }
 
     function checkVersion(int $clientVersion): void
@@ -256,20 +156,78 @@ class NowBoarding extends Table
     }
 
     /*
-     * SETUP #4
-     * Add weather
-     * Add starting passengers
+     * MAINTENANCE
+     * Create passengers (first turn only)
+     * Increase anger and file complaints
+     * Add new passengers
      */
-    function stBuildComplete()
+
+    function stMaintenance(): void
     {
-        $this->newWeather();
-        $planes = $this->getPlanesByIds();
-        $startingPax = [];
-        foreach ($planes as $plane) {
-            $x = $this->getPaxByStatus('MORNING', 1, $plane->alliance)[0];
-            $startingPax[] = $x;
+        $hour = $this->getVar('hour');
+        if ($hour == null) {
+            // Create pax on the first turn
+            $this->createPax();
+            $pax = $this->getPaxByStatus('PORT');
+            $this->notifyNewPax($pax);
+            $hour = $this->advanceHour($hour);
+        } else {
+            // Airport pax get angry
+            $pax = $this->getPaxByStatus('PORT');
+            $angerCount = 0;
+            $complaintCount = 0;
+            foreach ($pax as $x) {
+                $x->anger++;
+                if ($x->anger < 4) {
+                    // Increase anger
+                    $this->DbQuery("UPDATE `pax` SET `anger` = {$x->anger} WHERE `pax_id` = {$x->id}");
+                    $angerCount++;
+                } else {
+                    // File complaint
+                    $this->DbQuery("UPDATE `pax` SET `anger` = 4, `status` = 'COMPLAINT' WHERE `pax_id` = {$x->id}");
+                    $complaintCount++;
+                }
+            }
+            if ($angerCount) {
+                $this->notifyAllPlayers('pax', clienttranslate('${count} passengers waiting in airports get angry'), [
+                    'count' => $angerCount,
+                    'pax' => $pax,
+                ]);
+            }
+            if ($complaintCount) {
+                $this->notifyAllPlayers('complaint', clienttranslate('${count} passengers waiting in airports file complaints'), [
+                    'count' => $complaintCount,
+                    'pax' => $pax,
+                ]);
+            }
         }
-        $this->newPax($startingPax);
+
+        // Add new pax
+        $playerCount = $this->getPlayersNumber();
+        $paxCount = $playerCount;
+        if ($hour == 'MORNING') {
+            $paxCount--;
+        } else if ($hour == 'NIGHT') {
+            $paxCount++;
+        }
+        $pax = $this->getPaxByStatus($hour, $paxCount);
+        if (empty($hour)) {
+            // Advance hour
+            $hour = $this->advanceHour($hour);
+            if ($hour == null) {
+                $finale = $this->getVar('finale');
+                if ($finale == null) {
+                    // Final round
+                    $this->setVar('finale', '1');
+                    $this->notifyAllPlayers('message', clienttranslate('The moving walkway is ending! This is the final round.'), []);
+                } else {
+                    // Game over
+                    $this->notifyAllPlayers('message', clienttranslate('Game over.'), []);
+                    $this->gamestate->nextState('end');
+                }
+            }
+        }
+        $this->notifyNewPax($pax);
         $this->gamestate->nextState('prepare');
     }
 
@@ -404,7 +362,7 @@ class NowBoarding extends Table
             $x->status = 'PORT';
             $this->DbQuery("UPDATE `pax` SET `status` = 'PORT' WHERE `pax_id` = {$x->id}");
         }
-        $this->notifyAllPlayers('pax', 'stReveal', [
+        $this->notifyAllPlayers('pax', 'REVEAL!', [
             'pax' => $pax,
         ]);
         $this->gamestate->nextState('fly');
@@ -419,37 +377,6 @@ class NowBoarding extends Table
             'paxDrop' => [],
             'paxPickup' => [],
         ];
-    }
-
-    /*
-     * MAINTENANCE
-     * Add anger and complaints
-     * Add new passengers
-     */
-
-    function stMaintenance(): void
-    {
-        $pax = $this->getPaxByStatus('PORT');
-        foreach ($pax as $x) {
-            $x->anger++;
-            $this->DbQuery("UPDATE `pax` SET `anger` = {$x->anger} WHERE `pax_id` = {$x->id}");
-        }
-        $this->notifyAllPlayers('pax', clienttranslate('${count} passengers waiting in airports get angry'), [
-            'count' => count($pax),
-            'pax' => $pax,
-        ]);
-
-        $playerCount = $this->getPlayersNumber();
-        $paxCount = $playerCount;
-        $day = 'MORNING';
-        if ($day == 'MORNING') {
-            $paxCount--;
-        } else if (false == 'EVENING') {
-            $paxCount++;
-        }
-        $pax = $this->getPaxByStatus('QUEUE', $paxCount);
-        $this->newPax($pax);
-        $this->gamestate->nextState('prepare');
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -500,7 +427,10 @@ class NowBoarding extends Table
         }
 
         $color = N_REF_ALLIANCE_COLOR[$alliance];
-        $this->DbQuery("UPDATE plane SET `alliance` = '$alliance', `alliances` = '$alliance', `location` = '$alliance' WHERE `player_id` = {$plane->id}");
+        $plane->alliance = $alliance;
+        $plane->alliances = [$alliance];
+        $plane->location = $alliance;
+        $this->DbQuery("UPDATE plane SET `alliance` = '{$plane->alliance}', `alliances` = '{$plane->alliance}', `location` = '{$plane->location}' WHERE `player_id` = {$plane->id}");
         $this->DbQuery("UPDATE player SET `player_color` = '$color' WHERE `player_id` = {$plane->id}");
         $this->reloadPlayersBasicInfos();
 
@@ -570,7 +500,7 @@ class NowBoarding extends Table
         if ($state['name'] == 'prepare') {
             $this->gamestate->nextPrivateState($plane->id, 'preparePrivate');
         } else {
-            $this->gamestate->setPlayerNonMultiactive($plane->id, 'buildComplete');
+            $this->gamestate->setPlayerNonMultiactive($plane->id, 'maintenance');
         }
     }
 
@@ -626,7 +556,7 @@ class NowBoarding extends Table
         if ($state['name'] == 'prepare') {
             $this->gamestate->nextPrivateState($plane->id, 'preparePrivate');
         } else {
-            $this->gamestate->setPlayerNonMultiactive($plane->id, 'buildComplete');
+            $this->gamestate->setPlayerNonMultiactive($plane->id, 'maintenance');
         }
     }
 
@@ -653,47 +583,6 @@ class NowBoarding extends Table
         ]);
 
         $this->gamestate->nextPrivateState($plane->id, 'preparePrivate');
-    }
-
-    function newWeather(): void
-    {
-        $map = $this->getMap();
-
-        // Delete old weather
-        $map->weather = [];
-        $this->DbQuery("DELETE FROM `weather`");
-
-        // Determine how many weather tokens to add
-        $playerCount = $this->getPlayersNumber();
-        $tokens = ['FAST', 'SLOW', 'FAST', 'SLOW', 'FAST', 'SLOW'];
-        if ($playerCount == 2) {
-            array_splice($tokens, 2);
-        } else if ($playerCount == 3) {
-            array_splice($tokens, 4);
-        }
-
-        // Select a different random route for each token
-        $locationFancy = [];
-        $routeIds = array_rand($map->routes, count($tokens));
-        foreach ($routeIds as $routeId) {
-            // Select a random node on the route
-            $route = $map->routes[$routeId];
-            $node = $route[array_rand($route)];
-            $token = array_pop($tokens);
-            $this->DbQuery("INSERT INTO weather (`location`, `token`) VALUES ('{$node->id}', '$token')");
-            $map->weather[$node->id] = $token;
-            $locationFancy[$token][] = substr_replace($routeId, '-', 3, 0);
-        }
-
-        $this->notifyAllPlayers('message', clienttranslate('Storms slow travel along ${locationFancy}'), [
-            'locationFancy' => join(', ', $locationFancy['SLOW']),
-        ]);
-        $this->notifyAllPlayers('message', clienttranslate('Tailwinds speed travel along ${locationFancy}'), [
-            'locationFancy' => join(', ', $locationFancy['FAST']),
-        ]);
-        $this->notifyAllPlayers('weather', '', [
-            'weather' => $map->weather,
-        ]);
     }
 
     function flightBegin(): void
@@ -746,11 +635,19 @@ class NowBoarding extends Table
     {
     }
 
-
-
     //////////////////////////////////////////////////////////////////////////////
     //////////// Helpers
     ////////////
+
+    function getVar(string $key): ?string
+    {
+        return $this->getUniqueValueFromDB("SELECT `value` FROM `var` WHERE `key` = '$key'");
+    }
+
+    function setVar(string $key, string $value): void
+    {
+        $this->DbQuery("INSERT INTO `var` (`key`, `value`) VALUES ('$key', '$value') ON DUPLICATE KEY UPDATE `value` = '$value'");
+    }
 
     function getMap(): NMap
     {
@@ -834,16 +731,12 @@ SQL);
         }, $this->getCollectionFromDb($sql));
     }
 
-    function getPaxByStatus($status, ?int $limit = null, ?string $origin = null): array
+    function getPaxByStatus($status, ?int $limit = null): array
     {
         if (is_array($status)) {
             $status = join("', '", $status);
         }
-        $sql = "SELECT * FROM `pax` WHERE `status` IN ('$status')";
-        if ($origin != null) {
-            $sql .= " AND `origin` = '$origin'";
-        }
-        $sql .= " ORDER BY `pax_id`";
+        $sql = "SELECT * FROM `pax` WHERE `status` IN ('$status') ORDER BY `pax_id`";
         if ($limit != null) {
             $sql .= " LIMIT $limit";
         }
@@ -852,7 +745,123 @@ SQL);
         }, $this->getCollectionFromDb($sql));
     }
 
-    function newPax(array $pax): void
+    function createPax(): void
+    {
+        $planes = $this->getPlanesByIds();
+        $playerCount = count($planes);
+        $pax = [
+            ['ATL', 'DEN', 2],
+            ['ATL', 'DFW', 2],
+            ['ATL', 'LAX', 4],
+            ['ATL', 'MIA', 1],
+            ['ATL', 'ORD', 2],
+            ['ATL', 'SFO', 4],
+            ['DEN', 'ATL', 2],
+            ['DEN', 'DFW', 2],
+            ['DEN', 'LAX', 2],
+            ['DEN', 'MIA', 3],
+            ['DEN', 'ORD', 2],
+            ['DEN', 'SFO', 2],
+            ['DFW', 'ATL', 2],
+            ['DFW', 'DEN', 2],
+            ['DFW', 'LAX', 2],
+            ['DFW', 'MIA', 2],
+            ['DFW', 'ORD', 3],
+            ['DFW', 'SFO', 3],
+            ['LAX', 'ATL', 4],
+            ['LAX', 'DEN', 2],
+            ['LAX', 'DFW', 2],
+            ['LAX', 'MIA', 3],
+            ['LAX', 'ORD', 3],
+            ['LAX', 'SFO', 1],
+            ['MIA', 'ATL', 1],
+            ['MIA', 'DEN', 3],
+            ['MIA', 'DFW', 2],
+            ['MIA', 'LAX', 3],
+            ['MIA', 'ORD', 3],
+            ['MIA', 'SFO', 4],
+            ['ORD', 'ATL', 2],
+            ['ORD', 'DEN', 2],
+            ['ORD', 'DFW', 3],
+            ['ORD', 'LAX', 3],
+            ['ORD', 'MIA', 3],
+            ['ORD', 'SFO', 3],
+            ['SFO', 'ATL', 4],
+            ['SFO', 'DEN', 2],
+            ['SFO', 'DFW', 3],
+            ['SFO', 'LAX', 1],
+            ['SFO', 'MIA', 4],
+            ['SFO', 'ORD', 3],
+        ];
+        if ($playerCount >= 3) {
+            // Include JFK with 3+ players
+            array_push($pax, [
+                ['ATL', 'JFK', 2],
+                ['DEN', 'JFK', 3],
+                ['DFW', 'JFK', 3],
+                ['JFK', 'ATL', 2],
+                ['JFK', 'DEN', 2],
+                ['JFK', 'DFW', 3],
+                ['JFK', 'LAX', 5],
+                ['JFK', 'MIA', 3],
+                ['JFK', 'ORD', 2],
+                ['JFK', 'SFO', 4],
+                ['LAX', 'JFK', 5],
+                ['MIA', 'JFK', 3],
+                ['ORD', 'JFK', 2],
+                ['SFO', 'JFK', 4],
+            ]);
+        }
+        if ($playerCount >= 4) {
+            // Include SEA with 4+ players
+            array_push($pax, [
+                ['ATL', 'SEA', 4],
+                ['DEN', 'SEA', 2],
+                ['DFW', 'SEA', 3],
+                ['JFK', 'SEA', 3],
+                ['LAX', 'SEA', 3],
+                ['MIA', 'SEA', 5],
+                ['ORD', 'SEA', 2],
+                ['SEA', 'ATL', 4],
+                ['SEA', 'DEN', 2],
+                ['SEA', 'DFW', 3],
+                ['SEA', 'JFK', 3],
+                ['SEA', 'LAX', 3],
+                ['SEA', 'MIA', 5],
+                ['SEA', 'ORD', 2],
+                ['SEA', 'SFO', 2],
+                ['SFO', 'SEA', 2],
+            ]);
+        }
+        shuffle($pax);
+
+        // Create starting passenger in each airport
+        foreach ($planes as $plane) {
+            foreach ($pax as $k => $x) {
+                [$destination, $origin, $cash] = $x;
+                if ($origin == $plane->alliance) {
+                    $sql = "INSERT INTO pax (`status`, `destination`, `origin`, `cash`) VALUES ('PORT', '$destination', '$origin', $cash)";
+                    $this->DbQuery($sql);
+                    unset($pax[$k]);
+                    $startingPax[] = $x;
+                    break;
+                }
+            }
+        }
+
+        // Create queued passengers in each hour
+        $paxCounts = N_REF_PAX_COUNTS[$playerCount];
+        foreach ($paxCounts as $status => $count) {
+            $hourPax = array_splice($pax, $count * -1);
+            foreach ($hourPax as $x) {
+                [$destination, $origin, $cash] = $x;
+                $sql = "INSERT INTO pax (`status`, `destination`, `origin`, `cash`) VALUES ('$status', '$destination', '$origin', $cash)";
+                $this->DbQuery($sql);
+            }
+        }
+    }
+
+    function notifyNewPax(array $pax): void
     {
         foreach ($pax as $x) {
             $x->status = 'SECRET';
@@ -874,6 +883,57 @@ SQL);
             }
         }
         return $pax;
+    }
+
+    function advanceHour(?string $currentHour): ?string
+    {
+        $nextHour = N_REF_HOUR_NEXT[$currentHour];
+        if ($nextHour != null) {
+            $this->setVar('hour', $nextHour);
+
+            // Delete old weather
+            $map = $this->getMap();
+            $map->weather = [];
+            $this->DbQuery("DELETE FROM `weather`");
+
+            // Determine how much weather to add
+            $playerCount = $this->getPlayersNumber();
+            $tokens = ['FAST', 'SLOW', 'FAST', 'SLOW', 'FAST', 'SLOW'];
+            if ($playerCount == 2) {
+                array_splice($tokens, 2);
+            } else if ($playerCount == 3) {
+                array_splice($tokens, 4);
+            }
+
+            // Select a (different) random route for each token
+            $locationFancy = [];
+            $routeIds = array_rand($map->routes, count($tokens));
+            foreach ($routeIds as $routeId) {
+                // Select a random node on the route
+                $route = $map->routes[$routeId];
+                $node = $route[array_rand($route)];
+                $token = array_pop($tokens);
+                $this->DbQuery("INSERT INTO weather (`location`, `token`) VALUES ('{$node->id}', '$token')");
+                $map->weather[$node->id] = $token;
+                $locationFancy[$token][] = substr_replace($routeId, '-', 3, 0);
+            }
+
+            // Notify
+            if ($nextHour == 'MORNING') {
+                $desc = clienttranslate('Morning');
+            } else if ($nextHour == 'NOON') {
+                $desc = clienttranslate('Afternoon');
+            } else if ($nextHour == 'NIGHT') {
+                $desc = clienttranslate('Evening');
+            }
+            $this->notifyAllPlayers('weather', clienttranslate('${hour} weather: Storms slow travel along ${slow} and tailwinds speed travel along ${fast}.'), [
+                'weather' => $map->weather,
+                'hour' => $desc,
+                'slow' => join(', ', $locationFancy['SLOW']),
+                'fast' => join(', ', $locationFancy['FAST']),
+            ]);
+        }
+        return $nextHour;
     }
 
     //////////////////////////////////////////////////////////////////////////////

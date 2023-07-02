@@ -2,12 +2,11 @@ CREATE TABLE `pax` (
     `pax_id` INT(3) NOT NULL AUTO_INCREMENT,
     `status` ENUM(
         'MORNING',
-        'AFTERNOON',
-        'EVENING',
+        'NOON',
+        'NIGHT',
         'SECRET',
         'PORT',
         'SEAT',
-        'TEMP_SEAT',
         'CASH',
         'COMPLAINT'
     ) NOT NULL,
@@ -46,6 +45,12 @@ CREATE TABLE `plane` (
     `speed_remain` INT(2) NOT NULL DEFAULT '3',
     `seat` INT(2) NOT NULL DEFAULT '1',
     PRIMARY KEY (`player_id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8;
+
+CREATE TABLE `var` (
+    `key` VARCHAR(50) NOT NULL,
+    `value` VARCHAR(50),
+    PRIMARY KEY (`key`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
 
 CREATE TABLE `weather` (

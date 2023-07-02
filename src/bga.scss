@@ -1,0 +1,50 @@
+@use "colors" as *;
+
+html {
+  background: #2383ba;
+}
+
+#loader_mask {
+  position: fixed;
+  height: 100vh;
+}
+
+#loader_mask_background {
+  display: none;
+}
+
+#overall-content.gamestate_build #generalactions,
+#overall-content.gamestate_prepare #generalactions {
+  display: block;
+  margin-top: 5px;
+}
+
+.player-board {
+  background-color: $color-slate-600;
+  color: white;
+  width: auto !important;
+}
+
+.player-board .player-name a {
+  color: white !important;
+}
+
+.bgabutton .icon {
+  display: block;
+  font-size: 40px;
+  margin: auto;
+}
+
+.logfancy {
+  background-color: $color-neutral-200;
+  border-radius: 4px;
+  display: inline-block;
+  font-size: 18px;
+  font-weight: bold;
+  padding: 0 6px;
+  vertical-align: middle;
+}
+
+.logfancy .icon {
+  vertical-align: -2px;
+}
