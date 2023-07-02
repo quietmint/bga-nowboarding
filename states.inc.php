@@ -46,7 +46,7 @@ $machinestates = [
         'name' => 'buildAlliance2',
         'action' => 'stBuildAlliance2',
         'args' => 'argBuildAlliance2',
-        'descriptionmyturn' => clienttranslate('Choose a second alliance'),
+        'descriptionmyturn' => clienttranslate('Choose an additional alliance'),
         'possibleactions' => [
             'buildReset',
             'buy',

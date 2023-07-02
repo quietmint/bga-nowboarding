@@ -34,10 +34,10 @@ const N_REF_PAX_COUNTS = [
 ];
 
 const N_REF_HOUR_NEXT = [
-    null => 'MORNING',
+    'PRELUDE' => 'MORNING',
     'MORNING' => 'NOON',
     'NOON' => 'NIGHT',
-    'NIGHT' => null,
+    'NIGHT' => 'FINALE',
 ];
 
 const N_REF_SEAT_COST = [

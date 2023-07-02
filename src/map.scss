@@ -94,6 +94,7 @@
   line-height: 2.5cqw;
   text-align: center;
   width: 2.5%;
+  z-index: 10;
 }
 
 .node {
@@ -127,6 +128,7 @@
   //background: red;
   left: 50%;
   top: 50%;
+  z-index: 99;
 }
 
 #testview {

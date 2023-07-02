@@ -29,6 +29,10 @@ html {
   color: white !important;
 }
 
+#nbcommon {
+
+}
+
 .bgabutton .icon {
   display: block;
   font-size: 40px;
@@ -43,6 +47,11 @@ html {
   font-weight: bold;
   padding: 0 6px;
   vertical-align: middle;
+}
+
+.logfancy.complaint {
+  background-color: $color-red-700;
+  color: white;
 }
 
 .logfancy .icon {

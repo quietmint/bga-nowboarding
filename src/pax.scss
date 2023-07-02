@@ -26,8 +26,13 @@
   outline: 5px dashed rgb(255 255 255 / 0.25);
   overflow: hidden auto;
   padding: 5px;
-  min-width: 220px;
+  min-width: 215px;
   min-height: 45px;
+}
+
+.player-board .manifest .paxlist {
+  outline: none;
+  border: 5px dashed rgb(255 255 255 / 0.25);
 }
 
 .pax {
@@ -42,7 +47,7 @@
     "anger ticket" 1fr / auto 1fr;
   line-height: 1;
   margin-bottom: 4px;
-  width: 220px;
+  width: 215px;
 }
 
 .pax .anger {
