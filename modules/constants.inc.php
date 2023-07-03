@@ -34,7 +34,7 @@ const N_REF_PAX_COUNTS = [
 ];
 
 const N_REF_HOUR_NEXT = [
-    'PRELUDE' => 'MORNING',
+    'PREFLIGHT' => 'MORNING',
     'MORNING' => 'NOON',
     'NOON' => 'NIGHT',
     'NIGHT' => 'FINALE',

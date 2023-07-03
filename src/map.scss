@@ -4,8 +4,8 @@
   background-size: contain;
   container-type: inline-size;
   position: relative;
-  margin: 285px 225px 255px 0;
-  min-width: 1000px;
+  margin: 285px 55px 255px 0;
+  min-width: 1100px;
 }
 
 #manifests-top {
@@ -28,9 +28,11 @@
   display: flex;
   flex-direction: column;
   justify-content: space-evenly;
+  align-items: center;
+  left: 80%;
   position: absolute;
-  right: -220px;
-  top: 0;
+  right: -50px;
+  top: 44%;
 }
 
 #manifests-bottom {
@@ -48,28 +50,28 @@
   order: 1;
 }
 #manifest-SFO {
-  order: 2;
+  order: 1;
 }
 #manifest-DEN {
-  order: 3;
+  order: 2;
 }
 #manifest-ORD {
-  order: 4;
+  order: 3;
 }
 #manifest-JFK {
-  order: 1;
-}
-#manifest-ATL {
-  order: 2;
+  order: 4;
 }
 #manifest-LAX {
-  order: 1;
-}
-#manifest-DFW {
   order: 2;
 }
-#manifest-MIA {
+#manifest-DFW {
   order: 3;
+}
+#manifest-ATL {
+  order: 3;
+}
+#manifest-MIA {
+  order: 4;
 }
 
 /*

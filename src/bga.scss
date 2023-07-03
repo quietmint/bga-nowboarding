@@ -19,18 +19,18 @@ html {
   margin-top: 5px;
 }
 
+.slatebutton {
+  background-color: $color-neutral-700;
+  color: white !important;
+}
+
 .player-board {
-  background-color: $color-slate-600;
+  background-color: $color-neutral-600;
   color: white;
-  width: auto !important;
 }
 
 .player-board .player-name a {
   color: white !important;
-}
-
-#nbcommon {
-
 }
 
 .bgabutton .icon {
@@ -39,21 +39,51 @@ html {
   margin: auto;
 }
 
-.logfancy {
-  background-color: $color-neutral-200;
+.nbtag {
+  background-color: $color-neutral-700;
   border-radius: 4px;
+  box-shadow: 1px 1px rgb(0 0 0 / 0.5);
+  color: white;
   display: inline-block;
-  font-size: 18px;
-  font-weight: bold;
   padding: 0 6px;
   vertical-align: middle;
 }
 
-.logfancy.complaint {
+.nbtag.complaint {
   background-color: $color-red-700;
-  color: white;
 }
 
-.logfancy .icon {
+.log .nbtag {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.nbtag .icon {
   vertical-align: -2px;
+}
+
+#nbcommon {
+  display: flex;
+  justify-content: space-evenly;
+
+  .section {
+    text-align: center;
+  }
+
+  .lbl {
+    font-size: 12px;
+  }
+
+  .icon {
+    font-size: 32px;
+    vertical-align: -10px;
+  }
+}
+
+.gauges {
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 15px;
+  gap: 4px;
+  margin: 5px 0;
 }

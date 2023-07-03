@@ -92,7 +92,8 @@ class action_nowboarding extends APP_GameAction
     self::checkVersion();
     $this->game->checkAction('deplane');
     $paxId = self::getArg('paxId', AT_int, true);
-    $this->game->deplane($paxId);
+    $confirm = self::getArg('confirm', AT_bool, false) || false;
+    $this->game->deplane($paxId, $confirm);
     self::ajaxResponse();
   }
 }

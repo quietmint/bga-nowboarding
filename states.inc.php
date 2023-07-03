@@ -29,7 +29,6 @@ $machinestates = [
 
     N_STATE_BUILD_ALLIANCE => [
         'name' => 'buildAlliance',
-        'action' => 'stBuildAlliance',
         'args' => 'argBuildAlliance',
         'descriptionmyturn' => clienttranslate('Choose a starting airport and alliance'),
         'possibleactions' => [
@@ -44,7 +43,6 @@ $machinestates = [
 
     N_STATE_BUILD_ALLIANCE2 => [
         'name' => 'buildAlliance2',
-        'action' => 'stBuildAlliance2',
         'args' => 'argBuildAlliance2',
         'descriptionmyturn' => clienttranslate('Choose an additional alliance'),
         'possibleactions' => [
@@ -60,7 +58,6 @@ $machinestates = [
 
     N_STATE_BUILD_UPGRADE => [
         'name' => 'buildUpgrade',
-        'action' => 'stBuildUpgrade',
         'args' => 'argBuildUpgrade',
         'descriptionmyturn' => clienttranslate('Choose a starting upgrade'),
         'possibleactions' => [

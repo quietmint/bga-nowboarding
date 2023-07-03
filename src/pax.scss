@@ -1,15 +1,11 @@
 @use "colors" as *;
 
 .manifest {
-  text-transform: uppercase;
-  font-family: Consolas, monospace;
-  position: relative;
   display: flex;
   flex-direction: column;
-}
-
-.player-board .manifest {
-  outline: none;
+  font-family: Consolas, monospace;
+  position: relative;
+  text-transform: uppercase;
 }
 
 .manifest .location {
@@ -20,38 +16,42 @@
   text-align: center;
 }
 
-.manifest .paxlist {
-  background: rgb(255 255 255 / 0.5);
-  max-height: 240px;
-  outline: 5px dashed rgb(255 255 255 / 0.25);
-  overflow: hidden auto;
-  padding: 5px;
+.paxlist {
+  align-items: center;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  justify-content: center;
+  min-height: 41px;
   min-width: 215px;
-  min-height: 45px;
+  padding: 5px;
 }
 
-.player-board .manifest .paxlist {
-  outline: none;
-  border: 5px dashed rgb(255 255 255 / 0.25);
+.map .paxlist {
+  background: rgb(255 255 255 / 0.25);
+  max-height: 240px;
+  outline: 5px dashed rgb(255 255 255 / 0.5);
+  overflow: hidden auto;
 }
 
 .pax {
-  border-color: $color-sky-800;
-  color: $color-slate-800;
+  border-color: $color-neutral-700;
+  color: $color-neutral-700;
   cursor: pointer;
   display: grid;
+  filter: drop-shadow(0 0 1px white);
   font-size: 13px;
   gap: 0px 0px;
   grid-template:
     "anger vip" auto
     "anger ticket" 1fr / auto 1fr;
   line-height: 1;
-  margin-bottom: 4px;
   width: 215px;
 }
 
 .pax .anger {
-  background: $color-sky-800;
+  background: $color-neutral-700;
   border-color: inherit;
   border-style: solid;
   border-width: 2px;
@@ -62,26 +62,29 @@
   width: 32px;
 }
 
-.pax .anger.anger-1 {
+.pax .anger.anger-1,
+.nbtag.anger-1 {
   background-color: $color-lime-600;
 }
 
-.pax .anger.anger-2 {
+.pax .anger.anger-2,
+.nbtag.anger-2 {
   background-color: $color-amber-500;
 }
 
-.pax .anger.anger-3 {
+.pax .anger.anger-3,
+.nbtag.anger-3 {
   background-color: $color-red-500;
 }
 
-.pax .anger.anger-3 .ping {
-  animation: ping 4s cubic-bezier(0, 0, 0.2, 1) infinite;
-  background-color: inherit;
-  height: 100%;
-  position: absolute;
-  width: 100%;
-  z-index: -1;
-}
+// .pax .anger.anger-3 .ping {
+//   animation: ping 4s cubic-bezier(0, 0, 0.2, 1) infinite;
+//   background-color: inherit;
+//   height: 100%;
+//   position: absolute;
+//   width: 100%;
+//   z-index: -1;
+// }
 
 .pax .anger .icon {
   filter: drop-shadow(1px 1px 1px black);
@@ -95,11 +98,11 @@
   border-style: solid;
   border-width: 2px 2px 2px 0;
   grid-area: ticket;
+  height: 24px;
+  line-height: 24px;
   overflow: hidden;
   position: relative;
   text-align: center;
-  height: 24px;
-  line-height: 24px;
 }
 
 .pax .destination {
@@ -110,7 +113,7 @@
 }
 
 .pax .cash {
-  background: $color-sky-800;
+  background: $color-neutral-700;
   color: white;
   float: right;
   font-size: 16px;
@@ -120,7 +123,7 @@
 }
 
 .pax .vip {
-  background: linear-gradient(45deg, $color-sky-800 80%, transparent 80%);
+  background: linear-gradient(45deg, $color-neutral-700 80%, transparent 80%);
   color: $color-amber-400;
   font-weight: bold;
   grid-area: vip;
@@ -129,27 +132,31 @@
 }
 
 .pax.is-secret {
-  border-color: $color-slate-700;
   color: white;
-
-  .anger {
-    background: $color-slate-700;
-  }
 
   .cash {
     display: none;
   }
 
   .ticket {
-    background-color: $color-slate-700;
+    background-color: $color-neutral-700;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' xml:space='preserve' viewBox='0 0 60.1 14.2'%3E%3Cpath d='M0 0v14.2h1V0zm3.7 0v14.2h2.1V0zm4.8 0v14.2h1.2V0zm2 0v14.2h1V0zm3.7 0v14.2h3V0zM18 0v14.2H20V0zm2.9 0v14.2h3V0zm3.8 0v14.2h1V0zm3.8 0v6.6l-.1 7.6h2.2V0zm2.9 0v14.2h1V0zm3.7 0v14.2h2.1V0zm3 0v14.2h1V0zm3.7 0v14.2h2.1V0zm4.8 0v14.2h1.2V0zm2 0v14.2h3V0zm3.8 0v14.2h2V0zM55 0v14.2h3.1V0zM59 0v14.2H60V0z'/%3E%3C/svg%3E");
   }
 
   .destination {
     display: none;
   }
+}
 
-  .vip {
-    background: linear-gradient(45deg, $color-slate-700 80%, transparent 80%);
+.emptyseat {
+  background: rgb(255 255 255 / 0.25);
+  border-radius: 4px;
+  border: 5px dashed rgb(255 255 255 / 0.5);
+  order: 99;
+  text-align: center;
+  width: 210px;
+
+  .icon {
+    font-size: 32px;
   }
 }

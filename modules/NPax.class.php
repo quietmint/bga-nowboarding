@@ -25,7 +25,7 @@ class NPax extends APP_GameClass implements JsonSerializable
 
     public function __toString(): string
     {
-        return "NPax({$this->id} {$this->location})";
+        return "NPax({$this->id} {$this->status} @ {$this->location})";
     }
 
     public function jsonSerialize(): array

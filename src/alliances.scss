@@ -49,3 +49,24 @@
   background: linear-gradient(-30deg, $color-blue-900, $color-blue-700);
   color: white;
 }
+
+.panel-ATL {
+  background-color: $color-green-700;
+}
+
+.panel-DFW {
+  background-color: $color-purple-800;
+}
+
+.panel-LAX {
+  background-color: $color-amber-700;
+}
+
+.panel-ORD {
+  background-color: $color-red-800;
+}
+
+.panel-SEA {
+  background-color: $color-blue-800;
+  color: white !important;
+}
