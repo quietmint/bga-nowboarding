@@ -396,7 +396,7 @@ class NowBoarding extends Table
         $playerId = $this->getCurrentPlayerId();
         $plane = $this->getPlaneById($playerId);
         if ($type == 'ALLIANCE') {
-            if ($plane->alliance == null) {
+            if (empty($plane->alliances)) {
                 $this->buyAlliancePrimary($plane, $alliance);
             } else {
                 $this->buyAlliance($plane, $alliance);
