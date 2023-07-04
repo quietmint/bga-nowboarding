@@ -1,3 +1,5 @@
+@use "colors" as *;
+
 .pinging::before {
   content: "";
   background: white;
