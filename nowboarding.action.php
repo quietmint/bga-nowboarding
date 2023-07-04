@@ -29,14 +29,6 @@ class action_nowboarding extends APP_GameAction
     self::ajaxResponse();
   }
 
-  public function buildReset()
-  {
-    self::setAjaxMode();
-    self::checkVersion();
-    $this->game->buildReset();
-    self::ajaxResponse();
-  }
-
   public function buy()
   {
     self::setAjaxMode();
@@ -45,6 +37,14 @@ class action_nowboarding extends APP_GameAction
     $type = self::getArg('type', AT_alphanum, true);
     $alliance = self::getArg('alliance', AT_alphanum, false);
     $this->game->buy($type, $alliance);
+    self::ajaxResponse();
+  }
+
+  function reset()
+  {
+    self::setAjaxMode();
+    self::checkVersion();
+    $this->game->reset();
     self::ajaxResponse();
   }
 

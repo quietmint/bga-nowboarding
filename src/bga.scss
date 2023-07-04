@@ -13,15 +13,21 @@ html {
   display: none;
 }
 
-#overall-content.gamestate_build #generalactions,
-#overall-content.gamestate_prepare #generalactions {
+#nbbuys {
   display: block;
-  margin-top: 5px;
+  margin: 10px;
 }
 
-.slatebutton {
+.buybutton {
   background-color: $color-neutral-700;
   color: white !important;
+  max-width: 6.5em;
+  white-space: normal;
+}
+
+.ghostbutton {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .player-board {

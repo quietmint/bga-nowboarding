@@ -54,11 +54,9 @@ class NowBoarding extends Table
     protected function getAllDatas(): array
     {
         $players = $this->getCollectionFromDb("SELECT player_id id, player_score score FROM player");
-        $hour = $this->getVar('hour');
         return [
             'complaint' => $this->countPaxByStatus('COMPLAINT'),
-            'hour' => $hour,
-            'hourDesc' => $this->hourDesc[$hour],
+            'hour' => $this->getHourInfo(),
             'map' => $this->getMap(),
             'pax' => $this->filterPax($this->getPaxByStatus(['SECRET', 'PORT', 'SEAT'])),
             'planes' => $this->getPlanesByIds(),
@@ -110,6 +108,7 @@ class NowBoarding extends Table
                 'type' => 'ALLIANCE',
                 'alliance' => $alliance,
                 'cost' => 0,
+                'enabled' => true,
             ];
         }
         return ['buys' => $buys];
@@ -131,6 +130,7 @@ class NowBoarding extends Table
                 'type' => 'ALLIANCE',
                 'alliance' => $alliance,
                 'cost' => 0,
+                'enabled' => true,
             ];
         }
         return ['buys' => $buys];
@@ -148,11 +148,13 @@ class NowBoarding extends Table
                     'type' => 'SEAT',
                     'seat' => 2,
                     'cost' => 0,
+                    'enabled' => true,
                 ],
                 [
                     'type' => 'SPEED',
                     'speed' => 4,
                     'cost' => 0,
+                    'enabled' => true,
                 ],
             ],
         ];
@@ -167,13 +169,12 @@ class NowBoarding extends Table
 
     function stMaintenance(): void
     {
-        $playerCount = $this->getPlayersNumber();
-        $hour = $this->getVar('hour');
-        if ($hour == 'FINALE') {
+        $hourInfo = $this->getHourInfo(true);
+        if ($hourInfo['hour'] == 'FINALE') {
             // End final round
             $this->endGame();
         } else {
-            if ($hour == 'PREFLIGHT') {
+            if ($hourInfo['hour'] == 'PREFLIGHT') {
                 // Create pax on the first turn
                 $this->createPax();
                 $pax = $this->getPaxByStatus('PORT');
@@ -182,19 +183,18 @@ class NowBoarding extends Table
                     'pax' => array_values($pax),
                     'location' => $this->getPaxLocations($pax),
                 ]);
-                $hour = $this->advanceHour($playerCount, $hour);
             } else {
                 // Add anger/complaints on subsequent turns
                 $this->angerPax();
             }
 
-            // Add new pax
-            if (!$this->addPax($playerCount, $hour)) {
-                // Advance hour and try again
-                $hour = $this->advanceHour($playerCount, $hour);
-                if ($hour != 'FINALE') {
-                    $this->addPax($playerCount, $hour);
+            // Advance the hour
+            $hourInfo = $this->advanceHour($hourInfo);
+            if ($hourInfo['hour'] != 'FINALE') {
+                if ($hourInfo['round'] == 1) {
+                    $this->addWeather();
                 }
+                $this->addPax($hourInfo);
             }
 
             $this->gamestate->nextState('prepare');
@@ -213,8 +213,9 @@ class NowBoarding extends Table
         $this->gamestate->setAllPlayersMultiactive();
         $this->gamestate->initializePrivateStateForAllActivePlayers();
         $this->DbQuery("UPDATE `plane` SET `speed_remain` = `speed`");
+        $this->DbQuery("INSERT INTO `plane_undo` SELECT * FROM `plane`");
         $planes = $this->getPlanesByIds();
-        $this->notifyAllPlayers('planes', $this->msg['prepare'], [
+        $this->notifyAllPlayers('planes', '', [
             'planes' => array_values($planes)
         ]);
     }
@@ -222,75 +223,75 @@ class NowBoarding extends Table
     function argPreparePrivate(int $playerId): array
     {
         $plane = $this->getPlaneById($playerId);
+        $cash = $plane->getCashRemain();
         $buys = [];
 
-        // Alliances?
-        $cash = $plane->getCashRemain();
-        $cost = 7;
-        if ($cash >= $cost) {
-            $claimed = $plane->alliances;
-            $playerCount = $this->getPlayersNumber();
-            if ($playerCount <= 3) {
-                // Exclude Seattle for 2-3 players
-                $claimed[] = 'SEA';
-            }
-            $possible = array_diff(array_keys(N_REF_ALLIANCE_COLOR), $claimed);
-            foreach ($possible as $alliance) {
-                $buys[] = [
-                    'type' => 'ALLIANCE',
-                    'alliance' => $alliance,
-                    'cost' => $cost,
-                ];
-            }
-        }
-
-        // Seat?
+        // Seat
         if ($plane->seat < 5) {
             $seat = $plane->seat + 1;
             $cost = N_REF_SEAT_COST[$seat];
-            if ($cash >= $cost) {
-                $buys[] = [
-                    'type' => 'SEAT',
-                    'seat' => $seat,
-                    'cost' => $cost,
-                ];
-            }
-        }
-
-        // Speed?
-        if ($plane->speed < 9) {
-            $speed = $plane->speed + 1;
-            $cost = N_REF_SPEED_COST[$speed];
-            if ($cash >= $cost) {
-                $buys[] = [
-                    'type' => 'SPEED',
-                    'speed' => $speed,
-                    'cost' => $cost,
-                ];
-            }
-        }
-
-        // Temp Seat?
-        $cost = 2;
-        if ($cash >= $cost && !$plane->tempSeat && $this->getOwnerName("temp_seat = 1") == null) {
             $buys[] = [
-                'type' => 'TEMP_SEAT',
+                'type' => 'SEAT',
+                'seat' => $seat,
                 'cost' => $cost,
+                'enabled' => $cash >= $cost,
             ];
         }
 
-        // Temp Speed?
+        // Temp Seat
+        $cost = 2;
+        if (!$plane->tempSeat && $this->getOwnerName("`temp_seat` = 1") == null) {
+            $buys[] = [
+                'type' => 'TEMP_SEAT',
+                'cost' => $cost,
+                'enabled' => $cash >= $cost,
+            ];
+        }
+
+        // Speed
+        if ($plane->speed < 9) {
+            $speed = $plane->speed + 1;
+            $cost = N_REF_SPEED_COST[$speed];
+            $buys[] = [
+                'type' => 'SPEED',
+                'speed' => $speed,
+                'cost' => $cost,
+                'enabled' => $cash >= $cost,
+            ];
+        }
+
+        // Temp Speed
         $cost = 1;
-        if ($cash >= $cost && !$plane->tempSpeed && $this->getOwnerName("temp_speed = 1") == null) {
+        if (!$plane->tempSpeed && $this->getOwnerName("`temp_speed` = 1") == null) {
             $buys[] = [
                 'type' => 'TEMP_SPEED',
                 'cost' => $cost,
+                'enabled' => $cash >= $cost,
+            ];
+        }
+
+        // Alliances
+        $cost = 7;
+        $claimed = $plane->alliances;
+        $playerCount = $this->getPlayersNumber();
+        if ($playerCount <= 3) {
+            // Exclude Seattle for 2-3 players
+            $claimed[] = 'SEA';
+        }
+        $possible = array_diff(array_keys(N_REF_ALLIANCE_COLOR), $claimed);
+        foreach ($possible as $alliance) {
+            $buys[] = [
+                'type' => 'ALLIANCE',
+                'alliance' => $alliance,
+                'cost' => $cost,
+                'enabled' => $cash >= $cost,
             ];
         }
 
         $args = [
             'buys' => $buys,
             'cash' => $cash,
+            'reset' => $plane->debt > 0,
         ];
 
         if ($plane->debt > 0) {
@@ -338,6 +339,9 @@ class NowBoarding extends Table
 
     function stReveal(): void
     {
+        // Drop the undo information
+        $this->DbQuery("DELETE FROM `plane_undo`");
+
         // Play the sound!
         $this->notifyAllPlayers('sound', '', [
             'sound' => 'chime',
@@ -373,24 +377,6 @@ class NowBoarding extends Table
     //////////// Actions (ajax)
     ////////////
 
-    function buildReset(): void
-    {
-        $playerId = $this->getCurrentPlayerId();
-        $this->DbQuery("DELETE FROM `plane` WHERE `player_id` = $playerId");
-        $this->DbQuery("INSERT INTO `plane` (`player_id`) VALUES ($playerId)");
-        $this->DbQuery("UPDATE `player` SET `player_color` = '000000' WHERE `player_id` = $playerId");
-        $this->reloadPlayersBasicInfos();
-
-        $plane = $this->getPlaneById($playerId);
-        $this->notifyAllPlayers('buildReset', $this->msg['buildReset'], [
-            'plane' => $plane,
-            'player_id' => $playerId,
-            'player_name' => $this->getCurrentPlayerName(),
-        ]);
-        $this->gamestate->setPlayersMultiactive([$playerId], '');
-        $this->gamestate->initializePrivateState($playerId);
-    }
-
     function buy(string $type, ?string $alliance): void
     {
         $playerId = $this->getCurrentPlayerId();
@@ -416,7 +402,7 @@ class NowBoarding extends Table
 
     private function buyAlliancePrimary(NPlane $plane, string $alliance): void
     {
-        $owner = $this->getOwnerName("alliance = '$alliance'");
+        $owner = $this->getOwnerName("`alliances` = '$alliance'");
         if ($owner != null) {
             throw new BgaUserException(sprintf($this->exMsg['allianceOwner'], $owner, $alliance));
         }
@@ -499,7 +485,7 @@ class NowBoarding extends Table
 
     private function buyTempSeat(NPlane $plane): void
     {
-        $owner = $this->getOwnerName("temp_seat = 1");
+        $owner = $this->getOwnerName("`temp_seat` = 1");
         if ($owner != null) {
             throw new BgaUserException(sprintf($this->exMsg['tempOwner'], $owner, $this->_('Temporary Seat')));
         }
@@ -560,7 +546,7 @@ class NowBoarding extends Table
 
     private function buyTempSpeed(NPlane $plane): void
     {
-        $owner = $this->getOwnerName("temp_speed = 1");
+        $owner = $this->getOwnerName("`temp_speed` = 1");
         if ($owner != null) {
             throw new BgaUserException(sprintf($this->exMsg['tempOwner'], $owner, $this->_('Temporary Speed')));
         }
@@ -585,6 +571,29 @@ class NowBoarding extends Table
         ]);
 
         $this->gamestate->nextPrivateState($plane->id, 'preparePrivate');
+    }
+
+    function reset(): void
+    {
+        $playerId = $this->getCurrentPlayerId();
+        $isBuild = $this->gamestate->state()['name'] == 'build';
+        if ($isBuild) {
+            $this->DbQuery("DELETE FROM `plane` WHERE `player_id` = $playerId");
+            $this->DbQuery("INSERT INTO `plane` (`player_id`) VALUES ($playerId)");
+            $this->DbQuery("UPDATE `player` SET `player_color` = '000000' WHERE `player_id` = $playerId");
+            $this->reloadPlayersBasicInfos();
+        } else {
+            $this->DbQuery("REPLACE INTO `plane` SELECT * FROM `plane_undo` WHERE `player_id` = $playerId");
+        }
+
+        $plane = $this->getPlaneById($playerId);
+        $this->notifyAllPlayers('planes', $this->msg['reset'], [
+            'planes' => [$plane],
+            'player_id' => $playerId,
+            'player_name' => $this->getCurrentPlayerName(),
+        ]);
+        $this->gamestate->setPlayersMultiactive([$playerId], '');
+        $this->gamestate->initializePrivateState($playerId);
     }
 
     function flightBegin(): void
@@ -786,6 +795,52 @@ class NowBoarding extends Table
     function setVar(string $key, string $value): void
     {
         $this->DbQuery("INSERT INTO `var` (`key`, `value`) VALUES ('$key', '$value') ON DUPLICATE KEY UPDATE `value` = '$value'");
+    }
+
+    function getHourInfo(bool $beforeAddPax = false): array
+    {
+        $playerCount = $this->getPlayersNumber();
+        $hour = $this->getVar('hour');
+        $hourInfo = [
+            'hour' => $hour,
+            'hourDesc' => $this->hourDesc[$hour],
+        ];
+        if ($hour == 'MORNING' || $hour == 'NOON' || $hour == 'NIGHT') {
+            $draw = $playerCount;
+            if ($hour == 'MORNING') {
+                $draw--;
+            } else if ($hour == 'NIGHT') {
+                $draw++;
+            }
+            $hourPax = N_REF_HOUR_PAX[$playerCount][$hour];
+            $remainPax = $this->countPaxByStatus($hour);
+            $total = $hourPax / $draw;
+            $round = ($hourPax - $remainPax) / $draw;
+            if ($beforeAddPax) {
+                $round++;
+            }
+
+            $hourInfo['draw'] = $draw;
+            $hourInfo['round'] = $round;
+            $hourInfo['total'] = $total;
+        }
+        return $hourInfo;
+    }
+
+    function advanceHour(array $hourInfo): array
+    {
+        $advance = $hourInfo['hour'] == 'PREFLIGHT' || $hourInfo['round'] > $hourInfo['total'];
+        if ($advance) {
+            $nextHour = N_REF_HOUR_NEXT[$hourInfo['hour']];
+            $this->setVar('hour', $nextHour);
+            $hourInfo = $this->getHourInfo(true);
+        }
+
+        // Notify hour
+        $hourInfo['i18n'] = ['hourDesc'];
+        $msg = $hourInfo['hour'] == 'FINALE' ? $this->msg['hourFinale'] : $this->msg['hour'];
+        $this->notifyAllPlayers('hour', $msg, $hourInfo);
+        return $hourInfo;
     }
 
     function getPlayerIds(): array
@@ -1016,7 +1071,7 @@ SQL);
         foreach ($planes as $plane) {
             foreach ($pax as $k => $x) {
                 [$destination, $origin, $cash] = $x;
-                if ($origin == $plane->alliance) {
+                if ($origin == $plane->alliances[0]) {
                     $sql = "INSERT INTO pax (`status`,`cash`, `destination`, `location`, `origin`) VALUES ('PORT', $cash, '$destination', '$origin', '$origin')";
                     $this->DbQuery($sql);
                     unset($pax[$k]);
@@ -1027,7 +1082,7 @@ SQL);
         }
 
         // Create queued passengers in each hour
-        $paxCounts = N_REF_PAX_COUNTS[$playerCount];
+        $paxCounts = N_REF_HOUR_PAX[$playerCount];
         foreach ($paxCounts as $status => $count) {
             $hourPax = array_splice($pax, $count * -1);
             foreach ($hourPax as $x) {
@@ -1038,17 +1093,11 @@ SQL);
         }
     }
 
-    function addPax(int $playerCount, string $hour): bool
+    function addPax(array $hourInfo)
     {
-        $paxCount = $playerCount;
-        if ($hour == 'MORNING') {
-            $paxCount--;
-        } else if ($hour == 'NIGHT') {
-            $paxCount++;
-        }
-        $pax = $this->getPaxByStatus($hour, $paxCount);
+        $pax = $this->getPaxByStatus($hourInfo['hour'], $hourInfo['draw']);
         if (empty($pax)) {
-            return false;
+            throw new BgaVisibleSystemException("addPax: No passengers to add [???]");
         }
 
         foreach ($pax as $x) {
@@ -1056,12 +1105,12 @@ SQL);
             $x->location = $x->origin;
             $this->DbQuery("UPDATE `pax` SET `location` = '{$x->location}', `status` = 'SECRET' WHERE `pax_id` = {$x->id}");
         }
+
         $this->notifyAllPlayers('pax', $this->msg['addPax'], [
             'count' => count($pax),
             'location' => $this->getPaxLocations($pax),
             'pax' => array_values($this->filterPax($pax)),
         ]);
-        return true;
     }
 
     function filterPax(array $pax): array
@@ -1085,55 +1134,6 @@ SQL);
         $locations = array_keys($uniq);
         sort($locations);
         return join(', ', $locations);
-    }
-
-    function advanceHour(int $playerCount, string $currentHour): ?string
-    {
-        $nextHour = N_REF_HOUR_NEXT[$currentHour];
-        $this->setVar('hour', $nextHour);
-        if ($nextHour == 'FINALE') {
-            // Begin final round
-            $this->notifyAllPlayers('finale', $this->msg['finale'], [
-                'hour' => $nextHour,
-                'hourDesc' => $this->hourDesc[$nextHour],
-            ]);
-        } else {
-            // Delete old weather
-            $map = $this->getMap();
-            $map->weather = [];
-            $this->DbQuery("DELETE FROM `weather`");
-
-            // Determine how much weather to add
-            $tokens = ['FAST', 'SLOW', 'FAST', 'SLOW', 'FAST', 'SLOW'];
-            if ($playerCount == 2) {
-                array_splice($tokens, 2);
-            } else if ($playerCount == 3) {
-                array_splice($tokens, 4);
-            }
-
-            // Select a (different) random route for each token
-            $desc = [];
-            $routeIds = array_rand($map->routes, count($tokens));
-            foreach ($routeIds as $routeId) {
-                // Select a random node on the route
-                $route = $map->routes[$routeId];
-                $node = $route[array_rand($route)];
-                $token = array_pop($tokens);
-                $this->DbQuery("INSERT INTO weather (`location`, `token`) VALUES ('{$node->id}', '$token')");
-                $map->weather[$node->id] = $token;
-                $desc[$token][] = substr_replace($routeId, '-', 3, 0);
-            }
-
-            // Notify
-            $this->notifyAllPlayers('weather', $this->msg['weather'], [
-                'fast' => join(', ', $desc['FAST']),
-                'hour' => $nextHour,
-                'hourDesc' => $this->hourDesc[$nextHour],
-                'slow' => join(', ', $desc['SLOW']),
-                'weather' => $map->weather,
-            ]);
-        }
-        return $nextHour;
     }
 
     function angerPax(): void
@@ -1181,12 +1181,50 @@ SQL);
         }
     }
 
+    function addWeather(): void
+    {
+        // Delete old weather
+        $map = $this->getMap();
+        $map->weather = [];
+        $this->DbQuery("DELETE FROM `weather`");
+
+        // Determine how much weather to add
+        $playerCount = $this->getPlayersNumber();
+        $tokens = ['FAST', 'SLOW', 'FAST', 'SLOW', 'FAST', 'SLOW'];
+        if ($playerCount == 2) {
+            array_splice($tokens, 2);
+        } else if ($playerCount == 3) {
+            array_splice($tokens, 4);
+        }
+
+        // Select a (different) random route for each token
+        $desc = [];
+        $routeIds = array_rand($map->routes, count($tokens));
+        foreach ($routeIds as $routeId) {
+            // Select a random node on the route
+            $route = $map->routes[$routeId];
+            $node = $route[array_rand($route)];
+            $token = array_pop($tokens);
+            $this->DbQuery("INSERT INTO weather (`location`, `token`) VALUES ('{$node->id}', '$token')");
+            $map->weather[$node->id] = $token;
+            $desc[$token][] = substr_replace($routeId, '-', 3, 0);
+        }
+
+        // Notify
+        $this->notifyAllPlayers('weather', $this->msg['weather'], [
+            'routeFast' => join(', ', $desc['FAST']),
+            'routeSlow' => join(', ', $desc['SLOW']),
+            'weather' => $map->weather,
+        ]);
+    }
+
     function endGame(): void
     {
         // End final round
         // File a complaint for every 2 pax
         $count = $this->countPaxByStatus(['PORT', 'SEAT']);
         $complaint = floor($count / 2);
+        $this->DbQuery("UPDATE `pax` SET `status` = 'COMPLAINT' WHERE `status` IN ('PORT', 'SEAT') ORDER BY `pax_id` LIMIT $complaint");
         $total = $this->countPaxByStatus('COMPLAINT');
         if ($complaint > 0) {
             $this->notifyAllPlayers('complaint', $this->msg['complaintFinale'], [

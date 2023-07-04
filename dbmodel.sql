@@ -35,6 +35,8 @@ CREATE TABLE `plane` (
     PRIMARY KEY (`player_id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
 
+CREATE TABLE `plane_undo` AS SELECT * FROM `plane`;
+
 CREATE TABLE `var` (
     `key` VARCHAR(50) NOT NULL,
     `value` VARCHAR(50),

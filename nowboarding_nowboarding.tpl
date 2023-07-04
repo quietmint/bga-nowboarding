@@ -14,12 +14,12 @@
 <audio id="audiosrc_o_nowboarding_walkway" src="{GAMETHEMEURL}img/walkway.ogg" preload="none" autobuffer></audio>
 
 <div id="nbscale">
+  <div id="manifests-top" class="manifests"></div>
   <div id="nbmap" class="map">
     <div id="testpoint" class="test marker node"></div>
-    <div id="manifests-top"></div>
-    <div id="manifests-right"></div>
-    <div id="manifests-bottom"></div>
+    <div id="manifests-right" class="manifests"></div>
   </div>
+  <div id="manifests-bottom" class="manifests"></div>
 </div>
 
 {OVERALL_GAME_FOOTER}

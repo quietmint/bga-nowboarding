@@ -9,6 +9,7 @@ const N_STATE_BUILD_UPGRADE = 23;
 const N_STATE_MAINTENANCE = 3;
 const N_STATE_PREPARE = 4;
 const N_STATE_PREPARE_PRIVATE = 41;
+const N_STATE_PREPARE_PAY = 42;
 const N_STATE_REVEAL = 5;
 const N_STATE_FLY = 6;
 const N_STATE_FLY_PRIVATE = 61;
@@ -26,7 +27,7 @@ const N_REF_ALLIANCE_COLOR = [
     'SEA' => '1d4ed8', // blue
 ];
 
-const N_REF_PAX_COUNTS = [
+const N_REF_HOUR_PAX = [
     2 => ['MORNING' => 3, 'NOON' => 10, 'NIGHT' => 27],
     3 => ['MORNING' => 6, 'NOON' => 15, 'NIGHT' => 32],
     4 => ['MORNING' => 12, 'NOON' => 20, 'NIGHT' => 35],

@@ -15,11 +15,11 @@ $machinestates = [
     N_STATE_BUILD => [
         'name' => 'build',
         'action' => 'stInitPrivate',
-        'description' => clienttranslate('Wait for others to finish'),
+        'description' => clienttranslate('Wait for others to choose'),
         'descriptionmyturn' => '',
         'initialprivate' => N_STATE_BUILD_ALLIANCE,
         'possibleactions' => [
-            'buildReset',
+            'reset',
         ],
         'transitions' => [
             'maintenance' => N_STATE_MAINTENANCE,
@@ -46,7 +46,7 @@ $machinestates = [
         'args' => 'argBuildAlliance2',
         'descriptionmyturn' => clienttranslate('Choose an additional alliance'),
         'possibleactions' => [
-            'buildReset',
+            'reset',
             'buy',
         ],
         'transitions' => [
@@ -61,7 +61,7 @@ $machinestates = [
         'args' => 'argBuildUpgrade',
         'descriptionmyturn' => clienttranslate('Choose a starting upgrade'),
         'possibleactions' => [
-            'buildReset',
+            'reset',
             'buy',
         ],
         'transitions' => [
@@ -88,6 +88,9 @@ $machinestates = [
         'description' => clienttranslate('Wait for others to prepare'),
         'descriptionmyturn' => '',
         'initialprivate' => N_STATE_PREPARE_PRIVATE,
+        'possibleactions' => [
+            'reset',
+        ],
         'transitions' => [
             'reveal' => N_STATE_REVEAL,
         ],
@@ -102,6 +105,23 @@ $machinestates = [
         'possibleactions' => [
             'begin',
             'buy',
+            'reset',
+        ],
+        'transitions' => [
+            'preparePrivate' => N_STATE_PREPARE_PRIVATE,
+            'preparePay' => N_STATE_PREPARE_PAY,
+        ],
+        'type' => 'private',
+    ],
+
+    N_STATE_PREPARE_PAY => [
+        'name' => 'preparePay',
+        'args' => 'argPreparePay',
+        'descriptionmyturn' => clienttranslate('Pay for your purchases'),
+        'possibleactions' => [
+            'begin',
+            'pay',
+            'reset',
         ],
         'transitions' => [
             'preparePrivate' => N_STATE_PREPARE_PRIVATE,
