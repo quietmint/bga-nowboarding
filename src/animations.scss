@@ -2,7 +2,7 @@
   content: "";
   background: white;
   display: block;
-  animation: ping 4s cubic-bezier(0, 0, 0.2, 1) infinite;
+  animation: ping 3s cubic-bezier(0, 0, 0.2, 1) infinite;
   border-radius: 100%;
   position: absolute;
   top: 0;
@@ -11,8 +11,12 @@
   bottom: 0;
 }
 
+.is-danger.pinging::before {
+  background: $color-red-500;
+}
+
 @keyframes ping {
-  33%,
+  50%,
   100% {
     transform: scale(2);
     opacity: 0;
@@ -35,15 +39,5 @@
   }
   50% {
     transform: rotate(-3deg);
-  }
-}
-
-@keyframes grow {
-  0%,
-  100% {
-    height: 125px;
-  }
-  50% {
-    height: 300px;
   }
 }

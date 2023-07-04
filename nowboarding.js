@@ -30,7 +30,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         MIA: "manifests-bottom",
       };
       for (const node of gamedatas.map.nodes) {
-        this.mapEl.insertAdjacentHTML("beforeend", `<div id="node-${node}" class="marker node node-${node}"></div>`);
+        this.renderMapNode(node);
         if (node.length == 3) {
           this.renderMapManifest(node, manifestContainer[node]);
         }
@@ -158,13 +158,15 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       if (log && args && !args.processed) {
         for (const k in args) {
           if (k == "alliance") {
-            args.alliance = `<span class="nbtag alliance-${args[k]}"><i class="icon logo-${args[k]}"></i> ${args[k]}</span>`;
+            args[k] = `<span class="nbtag alliance-${args[k]}"><i class="icon logo-${args[k]}"></i> ${args[k]}</span>`;
           } else if (k == "anger") {
-            args.anger = `<span class="nbtag anger-${args[k]}"><i class="icon anger-${args[k]}"></i> ${args[k]}</span>`;
+            args[k] = `<span class="nbtag anger-${args[k]}"><i class="icon anger-${args[k]}"></i> ${args[k]}</span>`;
           } else if (k == "seat") {
-            args.seat = `<span class="nbtag seat"><i class="icon seat"></i> ${args[k]}</span>`;
+            args[k] = `<span class="nbtag seat"><i class="icon seat"></i> ${args[k]}</span>`;
           } else if (k == "speed") {
-            args.speed = `<span class="nbtag speed"><i class="icon speed"></i> ${args[k]}</span>`;
+            args[k] = `<span class="nbtag speed"><i class="icon speed"></i> ${args[k]}</span>`;
+          } else if (k == "temp") {
+            args[k] = `<span class="nbtag ${args.tempIcon}"><i class="icon ${args.tempIcon}"></i> ${args[k]}</span>`;
           } else if (k == "complaint") {
             args[k] = `<span class="nbtag complaint"><i class="icon complaint"></i> ${args[k]}</span>`;
           } else if (k == "cash" || k == "count" || k == "destination" || k == "fast" || k == "location" || k == "origin" || k == "route" || k == "slow") {
@@ -381,7 +383,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         if (pax.status == "SEAT" && pax.playerId == this.player_id) {
           this.takeAction("deplane", { paxId: pax.id }).catch((error) => {
             if (error == "deplaneConfirm") {
-              const msg = this.format_string_recursive(_("This passenger boarded your plane in ${location}. Returning them to the same airport will preserve their ${anger} anger."), {
+              const msg = this.format_string_recursive(_("This passenger will remain angry ${anger} if you return them to ${location} where they just boarded your plane"), {
                 anger: pax.anger,
                 location: pax.location,
               });
@@ -391,7 +393,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
             }
           });
         } else {
-          this.takeAction("enplane", { paxId: pax.id });
+          this.takeAction("board", { paxId: pax.id });
         }
       }
     },
@@ -456,12 +458,12 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     },
 
     renderPlane(plane) {
-      console.log(`✈️ Create plane ${plane.id} (${plane.alliance}) at ${plane.location}`);
-      this.swapClass(`overall_player_board_${plane.id}`, "panel-", `panel-${plane.alliance}`);
+      console.log(`✈️ Create plane ${plane.id} at ${plane.location}`);
+      this.swapClass(`overall_player_board_${plane.id}`, "panel-", `panel-${plane.alliances[0]}`);
       this.mapEl.insertAdjacentHTML(
         "beforeend",
         `<div id="plane-${plane.id}" class="plane node node-${plane.location}">
-          <div id="planeicon-${plane.id}" class="icon plane-${plane.alliance}"></div>
+          <div id="planeicon-${plane.id}" class="icon plane-${plane.alliances[0]}"></div>
         </div>`
       );
 
@@ -475,12 +477,12 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     deletePlane(plane) {
       console.log(`❌ Delete plane ${plane.id}`);
       this.getElement(`plane-${plane.id}`)?.remove();
-      document.querySelectorAll(`#gauges-${plane.id} .alliance`).forEach((el) => el.remove());
+      document.getElementById(`alliances-${plane.id}`).textContent = "";
       this.swapClass(`overall_player_board_${plane.id}`, "panel-");
     },
 
     movePlane(plane) {
-      console.log(`✈️ Move plane ${plane.id} (${plane.alliance}) to ${plane.location}`);
+      console.log(`✈️ Move plane ${plane.id} to ${plane.location}`);
       const rotation = this.getRotation(plane);
       document.querySelector(`#plane-${plane.id} .icon`).style.transform = `rotate(${rotation}deg)`;
       this.swapClass(`plane-${plane.id}`, "node-", `node-${plane.location}`);
@@ -506,9 +508,34 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     <div class="lbl">${_("Time")}</div>
     <div class="nbtag hour"><i class="icon"></i> <span></span></div>
   </div>
+  <div class="section">
+    <div class="lbl">${_("Map Size")}</div>
+    <div class="nbtag"><input type="range" id="nbrange" min="40" max="100" step="2" value="100"></div>
+  </div>
 </div>`
         );
         commonEl = document.getElementById("nbcommon");
+
+        const nbscale = document.getElementById("nbscale");
+        const nbrange = document.getElementById("nbrange");
+        nbrange.addEventListener("input", (ev) => {
+          console.log(`Changed the slider to ${nbrange.value}%`);
+          nbscale.style.width = `${nbrange.value}%`;
+          try {
+            localStorage.setItem("nowboarding.scale", nbrange.value);
+          } catch (e) {
+            // Local storage unavailable
+          }
+        });
+        try {
+          const storageValue = localStorage.getItem("nowboarding.scale");
+          if (storageValue) {
+            nbrange.value = storageValue;
+            nbrange.dispatchEvent(new Event("input"));
+          }
+        } catch (e) {
+          // Local storage unavailable
+        }
       }
 
       const hourEl = commonEl.querySelector(".hour");
@@ -521,6 +548,23 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     },
 
     renderPlaneGauges(plane) {
+      let alliancesEl = document.getElementById(`alliances-${plane.id}`);
+      if (alliancesEl == null) {
+        const parentEl = document.getElementById(`player_board_${plane.id}`);
+        parentEl.insertAdjacentHTML("beforeend", `<div id="alliances-${plane.id}" class="gauges"></div>`);
+        alliancesEl = document.getElementById(`alliances-${plane.id}`);
+      }
+
+      // Add/remove alliance tags
+      if (plane.alliances) {
+        for (const alliance of plane.alliances) {
+          const allianceEl = alliancesEl.querySelector(`.alliance-${alliance}`);
+          if (!allianceEl) {
+            alliancesEl.insertAdjacentHTML("beforeend", `<div class="nbtag alliance alliance-${alliance}"><i class="icon logo-${alliance}"></i> ${alliance}</div>`);
+          }
+        }
+      }
+
       let gaugesEl = document.getElementById(`gauges-${plane.id}`);
       if (gaugesEl == null) {
         const parentEl = document.getElementById(`player_board_${plane.id}`);
@@ -528,6 +572,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           "beforeend",
           `<div id="gauges-${plane.id}" class="gauges">
   <div class="nbtag speed"><i class="icon speed"></i> <span id="gauge-speed-${plane.id}"></span></div>
+  <div class="nbtag cash" id="gauge-cash-${plane.id}"></div>
 </div>`
         );
         gaugesEl = document.getElementById(`gauges-${plane.id}`);
@@ -537,15 +582,9 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       const speedEl = document.getElementById(`gauge-speed-${plane.id}`);
       speedEl.textContent = `${plane.speedRemain}/${plane.speed}`;
 
-      // Add/remove alliance tags
-      if (plane.alliances) {
-        for (const alliance of plane.alliances) {
-          const allianceEl = gaugesEl.querySelector(`.alliance-${alliance}`);
-          if (!allianceEl) {
-            gaugesEl.insertAdjacentHTML("afterbegin", `<div class="nbtag alliance alliance-${alliance}"><i class="icon logo-${alliance}"></i> ${alliance}</div>`);
-          }
-        }
-      }
+      // Update cash
+      const cashEl = document.getElementById(`gauge-cash-${plane.id}`);
+      cashEl.textContent = `\$${plane.cashRemain}`;
 
       // Add/remove temp seat tag
       const tempSeatEl = document.getElementById(`gauge-temp-seat-${plane.id}`);
@@ -614,6 +653,42 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
   <div id="paxlist-${manifestId}" class="paxlist"></div>
 </div>`
       );
+      const manifestEl = document.getElementById(`manifest-${manifestId}`);
+      manifestEl.addEventListener("mouseenter", (ev) => {
+        this.onEnterMapManifest(manifestId);
+      });
+      manifestEl.addEventListener("mouseleave", (ev) => {
+        this.onLeaveMapManifest(manifestId);
+      });
+    },
+
+    renderMapNode(node) {
+      this.mapEl.insertAdjacentHTML("beforeend", `<div id="node-${node}" class="marker node node-${node}"></div>`);
+      if (node.length == 3) {
+        const nodeEl = document.getElementById(`node-${node}`);
+        nodeEl.addEventListener("mouseenter", (ev) => {
+          this.onEnterMapManifest(node);
+        });
+        nodeEl.addEventListener("mouseleave", (ev) => {
+          this.onLeaveMapManifest(node);
+        });
+      }
+    },
+
+    onEnterMapManifest(manifestId) {
+      console.log(`onEnterMapManifest ${manifestId}`);
+      const manifestEl = document.getElementById(`manifest-${manifestId}`);
+      manifestEl.classList.add("is-active");
+      const markerEl = document.querySelector(`#nbmap .marker.node.node-${manifestId}`);
+      markerEl.classList.add("is-active", "pinging");
+    },
+
+    onLeaveMapManifest(manifestId) {
+      console.log(`onLeaveMapManifest for ${manifestId}`);
+      const manifestEl = document.getElementById(`manifest-${manifestId}`);
+      manifestEl.classList.remove("is-active");
+      const markerEl = document.querySelector(`#nbmap .marker.node.node-${manifestId}`);
+      markerEl.classList.remove("is-active", "pinging");
     },
 
     renderPax(pax) {
@@ -675,11 +750,13 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
       vipEl.textContent = isVip ? "VIP/FIRST IN LINE" : "";
       if (pax.status == "SECRET") {
+        paxEl.style.order = 5;
         paxEl.classList.add("is-secret");
         angerIconEl.classList.add("spinner");
         angerCountEl.textContent = "?";
         originEl.textContent = _("WELCOME ABOARD");
       } else {
+        paxEl.style.order = 4 - pax.anger;
         paxEl.classList.remove("is-secret");
         cashEl.textContent = `$${pax.cash}`;
         originEl.textContent = `${pax.origin} » `;

@@ -69,7 +69,12 @@ class NowBoarding extends Table
 
     function getGameProgression(): int
     {
-        return 0;
+        $paxTotal = $this->countPaxByStatus();
+        if ($paxTotal == 0) {
+            return 0;
+        }
+        $paxRemain = $this->countPaxByStatus(['MORNING', 'NOON', 'NIGHT']);
+        return ($paxTotal - $paxRemain) / $paxTotal * 100;
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -93,7 +98,7 @@ class NowBoarding extends Table
     function argBuildAlliance(int $playerId): array
     {
         $buys = [];
-        $claimed = $this->getObjectListFromDB("SELECT `alliance` FROM `plane` WHERE `alliance` IS NOT NULL AND `player_id` != $playerId", true);
+        $claimed = $this->getObjectListFromDB("SELECT `alliances` FROM `plane` WHERE `alliances` IS NOT NULL AND `player_id` != $playerId", true);
         $playerCount = $this->getPlayersNumber();
         if ($playerCount <= 3) {
             // Exclude Seattle for 2-3 players
@@ -117,7 +122,7 @@ class NowBoarding extends Table
     function argBuildAlliance2(int $playerId): array
     {
         $buys = [];
-        $claimed = $this->getObjectListFromDB("SELECT `alliance` FROM `plane` WHERE `player_id` = $playerId", true);
+        $claimed = $this->getObjectListFromDB("SELECT `alliances` FROM `plane` WHERE `player_id` = $playerId", true);
         // Exclude Seattle for 2-3 players
         $claimed[] = 'SEA';
         $possible = array_diff(array_keys(N_REF_ALLIANCE_COLOR), $claimed);
@@ -165,95 +170,35 @@ class NowBoarding extends Table
         $playerCount = $this->getPlayersNumber();
         $hour = $this->getVar('hour');
         if ($hour == 'FINALE') {
-            // File a complaint for every 2 pax
-            $count = $this->countPaxByStatus(['PORT', 'SEAT']);
-            $complaint = floor($count / 2);
-            $total = $this->countPaxByStatus('COMPLAINT');
-            if ($complaint > 0) {
-                $this->notifyAllPlayers('complaint', $this->msg['complaintFinale'], [
-                    'complaint' => $complaint,
-                    'count' => $count,
-                    'total' => $total,
-                ]);
-            }
-
-            // Determine win/lose
-            if ($total >= 3) {
-                $this->notifyAllPlayers('message', $this->msg['endLose'], [
-                    'complaint' => $total,
-                ]);
-            } else {
-                $this->notifyAllPlayers('message', $this->msg['endWin'], []);
-            }
-            $this->gamestate->nextState('end');
-            return;
-        }
-
-        if ($hour == 'PREFLIGHT') {
-            // Create pax on the first turn
-            $this->createPax();
-            $pax = $this->getPaxByStatus('PORT');
-            $this->notifyAllPlayers('pax', $this->msg['addPax'], [
-                'count' => count($pax),
-                'pax' => array_values($pax),
-            ]);
-            $hour = $this->advanceHour($playerCount, $hour);
+            // End final round
+            $this->endGame();
         } else {
-            // Add anger/complaints
-            $pax = $this->getPaxByStatus('PORT');
-            if (!empty($pax)) {
-                $anger = [];
-                $complaint = [];
-                foreach ($pax as $x) {
-                    $x->anger++;
-                    if ($x->anger < 4) {
-                        // Increase anger
-                        $this->DbQuery("UPDATE `pax` SET `anger` = {$x->anger} WHERE `pax_id` = {$x->id}");
-                        $anger[] = $x->location;
-                    } else {
-                        // File complaint
-                        $this->DbQuery("UPDATE `pax` SET `anger` = 4, `status` = 'COMPLAINT' WHERE `pax_id` = {$x->id}");
-                        $complaint[] = $x->location;
-                    }
-                }
-                if (!empty($anger)) {
-                    $this->notifyAllPlayers('message', $this->msg['anger'], [
-                        'count' => count($anger),
-                    ]);
-                }
-                if (!empty($complaint)) {
-                    $uniq = array_unique($complaint);
-                    sort($uniq);
-                    $total = $this->countPaxByStatus('COMPLAINT');
-                    $this->notifyAllPlayers('complaint', $this->msg['complaint'], [
-                        'complaint' => count($complaint),
-                        'location' => join(', ', $uniq),
-                        'total' => $total,
-                    ]);
-                    if ($total >= 3) {
-                        $this->notifyAllPlayers('message', $this->msg['endLose'], [
-                            'complaint' => $total,
-                        ]);
-                        $this->gamestate->nextState('end');
-                        return;
-                    }
-                }
-                $this->notifyAllPlayers('pax', '', [
+            if ($hour == 'PREFLIGHT') {
+                // Create pax on the first turn
+                $this->createPax();
+                $pax = $this->getPaxByStatus('PORT');
+                $this->notifyAllPlayers('pax', $this->msg['addPax'], [
+                    'count' => count($pax),
                     'pax' => array_values($pax),
+                    'location' => $this->getPaxLocations($pax),
                 ]);
+                $hour = $this->advanceHour($playerCount, $hour);
+            } else {
+                // Add anger/complaints on subsequent turns
+                $this->angerPax();
             }
-        }
 
-        // Add new pax
-        if (!$this->addPax($playerCount, $hour)) {
-            // Advance hour and try again
-            $hour = $this->advanceHour($playerCount, $hour);
-            if ($hour != 'FINALE') {
-                $this->addPax($playerCount, $hour);
+            // Add new pax
+            if (!$this->addPax($playerCount, $hour)) {
+                // Advance hour and try again
+                $hour = $this->advanceHour($playerCount, $hour);
+                if ($hour != 'FINALE') {
+                    $this->addPax($playerCount, $hour);
+                }
             }
-        }
 
-        $this->gamestate->nextState('prepare');
+            $this->gamestate->nextState('prepare');
+        }
     }
 
     /*
@@ -280,11 +225,10 @@ class NowBoarding extends Table
         $buys = [];
 
         // Alliances?
-        $debt = $plane->debt;
-        $cash = $plane->cash - $debt;
+        $cash = $plane->getCashRemain();
         $cost = 7;
         if ($cash >= $cost) {
-            $claimed = $this->getObjectListFromDB("SELECT `alliance` FROM `plane` WHERE `player_id` = $playerId", true);
+            $claimed = $plane->alliances;
             $playerCount = $this->getPlayersNumber();
             if ($playerCount <= 3) {
                 // Exclude Seattle for 2-3 players
@@ -348,9 +292,14 @@ class NowBoarding extends Table
             'buys' => $buys,
             'cash' => $cash,
         ];
-        if ($debt > 0) {
-            $args['debt'] = $debt;
+
+        if ($plane->debt > 0) {
+            // Did we overpay?
+            $wallet = $this->getPaxWallet($plane->id);
+            self::debug("wallet for player {$plane->id} : " . json_encode($wallet) . " // ");
+            $args['wallet'] = $wallet;
         }
+
         return $args;
 
 
@@ -473,10 +422,9 @@ class NowBoarding extends Table
         }
 
         $color = N_REF_ALLIANCE_COLOR[$alliance];
-        $plane->alliance = $alliance;
         $plane->alliances = [$alliance];
         $plane->location = $alliance;
-        $this->DbQuery("UPDATE `plane` SET `alliance` = '{$plane->alliance}', `alliances` = '{$plane->alliance}', `location` = '{$plane->location}' WHERE `player_id` = {$plane->id}");
+        $this->DbQuery("UPDATE `plane` SET `alliances` = '{$plane->getAlliancesSql()}', `location` = '{$plane->location}' WHERE `player_id` = {$plane->id}");
         $this->DbQuery("UPDATE `player` SET `player_color` = '$color' WHERE `player_id` = {$plane->id}");
         $this->reloadPlayersBasicInfos();
 
@@ -499,15 +447,14 @@ class NowBoarding extends Table
             throw new BgaUserException(sprintf($this->exMsg['allianceDuplicate'], $alliance));
         }
         $cost = $isBuild ? 0 : 7;
-        $cash = $plane->cash - $plane->debt;
+        $cash = $plane->getCashRemain();
         if ($cash < $cost) {
             throw new BgaUserException(sprintf($this->exMsg['noCash'], "\${$cost}", "\${$cash}"));
         }
 
         $plane->debt += $cost;
         $plane->alliances[] = $alliance;
-        $alliances = join(',', $plane->alliances);
-        $this->DbQuery("UPDATE `plane` SET `debt` = {$plane->debt}, `alliances` = '$alliances' WHERE `player_id` = {$plane->id}");
+        $this->DbQuery("UPDATE `plane` SET `debt` = {$plane->debt}, `alliances` = '{$plane->getAlliancesSql()}' WHERE `player_id` = {$plane->id}");
 
         $this->notifyAllPlayers('planes', $this->msg['alliance'], [
             'alliance' => $alliance,
@@ -526,7 +473,7 @@ class NowBoarding extends Table
         }
         $isBuild = $this->gamestate->state()['name'] == 'build';
         $cost = $isBuild ? 0 : N_REF_SEAT_COST[$plane->seat + 1];
-        $cash = $plane->cash - $plane->debt;
+        $cash = $plane->getCashRemain();
         if ($cash < $cost) {
             throw new BgaUserException(sprintf($this->exMsg['noCash'], "\${$cost}", "\${$cash}"));
         }
@@ -554,10 +501,10 @@ class NowBoarding extends Table
     {
         $owner = $this->getOwnerName("temp_seat = 1");
         if ($owner != null) {
-            throw new BgaUserException(sprintf($this->exMsg['tempSeatOwner'], $owner));
+            throw new BgaUserException(sprintf($this->exMsg['tempOwner'], $owner, $this->_('Temporary Seat')));
         }
         $cost = 2;
-        $cash = $plane->cash - $plane->debt;
+        $cash = $plane->getCashRemain();
         if ($cash < $cost) {
             throw new BgaUserException(sprintf($this->exMsg['noCash'], "\${$cost}", "\${$cash}"));
         }
@@ -566,10 +513,14 @@ class NowBoarding extends Table
         $plane->tempSeat = true;
         $this->DbQuery("UPDATE `plane` SET `debt` = {$plane->debt}, `temp_seat` = 1 WHERE `player_id` = {$plane->id}");
 
-        $this->notifyAllPlayers('planes', $this->msg['tempSeat'], [
+        $this->notifyAllPlayers('planes', $this->msg['temp'], [
+            'i18n' => ['temp'],
+            'preserve' => ['tempIcon'],
             'planes' => [$plane],
             'player_id' => $plane->id,
             'player_name' => $plane->name,
+            'temp' => clienttranslate('Temporary Seat'),
+            'tempIcon' => 'speed',
         ]);
 
         $this->gamestate->nextPrivateState($plane->id, 'preparePrivate');
@@ -582,7 +533,7 @@ class NowBoarding extends Table
         }
         $isBuild = $this->gamestate->state()['name'] == 'build';
         $cost = $isBuild ? 0 : N_REF_SPEED_COST[$plane->speed + 1];
-        $cash = $plane->cash - $plane->debt;
+        $cash = $plane->getCashRemain();
         if ($cash < $cost) {
             throw new BgaUserException(sprintf($this->exMsg['noCash'], "\${$cost}", "\${$cash}"));
         }
@@ -611,10 +562,10 @@ class NowBoarding extends Table
     {
         $owner = $this->getOwnerName("temp_speed = 1");
         if ($owner != null) {
-            throw new BgaUserException(sprintf($this->exMsg['tempSpeedOwner'], $owner));
+            throw new BgaUserException(sprintf($this->exMsg['tempOwner'], $owner, $this->_('Temporary Speed')));
         }
         $cost = 1;
-        $cash = $plane->cash - $plane->debt;
+        $cash = $plane->getCashRemain();
         if ($cash < $cost) {
             throw new BgaUserException(sprintf($this->exMsg['noCash'], "\${$cost}", "\${$cash}"));
         }
@@ -623,10 +574,14 @@ class NowBoarding extends Table
         $plane->tempSpeed = true;
         $this->DbQuery("UPDATE `plane` SET `debt` = {$plane->debt}, `temp_speed` = 1 WHERE `player_id` = {$plane->id}");
 
-        $this->notifyAllPlayers('planes', $this->msg['tempSpeed'], [
+        $this->notifyAllPlayers('planes', $this->msg['temp'], [
+            'i18n' => ['temp'],
+            'preserve' => ['tempIcon'],
             'planes' => [$plane],
             'player_id' => $plane->id,
             'player_name' => $plane->name,
+            'temp' => clienttranslate('Temporary Speed'),
+            'tempIcon' => 'speed',
         ]);
 
         $this->gamestate->nextPrivateState($plane->id, 'preparePrivate');
@@ -658,6 +613,20 @@ class NowBoarding extends Table
         $plane->origin = $move->getOrigin();
         $plane->location = $location;
         $plane->speedRemain -= $move->fuel;
+        if ($plane->speedRemain == -1 && $plane->tempSpeed) {
+            $plane->tempSpeed = false;
+            $this->DbQuery("UPDATE `plane` SET `temp_speed` = NULL WHERE `player_id` = {$plane->id}");
+            $this->notifyAllPlayers('message', $this->msg['tempUsed'], [
+                'i18n' => ['temp'],
+                'preserve' => ['tempIcon'],
+                'player_id' => $plane->id,
+                'player_name' => $plane->name,
+                'temp' => clienttranslate('Temporary Speed'),
+                'tempIcon' => 'speed',
+            ]);
+        } else if ($plane->speedRemain < 0) {
+            throw new BgaVisibleSystemException("move: $plane not enough fuel to reach $location with speedRemain={$plane->speedRemain}, tempSpeed={$plane->getTempSpeedSql()} [???]");
+        }
         $this->DbQuery("UPDATE `plane` SET `location` = '{$plane->location}', `origin` = '{$plane->origin}', `speed_remain` = {$plane->speedRemain} WHERE `player_id` = {$plane->id}");
 
         $this->notifyAllPlayers('move', $this->msg['move'], [
@@ -672,7 +641,7 @@ class NowBoarding extends Table
         $this->gamestate->nextPrivateState($plane->id, 'flyPrivate');
     }
 
-    function enplane(int $paxId): void
+    function board(int $paxId): void
     {
         $playerId = $this->getCurrentPlayerId();
         $plane = $this->getPlaneById($playerId);
@@ -681,13 +650,13 @@ class NowBoarding extends Table
 
         if ($x->status == 'SEAT') {
             if ($x->playerId == $playerId) {
-                throw new BgaVisibleSystemException("enplane: $x player ID is already $playerId [???]");
+                throw new BgaVisibleSystemException("board: $x player ID is already $playerId [???]");
             }
             // Transfer from another plane
             // Must be together at an airport
             $other = $this->getPlaneById($x->playerId);
             if ($other->location != $plane->location || strlen($plane->location) != 3) {
-                throw new BgaUserException(sprintf($this->exMsg['enplaneTransfer'], $other->name));
+                throw new BgaUserException(sprintf($this->exMsg['boardTransfer'], $other->name));
             }
             // Implicit deplane
             $planeIds[] = $other->id;
@@ -704,13 +673,13 @@ class NowBoarding extends Table
         } else if ($x->status == 'PORT') {
             // Pickup from airport
             if (strlen($x->location) != 3) {
-                throw new BgaVisibleSystemException("enplane: $x location is not at an airport [???]");
+                throw new BgaVisibleSystemException("board: $x location is not at an airport [???]");
             }
             if ($x->location != $plane->location) {
-                throw new BgaUserException(sprintf($this->exMsg['enplanePort'], $x->location));
+                throw new BgaUserException(sprintf($this->exMsg['boardPort'], $x->location));
             }
         } else {
-            throw new BgaVisibleSystemException("enplane: $x status is invalid [???]");
+            throw new BgaVisibleSystemException("board: $x status is invalid [???]");
         }
 
         if ($plane->seatRemain <= 0) {
@@ -718,11 +687,15 @@ class NowBoarding extends Table
                 throw new BgaUserException($this->exMsg['noSeat']);
             }
             $plane->tempSeat = false;
-            $this->DbQuery("UPDATE `plane` SET `temp_seat` = null WHERE `player_id` = {$plane->id}");
-            $this->notifyAllPlayers('planes', $this->msg['tempSeatReturn'], [
+            $this->DbQuery("UPDATE `plane` SET `temp_seat` = NULL WHERE `player_id` = {$plane->id}");
+            $this->notifyAllPlayers('planes', $this->msg['tempUsed'], [
+                'i18n' => ['temp'],
+                'preserve' => ['tempIcon'],
                 'planes' => [$plane],
                 'player_id' => $plane->id,
                 'player_name' => $plane->name,
+                'temp' => clienttranslate('Temporary Seat'),
+                'tempIcon' => 'seat',
             ]);
         }
 
@@ -737,7 +710,7 @@ class NowBoarding extends Table
             'planes' => array_values($planes)
         ]);
 
-        $this->notifyAllPlayers('pax', $this->msg['enplane'], [
+        $this->notifyAllPlayers('pax', $this->msg['board'], [
             'location' => $x->location,
             'pax' => [$x],
             'player_id' => $plane->id,
@@ -787,8 +760,7 @@ class NowBoarding extends Table
             $msg = $this->msg['deplane'];
             $args['location'] = $x->location;
         }
-        $playerIdNull = $x->playerId ?? 'NULL';
-        $this->DbQuery("UPDATE `pax` SET `anger` = {$x->anger}, `location` = '{$x->location}', `player_id` = $playerIdNull, `status` = '{$x->status}' WHERE `pax_id` = {$x->id}");
+        $this->DbQuery("UPDATE `pax` SET `anger` = {$x->anger}, `location` = '{$x->location}', `player_id` = {$x->getPlayerIdSql()}, `status` = '{$x->status}' WHERE `pax_id` = {$x->id}");
 
         // Update UI empty seats
         self::debug("Refresh plane for $playerId // ");
@@ -930,13 +902,22 @@ SQL);
         }, $this->getCollectionFromDb($sql));
     }
 
-    function countPaxByStatus($status): int
+    function countPaxByStatus($status = null): int
     {
         if (is_array($status)) {
             $status = join("', '", $status);
         }
-        $sql = "SELECT COUNT(1) FROM `pax` WHERE `status` IN ('$status') ORDER BY `pax_id`";
+        $sql = "SELECT COUNT(1) FROM `pax`";
+        if (!empty($status)) {
+            $sql .= " WHERE `status` IN ('$status')";
+        }
         return intval($this->getUniqueValueFromDB($sql));
+    }
+
+    function getPaxWallet(int $playerId): array
+    {
+        $sql = "SELECT `pax_id`, `cash` FROM `pax` WHERE `status` = 'CASH' AND `player_id` = $playerId ORDER BY `pax_id`";
+        return $this->getCollectionFromDB($sql, true);
     }
 
     function createPax(): void
@@ -1077,6 +1058,7 @@ SQL);
         }
         $this->notifyAllPlayers('pax', $this->msg['addPax'], [
             'count' => count($pax),
+            'location' => $this->getPaxLocations($pax),
             'pax' => array_values($this->filterPax($pax)),
         ]);
         return true;
@@ -1092,17 +1074,30 @@ SQL);
         return $pax;
     }
 
+    function getPaxLocations(array $pax): string
+    {
+        $uniq = [];
+        foreach ($pax as $x) {
+            if ($x->location) {
+                $uniq[$x->location] = true;
+            }
+        }
+        $locations = array_keys($uniq);
+        sort($locations);
+        return join(', ', $locations);
+    }
+
     function advanceHour(int $playerCount, string $currentHour): ?string
     {
         $nextHour = N_REF_HOUR_NEXT[$currentHour];
+        $this->setVar('hour', $nextHour);
         if ($nextHour == 'FINALE') {
+            // Begin final round
             $this->notifyAllPlayers('finale', $this->msg['finale'], [
                 'hour' => $nextHour,
                 'hourDesc' => $this->hourDesc[$nextHour],
             ]);
         } else {
-            $this->setVar('hour', $nextHour);
-
             // Delete old weather
             $map = $this->getMap();
             $map->weather = [];
@@ -1139,6 +1134,78 @@ SQL);
             ]);
         }
         return $nextHour;
+    }
+
+    function angerPax(): void
+    {
+        $pax = $this->getPaxByStatus('PORT');
+        if (!empty($pax)) {
+            $anger = [];
+            $complaint = [];
+            foreach ($pax as $x) {
+                $x->anger++;
+                if ($x->anger < 4) {
+                    // Increase anger
+                    $this->DbQuery("UPDATE `pax` SET `anger` = {$x->anger} WHERE `pax_id` = {$x->id}");
+                    $anger[] = $x;
+                } else {
+                    // File complaint
+                    $x->status = 'COMPLAINT';
+                    $this->DbQuery("UPDATE `pax` SET `anger` = {$x->anger}, `status` = 'COMPLAINT' WHERE `pax_id` = {$x->id}");
+                    $complaint[] = $x;
+                }
+            }
+            if (!empty($anger)) {
+                $this->notifyAllPlayers('message', $this->msg['anger'], [
+                    'count' => count($anger),
+                ]);
+            }
+            if (!empty($complaint)) {
+                $total = $this->countPaxByStatus('COMPLAINT');
+                $this->notifyAllPlayers('complaint', $this->msg['complaint'], [
+                    'complaint' => count($complaint),
+                    'location' => $this->getPaxLocations($complaint),
+                    'total' => $total,
+                ]);
+                if ($total >= 3) {
+                    $this->notifyAllPlayers('message', $this->msg['endLose'], [
+                        'complaint' => $total,
+                    ]);
+                    $this->gamestate->nextState('end');
+                    return;
+                }
+            }
+            $this->notifyAllPlayers('pax', '', [
+                'pax' => array_values($pax),
+            ]);
+        }
+    }
+
+    function endGame(): void
+    {
+        // End final round
+        // File a complaint for every 2 pax
+        $count = $this->countPaxByStatus(['PORT', 'SEAT']);
+        $complaint = floor($count / 2);
+        $total = $this->countPaxByStatus('COMPLAINT');
+        if ($complaint > 0) {
+            $this->notifyAllPlayers('complaint', $this->msg['complaintFinale'], [
+                'complaint' => $complaint,
+                'count' => $count,
+                'total' => $total,
+            ]);
+        }
+
+        // Determine win/lose
+        if ($total >= 3) {
+            $this->notifyAllPlayers('message', $this->msg['endLose'], [
+                'complaint' => $total,
+            ]);
+        } else {
+            $this->DbQuery("UPDATE `player` SET `player_score` = 1");
+            $this->notifyAllPlayers('message', $this->msg['endWin'], []);
+        }
+        $this->gamestate->nextState('end');
     }
 
     //////////////////////////////////////////////////////////////////////////////

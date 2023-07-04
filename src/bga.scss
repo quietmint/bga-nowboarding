@@ -45,7 +45,7 @@ html {
   box-shadow: 1px 1px rgb(0 0 0 / 0.5);
   color: white;
   display: inline-block;
-  padding: 0 6px;
+  padding: 1px 6px;
   vertical-align: middle;
 }
 
@@ -54,7 +54,7 @@ html {
 }
 
 .log .nbtag {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: bold;
 }
 
@@ -64,6 +64,8 @@ html {
 
 #nbcommon {
   display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
   justify-content: space-evenly;
 
   .section {
@@ -74,16 +76,26 @@ html {
     font-size: 12px;
   }
 
-  .icon {
-    font-size: 32px;
-    vertical-align: -10px;
+  .nbtag {
+    padding-top: 3px;
+    padding-bottom: 3px;
   }
+
+  .icon {
+    font-size: 24px;
+    vertical-align: -6px;
+  }
+}
+
+#nbrange {
+  width: 100%;
+  margin: 4px 0;
 }
 
 .gauges {
   display: flex;
   flex-wrap: wrap;
   font-size: 15px;
-  gap: 4px;
+  gap: 5px;
   margin: 5px 0;
 }

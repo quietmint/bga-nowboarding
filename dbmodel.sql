@@ -16,26 +16,14 @@ CREATE TABLE `pax` (
     `destination` VARCHAR(50) NOT NULL,
     `location` VARCHAR(50) DEFAULT NULL,
     `player_id` INT(10) DEFAULT NULL,
+    `vip` VARCHAR(50) DEFAULT NULL,
     PRIMARY KEY (`pax_id`),
     INDEX (`status`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8 AUTO_INCREMENT = 1;
 
 CREATE TABLE `plane` (
     `player_id` INT(10) NOT NULL,
-    `alliance` ENUM(
-        'ATL',
-        'DFW',
-        'LAX',
-        'ORD',
-        'SEA'
-    ) DEFAULT NULL,
-    `alliances` SET(
-        'ATL',
-        'DFW',
-        'LAX',
-        'ORD',
-        'SEA'
-    ) DEFAULT NULL,
+    `alliances` VARCHAR(50) NOT NULL DEFAULT '',
     `debt` INT(2) NOT NULL DEFAULT '0',
     `origin` VARCHAR(50) DEFAULT NULL,
     `location` VARCHAR(50) DEFAULT NULL,

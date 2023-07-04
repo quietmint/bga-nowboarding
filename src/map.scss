@@ -1,4 +1,9 @@
-.map {
+#nbscale {
+  margin: auto;
+  min-width: 1155px;
+}
+
+#nbmap {
   aspect-ratio: 2 / 1;
   background-repeat: no-repeat;
   background-size: contain;
@@ -15,12 +20,8 @@
   justify-content: space-evenly;
   left: 0;
   position: absolute;
-  right: -220px;
+  right: -55px;
   top: -275px;
-}
-
-#manifests-top .manifest {
-  flex-direction: column-reverse;
 }
 
 #manifests-right {
@@ -43,47 +44,53 @@
   justify-content: space-evenly;
   left: 0;
   position: absolute;
-  right: 0;
+  right: -55px;
 }
 
 #manifest-SEA {
-  order: 1;
+  order: 10;
 }
 #manifest-SFO {
-  order: 1;
+  order: 11;
 }
 #manifest-DEN {
-  order: 2;
+  order: 20;
 }
 #manifest-ORD {
-  order: 3;
+  order: 30;
 }
 #manifest-JFK {
-  order: 4;
+  order: 40;
 }
 #manifest-LAX {
-  order: 2;
+  order: 20;
 }
 #manifest-DFW {
-  order: 3;
+  order: 30;
 }
 #manifest-ATL {
-  order: 3;
+  order: 31;
 }
 #manifest-MIA {
-  order: 4;
+  order: 40;
 }
 
-/*
 .node {
-  pointer-events: none;
-}*/
+  background-repeat: no-repeat;
+  background-size: contain;
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
 
 .marker.node {
-  //background: black;
   border-radius: 100%;
-  height: 2%;
-  width: 1%;
+  height: 6%;
+  width: 3%;
+}
+
+.is-active.node {
+  z-index: 9;
+  border: 5px dashed white;
 }
 
 .move.node {
@@ -97,13 +104,6 @@
   text-align: center;
   width: 2.5%;
   z-index: 10;
-}
-
-.node {
-  background-repeat: no-repeat;
-  background-size: contain;
-  position: absolute;
-  transform: translate(-50%, -50%);
 }
 
 .plane.node {
@@ -126,18 +126,12 @@
   transition: transform 500ms ease-out;
 }
 
-.test.node {
-  //background: red;
-  left: 50%;
-  top: 50%;
-  z-index: 99;
-}
-
-#testview {
-  text-align: center;
-  font-size: 18px;
-  padding: 6px;
-}
+// .test.node {
+//   background: red;
+//   left: 50%;
+//   top: 50%;
+//   z-index: 99;
+// }
 
 .weather.node {
   align-items: center;

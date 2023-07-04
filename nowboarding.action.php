@@ -76,13 +76,13 @@ class action_nowboarding extends APP_GameAction
     self::ajaxResponse();
   }
 
-  public function enplane()
+  public function board()
   {
     self::setAjaxMode();
     self::checkVersion();
-    $this->game->checkAction('enplane');
+    $this->game->checkAction('board');
     $paxId = self::getArg('paxId', AT_int, true);
-    $this->game->enplane($paxId);
+    $this->game->board($paxId);
     self::ajaxResponse();
   }
 

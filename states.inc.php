@@ -92,6 +92,7 @@ $machinestates = [
             'reveal' => N_STATE_REVEAL,
         ],
         'type' => 'multipleactiveplayer',
+        'updateGameProgression' => true,
     ],
 
     N_STATE_PREPARE_PRIVATE => [
@@ -137,7 +138,7 @@ $machinestates = [
         'possibleactions' => [
             'deplane',
             'end',
-            'enplane',
+            'board',
             'move',
         ],
         'transitions' => [

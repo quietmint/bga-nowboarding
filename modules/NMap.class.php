@@ -92,6 +92,9 @@ class NMap extends APP_GameClass implements JsonSerializable
     public function getPossibleMoves(NPlane $plane): array
     {
         $fuelMax = $plane->speedRemain;
+        if ($plane->tempSpeed) {
+            $fuelMax++;
+        }
         $visited = [];
         $best = [];
         $start = new NMove(0, $this->nodes[$plane->location], []);
