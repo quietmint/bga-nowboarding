@@ -13,7 +13,8 @@ html {
   display: none;
 }
 
-#nbbuys {
+#nbbuys,
+#nbpays {
   display: block;
   margin: 10px;
 }
@@ -28,6 +29,15 @@ html {
 .ghostbutton {
   cursor: not-allowed;
   opacity: 0.5;
+}
+
+.paybutton {
+  background-color: $color-green-600;
+  color: white !important;
+}
+
+.paybutton.ghostbutton {
+  cursor: pointer;
 }
 
 .player-board {

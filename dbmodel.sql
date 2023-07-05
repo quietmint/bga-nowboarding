@@ -8,6 +8,7 @@ CREATE TABLE `pax` (
         'PORT',
         'SEAT',
         'CASH',
+        'PAID',
         'COMPLAINT'
     ) NOT NULL,
     `anger` INT(1) NOT NULL DEFAULT '0',
@@ -20,6 +21,8 @@ CREATE TABLE `pax` (
     PRIMARY KEY (`pax_id`),
     INDEX (`status`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8 AUTO_INCREMENT = 1;
+
+CREATE TABLE `pax_undo` LIKE `pax`;
 
 CREATE TABLE `plane` (
     `player_id` INT(10) NOT NULL,
@@ -35,7 +38,7 @@ CREATE TABLE `plane` (
     PRIMARY KEY (`player_id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
 
-CREATE TABLE `plane_undo` AS SELECT * FROM `plane`;
+CREATE TABLE `plane_undo` LIKE `plane`;
 
 CREATE TABLE `var` (
     `key` VARCHAR(50) NOT NULL,

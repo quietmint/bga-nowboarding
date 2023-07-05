@@ -22,21 +22,22 @@ $this->msg = [
     'hour' => clienttranslate('${hourDesc} round ${round} of ${total} begins'),
     'hourFinale' => clienttranslate('${hourDesc} begins'),
     'move' => clienttranslate('${player_name} flys to ${location}'),
-    'reset' => clienttranslate('${player_name} restarts their turn'),
     'seat' => clienttranslate('${player_name} upgrades seats to ${seat}'),
     'speed' => clienttranslate('${player_name} upgrades speed to ${speed}'),
     'temp' => clienttranslate('${player_name} purchases ${temp}'),
     'tempUsed' => clienttranslate('${player_name} uses ${temp}'),
+    'undo' => clienttranslate('${player_name} restarts their turn'),
     'weather' => clienttranslate('Weather forecast: Storms slow travel between ${routeSlow} while tailwinds speed travel between ${routeFast}'),
 ];
 
 $this->exMsg = [
     'allianceDuplicate' => $this->_("You already joined alliance %s"),
     'allianceOwner' => $this->_("%s already selected alliance %s"),
-    'deplanePort' => $this->_("You must be at an airport to deplane passengers"),
     'boardPort' => $this->_("You must be at %s to board this passenger"),
     'boardTransfer' => $this->_("You and %s must be at the same airport to transfer passengers"),
+    'deplanePort' => $this->_("You must be at an airport to deplane passengers"),
     'noCash' => $this->_("You have insufficient funds (cost: %s, cash: %s)"),
+    'noPay' => $this->_("You must choose bills totalling at least %s, even if it results in overpayment"),
     'noSeat' => $this->_("You have no empty seats"),
     'tempOwner' => $this->_("%s already owns %s"),
     'version' => $this->_("A new version of this game is now available. Please reload the page (F5)."),
@@ -76,7 +77,7 @@ $this->vips = [
     ],
     'IMPATIENT' => [
         'name' => clienttranslate('Impatient'),
-        'desc' => clienttranslate('Anger never reset'),
+        'desc' => clienttranslate('Anger never clears'),
         'hours' => ['MORNING'],
     ],
     'NERVOUS' => [

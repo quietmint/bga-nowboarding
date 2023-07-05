@@ -19,7 +19,7 @@ $machinestates = [
         'descriptionmyturn' => '',
         'initialprivate' => N_STATE_BUILD_ALLIANCE,
         'possibleactions' => [
-            'reset',
+            'undo',
         ],
         'transitions' => [
             'maintenance' => N_STATE_MAINTENANCE,
@@ -46,8 +46,8 @@ $machinestates = [
         'args' => 'argBuildAlliance2',
         'descriptionmyturn' => clienttranslate('Choose an additional alliance'),
         'possibleactions' => [
-            'reset',
             'buy',
+            'undo',
         ],
         'transitions' => [
             'buildAlliance' => N_STATE_BUILD_ALLIANCE,
@@ -61,8 +61,8 @@ $machinestates = [
         'args' => 'argBuildUpgrade',
         'descriptionmyturn' => clienttranslate('Choose a starting upgrade'),
         'possibleactions' => [
-            'reset',
             'buy',
+            'undo',
         ],
         'transitions' => [
             'buildAlliance' => N_STATE_BUILD_ALLIANCE,
@@ -89,7 +89,7 @@ $machinestates = [
         'descriptionmyturn' => '',
         'initialprivate' => N_STATE_PREPARE_PRIVATE,
         'possibleactions' => [
-            'reset',
+            'undo',
         ],
         'transitions' => [
             'reveal' => N_STATE_REVEAL,
@@ -101,11 +101,11 @@ $machinestates = [
     N_STATE_PREPARE_PRIVATE => [
         'name' => 'preparePrivate',
         'args' => 'argPreparePrivate',
-        'descriptionmyturn' => clienttranslate('Prepare for the next round'),
+        'descriptionmyturn' => clienttranslate('Discuss flight plans and purchase upgrades ($${cash} available)'),
         'possibleactions' => [
-            'begin',
             'buy',
-            'reset',
+            'prepareDone',
+            'undo',
         ],
         'transitions' => [
             'preparePrivate' => N_STATE_PREPARE_PRIVATE,
@@ -117,11 +117,10 @@ $machinestates = [
     N_STATE_PREPARE_PAY => [
         'name' => 'preparePay',
         'args' => 'argPreparePay',
-        'descriptionmyturn' => clienttranslate('Pay for your purchases'),
+        'descriptionmyturn' => clienttranslate('Choose how to pay $${debt}'),
         'possibleactions' => [
-            'begin',
             'pay',
-            'reset',
+            'undo',
         ],
         'transitions' => [
             'preparePrivate' => N_STATE_PREPARE_PRIVATE,
@@ -154,11 +153,11 @@ $machinestates = [
     N_STATE_FLY_PRIVATE => [
         'name' => 'flyPrivate',
         'args' => 'argFlyPrivate',
-        'descriptionmyturn' => clienttranslate('Go! Go! Go!'),
+        'descriptionmyturn' => clienttranslate('Go! (${speedRemain} speed remaining)'),
         'possibleactions' => [
-            'deplane',
-            'end',
             'board',
+            'deplane',
+            'flyDone',
             'move',
         ],
         'transitions' => [

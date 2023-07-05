@@ -41,6 +41,7 @@ class NowBoarding extends Table
         $this->reloadPlayersBasicInfos();
 
         $this->setVar('hour', 'PREFLIGHT');
+        $this->createUndo();
     }
 
     function checkVersion(int $clientVersion): void
@@ -213,9 +214,9 @@ class NowBoarding extends Table
         $this->gamestate->setAllPlayersMultiactive();
         $this->gamestate->initializePrivateStateForAllActivePlayers();
         $this->DbQuery("UPDATE `plane` SET `speed_remain` = `speed`");
-        $this->DbQuery("INSERT INTO `plane_undo` SELECT * FROM `plane`");
+        $this->createUndo();
         $planes = $this->getPlanesByIds();
-        $this->notifyAllPlayers('planes', '', [
+        $this->notifyAllPlayers('planes', '!!! stPrepare !!!', [
             'planes' => array_values($planes)
         ]);
     }
@@ -291,7 +292,7 @@ class NowBoarding extends Table
         $args = [
             'buys' => $buys,
             'cash' => $cash,
-            'reset' => $plane->debt > 0,
+            'undo' => $plane->debt > 0,
         ];
 
         if ($plane->debt > 0) {
@@ -330,6 +331,41 @@ class NowBoarding extends Table
         // }
     }
 
+    function argPreparePay(int $playerId): array
+    {
+        $plane = $this->getPlaneById($playerId);
+        $wallet = $this->getPaxWallet($plane->id);
+
+        $walletCount = count($wallet);
+        $suggestion = null;
+        $overpay = null;
+        foreach ($this->generatePermutations($wallet) as $p) {
+            $thisSum = 0;
+            $thisSuggestion = [];
+            for ($i = $walletCount - 1; $thisSum < $plane->debt && $i >= 0; $i--) {
+                $thisSuggestion[] = $p[$i];
+                $thisSum += $p[$i];
+            }
+            $thisOverpay = $thisSum - $plane->debt;
+            self::debug("found suggestion " . join(',', $thisSuggestion) . " with overpay=$thisOverpay // ");
+            if ($suggestion == null || $thisOverpay < $overpay || $thisOverpay == $overpay && count($thisSuggestion) < count($suggestion)) {
+                self::debug("it's the best! // ");
+                $suggestion = $thisSuggestion;
+                $overpay = $thisOverpay;
+            }
+            if ($overpay == 0) {
+                break;
+            }
+        }
+
+        return [
+            'debt' => $plane->debt,
+            'wallet' => $wallet,
+            'suggestion' => $suggestion,
+            'overpay' => $overpay,
+        ];
+    }
+
     /*
      * FLIGHT
      * Reveal passengers
@@ -339,8 +375,8 @@ class NowBoarding extends Table
 
     function stReveal(): void
     {
-        // Drop the undo information
-        $this->DbQuery("DELETE FROM `plane_undo`");
+        // Remove undo info
+        $this->eraseUndo();
 
         // Play the sound!
         $this->notifyAllPlayers('sound', '', [
@@ -370,12 +406,29 @@ class NowBoarding extends Table
             'moves' => $map->getPossibleMoves($plane),
             'paxDrop' => [],
             'paxPickup' => [],
+            'speedRemain' => max(0, $plane->speedRemain),
         ];
     }
 
     //////////////////////////////////////////////////////////////////////////////
     //////////// Actions (ajax)
     ////////////
+
+    function undo(): void
+    {
+        $playerId = $this->getCurrentPlayerId();
+        $this->DbQuery("REPLACE INTO `plane` SELECT * FROM `plane_undo` WHERE `player_id` = $playerId");
+        $this->DbQuery("REPLACE INTO `pax` SELECT * FROM `pax_undo` WHERE `player_id` = $playerId");
+
+        $plane = $this->getPlaneById($playerId);
+        $this->notifyAllPlayers('planes', $this->msg['undo'], [
+            'planes' => [$plane],
+            'player_id' => $playerId,
+            'player_name' => $this->getCurrentPlayerName(),
+        ]);
+        $this->gamestate->setPlayersMultiactive([$playerId], '');
+        $this->gamestate->initializePrivateState($playerId);
+    }
 
     function buy(string $type, ?string $alliance): void
     {
@@ -573,36 +626,50 @@ class NowBoarding extends Table
         $this->gamestate->nextPrivateState($plane->id, 'preparePrivate');
     }
 
-    function reset(): void
+    function pay($paxIds): void
     {
         $playerId = $this->getCurrentPlayerId();
-        $isBuild = $this->gamestate->state()['name'] == 'build';
-        if ($isBuild) {
-            $this->DbQuery("DELETE FROM `plane` WHERE `player_id` = $playerId");
-            $this->DbQuery("INSERT INTO `plane` (`player_id`) VALUES ($playerId)");
-            $this->DbQuery("UPDATE `player` SET `player_color` = '000000' WHERE `player_id` = $playerId");
-            $this->reloadPlayersBasicInfos();
-        } else {
-            $this->DbQuery("REPLACE INTO `plane` SELECT * FROM `plane_undo` WHERE `player_id` = $playerId");
+        $wallet = $this->getPaxWallet($playerId);
+        $total = 0;
+        $validIds = [];
+        foreach ($wallet as $paxId => $cash) {
+            if (in_array($paxId, $paxIds)) {
+                $total += $cash;
+                $validIds[] = $paxId;
+            }
         }
 
         $plane = $this->getPlaneById($playerId);
-        $this->notifyAllPlayers('planes', $this->msg['reset'], [
-            'planes' => [$plane],
-            'player_id' => $playerId,
-            'player_name' => $this->getCurrentPlayerName(),
-        ]);
-        $this->gamestate->setPlayersMultiactive([$playerId], '');
-        $this->gamestate->initializePrivateState($playerId);
-    }
+        if ($total < $plane->debt) {
+            throw new BgaUserException(sprintf($this->exMsg['noPay'], "\${$plane->debt}"));
+        }
 
-    function flightBegin(): void
-    {
-        $playerId = $this->getCurrentPlayerId();
+        // Payment
+        $this->DbQuery("UPDATE `pax` SET `status` = 'PAID' WHERE `pax_id` IN (" . join(',', $validIds) . ")");
+        $this->DbQuery("UPDATE `plane` SET `debt` = 0 WHERE `player_id` = $playerId");
+
+        // Update plane gauges UI (e.g., overpayment)
+        $plane = $this->getPlaneById($playerId);
+        $this->notifyAllPlayers('planes', '', [
+            'planes' => [$plane],
+        ]);
+
         $this->gamestate->setPlayerNonMultiactive($playerId, 'reveal');
     }
 
-    function flightEnd(): void
+
+    function prepareDone(): void
+    {
+        $playerId = $this->getCurrentPlayerId();
+        $plane = $this->getPlaneById($playerId);
+        if ($plane->debt > 0) {
+            $this->gamestate->nextPrivateState($plane->id, 'preparePay');
+        } else {
+            $this->gamestate->setPlayerNonMultiactive($playerId, 'reveal');
+        }
+    }
+
+    function flyDone(): void
     {
         $playerId = $this->getCurrentPlayerId();
         $this->gamestate->setPlayerNonMultiactive($playerId, 'maintenance');
@@ -841,6 +908,18 @@ class NowBoarding extends Table
         $msg = $hourInfo['hour'] == 'FINALE' ? $this->msg['hourFinale'] : $this->msg['hour'];
         $this->notifyAllPlayers('hour', $msg, $hourInfo);
         return $hourInfo;
+    }
+
+    function createUndo(): void
+    {
+        $this->DbQuery("INSERT INTO `plane_undo` SELECT * FROM `plane`");
+        $this->DbQuery("INSERT INTO `pax_undo` SELECT * FROM `pax` WHERE `status` = 'CASH'");
+    }
+
+    function eraseUndo(): void
+    {
+        $this->DbQuery("DELETE FROM `plane_undo`");
+        $this->DbQuery("DELETE FROM `pax_undo`");
     }
 
     function getPlayerIds(): array

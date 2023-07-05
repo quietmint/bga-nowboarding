@@ -29,6 +29,14 @@ class action_nowboarding extends APP_GameAction
     self::ajaxResponse();
   }
 
+  function undo()
+  {
+    self::setAjaxMode();
+    self::checkVersion();
+    $this->game->undo();
+    self::ajaxResponse();
+  }
+
   public function buy()
   {
     self::setAjaxMode();
@@ -40,29 +48,31 @@ class action_nowboarding extends APP_GameAction
     self::ajaxResponse();
   }
 
-  function reset()
+  public function pay()
   {
     self::setAjaxMode();
     self::checkVersion();
-    $this->game->reset();
+    $this->game->checkAction('pay');
+    $paxIds = explode(',', self::getArg('paxIds', AT_numberlist, true));
+    $this->game->pay($paxIds);
     self::ajaxResponse();
   }
 
-  public function flightBegin()
+  public function prepareDone()
   {
     self::setAjaxMode();
     self::checkVersion();
-    $this->game->checkAction('begin');
-    $this->game->flightBegin();
+    $this->game->checkAction('prepareDone');
+    $this->game->prepareDone();
     self::ajaxResponse();
   }
 
-  public function flightEnd()
+  public function flyDone()
   {
     self::setAjaxMode();
     self::checkVersion();
-    $this->game->checkAction('end');
-    $this->game->flightEnd();
+    $this->game->checkAction('flyDone');
+    $this->game->flyDone();
     self::ajaxResponse();
   }
 

@@ -65,7 +65,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       dojo.subscribe("move", this, "onNotify");
       dojo.subscribe("pax", this, "onNotify");
       dojo.subscribe("planes", this, "onNotify");
-      dojo.subscribe("reset", this, "onNotify");
       dojo.subscribe("sound", this, "onNotify");
       dojo.subscribe("weather", this, "onNotify");
       this.notifqueue.setSynchronous("complaint", 1000);
@@ -197,12 +196,12 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       console.log(`▶️ State ${stateName}`, args);
 
       if (!this.is_spectator) {
-        // Inactive players can undo
+        // Inactive players still can undo
         if (stateName == "build" || stateName == "buildAlliance2" || stateName == "buildUpgrade" || stateName == "prepare") {
-          this.addActionButton("button_reset", _("Start Over"), () => this.takeAction("reset"));
+          this.addActionButton("button_undo", _("Start Over"), () => this.takeAction("undo"), null, false, "gray");
         }
 
-        // Inactive players clear moves
+        // Inactive players still clear moves
         if (stateName == "fly" || stateName == "maintenance") {
           this.deleteMoves();
         }
@@ -210,12 +209,21 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         // Active players
         if (this.isCurrentPlayerActive()) {
           if (stateName == "preparePrivate") {
-            this.addActionButton("button_flightBegin", _("Begin Round"), () => this.takeAction("flightBegin"));
-            if (args.reset) {
-              this.addActionButton("button_reset", _("Start Over"), () => this.takeAction("reset"));
+            this.addActionButton("button_prepareDone", _("Ready"), () => this.takeAction("prepareDone"));
+            if (args.undo) {
+              this.addActionButton("button_undo", _("Start Over"), () => this.takeAction("undo"), null, false, "gray");
             }
+          } else if (stateName == "preparePay") {
+            this.addActionButton("button_pay", _("Pay"), () => {
+              const paxIds = [];
+              document.querySelectorAll("#nbpays .paybutton:not(.ghostbutton)").forEach((el) => paxIds.push(el.dataset.id));
+              this.takeAction("pay", { paxIds });
+            });
+            this.addActionButton("button_undo", _("Start Over"), () => this.takeAction("undo"), null, false, "gray");
+            this.renderPays(args.wallet, args.suggestion);
           } else if (stateName == "flyPrivate") {
-            this.addActionButton("button_flightEnd", _("End Round"), () => this.takeAction("flightEnd"), null, false, "red");
+            const color = args.speedRemain > 0 ? "red" : "blue";
+            this.addActionButton("button_flyDone", _("End Round"), () => this.takeAction("flyDone"), null, false, color);
             // Update the possible moves
             this.deleteMoves();
             if (args?.moves) {
@@ -530,7 +538,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
       // Update speed tag
       const speedEl = document.getElementById(`gauge-speed-${plane.id}`);
-      speedEl.textContent = `${plane.speedRemain}/${plane.speed}`;
+      speedEl.textContent = `${Math.max(0, plane.speedRemain)}/${plane.speed}`;
 
       // Add/remove temp seat tag
       const tempSeatEl = document.getElementById(`gauge-temp-seat-${plane.id}`);
@@ -733,7 +741,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
     renderBuys(buys) {
       const parentEl = document.getElementById("generalactions");
-      parentEl.insertAdjacentHTML("beforeend", `<div id="nbbuys" class="buys">`);
+      parentEl.insertAdjacentHTML("beforeend", `<div id="nbbuys"></div>`);
       const buysEl = document.getElementById("nbbuys");
       for (const i in buys) {
         const buy = buys[i];
@@ -780,6 +788,37 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
             this.onLeaveMapManifest(buy.alliance);
           });
         }
+      }
+    },
+
+    renderPays(wallet, suggestion) {
+      const parentEl = document.getElementById("generalactions");
+      parentEl.insertAdjacentHTML("beforeend", `<div id="nbpays"><div id="nbpayinfo"></div></div>`);
+      const paysEl = document.getElementById("nbpays");
+      const buttonEl = document.getElementById("button_pay");
+      const workingSuggestion = [...suggestion];
+      for (const i in wallet) {
+        const cash = wallet[i];
+        const id = `pay_${i}`;
+        let cssClass = "ghostbutton";
+        const index = workingSuggestion.indexOf(cash);
+        if (index > -1) {
+          cssClass = "";
+          workingSuggestion.splice(index, 1);
+        }
+        paysEl.insertAdjacentHTML("beforeend", `<div id="${id}" class="action-button bgabutton paybutton ${cssClass}" data-id="${i}" data-cash="${cash}">\$${cash}</div>`);
+        const buyEl = document.getElementById(id);
+        buyEl.addEventListener("click", (ev) => {
+          buyEl.classList.toggle("ghostbutton");
+          updateTotal();
+        });
+      }
+      updateTotal();
+
+      function updateTotal() {
+        let sum = 0;
+        paysEl.querySelectorAll(".paybutton:not(.ghostbutton)").forEach((el) => (sum += parseInt(el.dataset.cash)));
+        buttonEl.textContent = `${_("Pay")} \$${sum}`;
       }
     },
 

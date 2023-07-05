@@ -166,28 +166,4 @@ class NMap extends APP_GameClass implements JsonSerializable
         }
         return $out;
     }
-
-    // ----------------------------------------------------------------------
-
-    public function resetWeather(): void
-    {
-        $dbrows = self::getObjectListFromDB("SELECT * FROM weather");
-        // Select 2, 4, or 6 random routes
-        $routeIds = array_rand($this->routes, count($dbrows));
-        foreach ($dbrows as $dbrow) {
-            $weatherId = intval($dbrow['weather_id']);
-            $token = $dbrow['token'];
-            $nodeId = $dbrow['current_node'];
-            if ($nodeId != null) {
-                // Remove old weather
-                $this->nodes[$nodeId]->weather = null;
-            }
-            $routeId = array_pop($routeIds);
-            $route = &$this->routes[$routeId];
-            $node = $route[array_rand($route)];
-            $node->weather = $token;
-            $this->weather[$weatherId] = $node;
-            self::DbQuery("UPDATE weather SET current_node = {$node->getId()} WHERE weather_id = $weatherId");
-        }
-    }
 }
