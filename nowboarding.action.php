@@ -48,13 +48,21 @@ class action_nowboarding extends APP_GameAction
     self::ajaxResponse();
   }
 
+  public function buyAgain()
+  {
+    self::setAjaxMode();
+    self::checkVersion();
+    $this->game->buyAgain();
+    self::ajaxResponse();
+  }
+
   public function pay()
   {
     self::setAjaxMode();
     self::checkVersion();
     $this->game->checkAction('pay');
-    $paxIds = explode(',', self::getArg('paxIds', AT_numberlist, true));
-    $this->game->pay($paxIds);
+    $paid = explode(',', self::getArg('paid', AT_numberlist, true));
+    $this->game->pay($paid);
     self::ajaxResponse();
   }
 
@@ -73,6 +81,14 @@ class action_nowboarding extends APP_GameAction
     self::checkVersion();
     $this->game->checkAction('flyDone');
     $this->game->flyDone();
+    self::ajaxResponse();
+  }
+
+  public function flyAgain()
+  {
+    self::setAjaxMode();
+    self::checkVersion();
+    $this->game->flyAgain();
     self::ajaxResponse();
   }
 

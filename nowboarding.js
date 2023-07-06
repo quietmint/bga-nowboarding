@@ -8,9 +8,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     setup(gamedatas) {
       console.log("🐣 Setup", gamedatas);
 
-      // TODO!
-      document.head.insertAdjacentHTML("beforeend", `<link rel="stylesheet" type="text/css" href="https://studio.boardgamearena.com:8084/data/themereleases/current/games/nowboarding/999999-9999/index.css?${Date.now()}"/>`);
-
       // Setup common
       this.renderCommon();
 
@@ -196,31 +193,40 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       console.log(`▶️ State ${stateName}`, args);
 
       if (!this.is_spectator) {
-        // Inactive players still can undo
+        // Inactive players can undo or go back
         if (stateName == "build" || stateName == "buildAlliance2" || stateName == "buildUpgrade" || stateName == "prepare") {
           this.addActionButton("button_undo", _("Start Over"), () => this.takeAction("undo"), null, false, "gray");
         }
+        if (stateName == "fly") {
+          this.addActionButton("button_flyAgain", _("Go Back"), () => this.takeAction("flyAgain"), null, false, "gray");
+        }
 
-        // Inactive players still clear moves
+        // Inactive players clear moves
         if (stateName == "fly" || stateName == "maintenance") {
           this.deleteMoves();
         }
 
         // Active players
         if (this.isCurrentPlayerActive()) {
-          if (stateName == "preparePrivate") {
+          if (stateName == "buildAlliance" || stateName == "buildAlliance2" || stateName == "buildUpgrade") {
+            this.renderBuys(args.buys);
+          } else if (stateName == "prepareBuy") {
             this.addActionButton("button_prepareDone", _("Ready"), () => this.takeAction("prepareDone"));
             if (args.undo) {
               this.addActionButton("button_undo", _("Start Over"), () => this.takeAction("undo"), null, false, "gray");
             }
+            this.renderBuys(args.buys);
+            if (args.wallet.length > 0) {
+              this.renderWalletBuy(args.wallet, args.overpay);
+            }
           } else if (stateName == "preparePay") {
             this.addActionButton("button_pay", _("Pay"), () => {
-              const paxIds = [];
-              document.querySelectorAll("#nbpays .paybutton:not(.ghostbutton)").forEach((el) => paxIds.push(el.dataset.id));
-              this.takeAction("pay", { paxIds });
+              const paid = [];
+              document.querySelectorAll("#nbwallet .paybutton:not(.ghostbutton)").forEach((el) => paid.push(el.dataset.cash));
+              this.takeAction("pay", { paid });
             });
-            this.addActionButton("button_undo", _("Start Over"), () => this.takeAction("undo"), null, false, "gray");
-            this.renderPays(args.wallet, args.suggestion);
+            this.addActionButton("button_buyAgain", _("Go Back"), () => this.takeAction("buyAgain"), null, false, "gray");
+            this.renderWalletPay(args.wallet, args.suggestion);
           } else if (stateName == "flyPrivate") {
             const color = args.speedRemain > 0 ? "red" : "blue";
             this.addActionButton("button_flyDone", _("End Round"), () => this.takeAction("flyDone"), null, false, color);
@@ -229,10 +235,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
             if (args?.moves) {
               this.renderMoves(args.moves);
             }
-          }
-
-          if (args?.buys?.length > 0) {
-            this.renderBuys(args.buys);
           }
         }
       }
@@ -335,7 +337,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     takePaxAction(paxId) {
       const pax = this.gamedatas.pax[paxId];
       if (this.isCurrentPlayerActive()) {
-        console.log(`takePaxAction ${pax.id} ${pax.status} ${pax.location}`, pax);
         if (pax.status == "SEAT" && pax.playerId == this.player_id) {
           this.takeAction("deplane", { paxId: pax.id }).catch((error) => {
             if (error == "deplaneConfirm") {
@@ -475,7 +476,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       if (plane.location && !planeEl) {
         // Create plane
         console.log(`✈️ Create plane ${plane.id} at ${plane.location}`);
-        this.mapEl.insertAdjacentHTML("beforeend", `<div id="plane-${plane.id}" class="plane node node-${plane.location}"><div id="planeicon-${plane.id}" class="icon plane-${plane.alliances[0]}"></div></div>`);
+        const cssClass = plane.id == this.player_id ? "mine" : "";
+        this.mapEl.insertAdjacentHTML("beforeend", `<div id="plane-${plane.id}" class="plane node node-${plane.location} ${cssClass}"><div id="planeicon-${plane.id}" class="icon plane-${plane.alliances[0]}"></div></div>`);
         const rotation = this.getRotation(plane);
         if (rotation) {
           const iconEl = document.getElementById(`planeicon-${plane.id}`);
@@ -508,15 +510,17 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       }
 
       // Add/remove alliances tag
-      if (plane.alliances.length > 0) {
-        for (const alliance of plane.alliances) {
-          const allianceEl = alliancesEl.querySelector(`.alliance-${alliance}`);
-          if (!allianceEl) {
-            alliancesEl.insertAdjacentHTML("beforeend", `<div class="nbtag alliance alliance-${alliance}"><i class="icon logo-${alliance}"></i> ${alliance}</div>`);
-          }
+      alliancesEl.childNodes.forEach((el) => {
+        const alliance = el.dataset.alliance;
+        if (!plane.alliances.includes(alliance)) {
+          el.remove();
         }
-      } else {
-        alliancesEl.textContent = "";
+      });
+      for (const alliance of plane.alliances) {
+        const el = alliancesEl.querySelector(`.alliance-${alliance}`);
+        if (!el) {
+          alliancesEl.insertAdjacentHTML("beforeend", `<div class="nbtag alliance alliance-${alliance}" data-alliance="${alliance}"><i class="icon logo-${alliance}"></i> ${alliance}</div>`);
+        }
       }
 
       let gaugesEl = document.getElementById(`gauges-${plane.id}`);
@@ -630,7 +634,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     },
 
     onEnterMapManifest(manifestId) {
-      console.log(`onEnterMapManifest ${manifestId}`);
       const manifestEl = document.getElementById(`manifest-${manifestId}`);
       manifestEl.classList.add("is-active");
       const markerEl = document.querySelector(`#nbmap .marker.node.node-${manifestId}`);
@@ -638,7 +641,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     },
 
     onLeaveMapManifest(manifestId) {
-      console.log(`onLeaveMapManifest for ${manifestId}`);
       const manifestEl = document.getElementById(`manifest-${manifestId}`);
       manifestEl.classList.remove("is-active");
       const markerEl = document.querySelector(`#nbmap .marker.node.node-${manifestId}`);
@@ -672,7 +674,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       if (!paxEl) {
         // Pax doesn't exist but should
         // Create new pax
-        console.log("Welcome, new passenger!");
         listEl.insertAdjacentHTML(
           "beforeend",
           `<div id="pax-${pax.id}" class="pax">
@@ -700,9 +701,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       const originEl = paxEl.querySelector(".origin");
       const destinationEl = paxEl.querySelector(".destination");
       const cashEl = paxEl.querySelector(".cash");
-      const isVip = Math.random() >= 0.7;
 
-      vipEl.textContent = isVip ? "VIP/FIRST IN LINE" : "";
+      vipEl.textContent = "";
       if (pax.status == "SECRET") {
         paxEl.style.order = 5;
         paxEl.classList.add("is-secret");
@@ -717,7 +717,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         destinationEl.textContent = pax.destination;
         this.swapClass(angerEl, "anger-", `anger-${pax.anger}`);
         this.swapClass(angerIconEl, ["spinner", "anger-"], `anger-${pax.anger}`);
-        angerIconEl.classList.toggle("pinging", pax.anger == 3);
         angerCountEl.textContent = pax.anger;
       }
 
@@ -791,35 +790,50 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       }
     },
 
-    renderPays(wallet, suggestion) {
+    renderWalletBuy(wallet, overpay) {
       const parentEl = document.getElementById("generalactions");
-      parentEl.insertAdjacentHTML("beforeend", `<div id="nbpays"><div id="nbpayinfo"></div></div>`);
-      const paysEl = document.getElementById("nbpays");
-      const buttonEl = document.getElementById("button_pay");
+      parentEl.insertAdjacentHTML("beforeend", `<div id="nbwallet">${_("Wallet")}: </div>`);
+      const walletEl = document.getElementById("nbwallet");
+      for (const cash of wallet) {
+        walletEl.insertAdjacentHTML("beforeend", `<div class="action-button bgabutton paybutton is-buy">\$${cash}</div>`);
+      }
+      if (overpay) {
+        const msg = this.format_string_recursive(_("Estimated overpayment: ${overpay}"), {
+          overpay: `\$${overpay}`,
+        });
+        walletEl.insertAdjacentHTML("beforeend", `<div class="overpay-info">${msg}</div>`);
+      }
+    },
+
+    renderWalletPay(wallet, suggestion) {
+      const parentEl = document.getElementById("generalactions");
+      parentEl.insertAdjacentHTML("beforeend", `<div id="nbwallet">${_("Wallet")}: </div>`);
+      const walletEl = document.getElementById("nbwallet");
       const workingSuggestion = [...suggestion];
-      for (const i in wallet) {
-        const cash = wallet[i];
-        const id = `pay_${i}`;
+      let i = 0;
+      for (const cash of wallet) {
+        const id = `pay_${i++}`;
         let cssClass = "ghostbutton";
         const index = workingSuggestion.indexOf(cash);
         if (index > -1) {
           cssClass = "";
           workingSuggestion.splice(index, 1);
         }
-        paysEl.insertAdjacentHTML("beforeend", `<div id="${id}" class="action-button bgabutton paybutton ${cssClass}" data-id="${i}" data-cash="${cash}">\$${cash}</div>`);
+        walletEl.insertAdjacentHTML("beforeend", `<div id="${id}" class="action-button bgabutton paybutton ${cssClass}" data-cash="${cash}">\$${cash}</div>`);
         const buyEl = document.getElementById(id);
         buyEl.addEventListener("click", (ev) => {
           buyEl.classList.toggle("ghostbutton");
-          updateTotal();
+          this.updatePayButton();
         });
       }
-      updateTotal();
+      this.updatePayButton();
+    },
 
-      function updateTotal() {
-        let sum = 0;
-        paysEl.querySelectorAll(".paybutton:not(.ghostbutton)").forEach((el) => (sum += parseInt(el.dataset.cash)));
-        buttonEl.textContent = `${_("Pay")} \$${sum}`;
-      }
+    updatePayButton() {
+      let sum = 0;
+      document.querySelectorAll("#nbwallet .paybutton:not(.ghostbutton)").forEach((el) => (sum += parseInt(el.dataset.cash)));
+      const buttonEl = document.getElementById("button_pay");
+      buttonEl.textContent = `${_("Pay")} \$${sum}`;
     },
 
     renderMoves(moves) {

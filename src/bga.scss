@@ -13,8 +13,13 @@ html {
   display: none;
 }
 
-#nbbuys,
-#nbpays {
+.overpay-info {
+  color: $color-red-900;
+  font-size: 14px;
+  line-height: 18px;
+}
+
+#nbbuys {
   display: block;
   margin: 10px;
 }
@@ -27,17 +32,28 @@ html {
 }
 
 .ghostbutton {
-  cursor: not-allowed;
   opacity: 0.5;
+
+  &.buybutton {
+    cursor: not-allowed;
+  }
+}
+
+#nbwallet {
+  background-color: $color-neutral-200;
+  color: $color-lime-800;
+  display: block;
+  margin: 10px;
+  padding: 5px;
 }
 
 .paybutton {
-  background-color: $color-green-600;
+  background-color: $color-lime-600;
   color: white !important;
-}
 
-.paybutton.ghostbutton {
-  cursor: pointer;
+  &.is-buy {
+    cursor: default;
+  }
 }
 
 .player-board {

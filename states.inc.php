@@ -87,7 +87,7 @@ $machinestates = [
         'action' => 'stPrepare',
         'description' => clienttranslate('Wait for others to prepare'),
         'descriptionmyturn' => '',
-        'initialprivate' => N_STATE_PREPARE_PRIVATE,
+        'initialprivate' => N_STATE_PREPARE_BUY,
         'possibleactions' => [
             'undo',
         ],
@@ -98,17 +98,17 @@ $machinestates = [
         'updateGameProgression' => true,
     ],
 
-    N_STATE_PREPARE_PRIVATE => [
-        'name' => 'preparePrivate',
-        'args' => 'argPreparePrivate',
-        'descriptionmyturn' => clienttranslate('Discuss flight plans and purchase upgrades ($${cash} available)'),
+    N_STATE_PREPARE_BUY => [
+        'name' => 'prepareBuy',
+        'args' => 'argPrepareBuy',
+        'descriptionmyturn' => clienttranslate('Discuss plans and purchase upgrades ($${cash} available)'),
         'possibleactions' => [
             'buy',
             'prepareDone',
             'undo',
         ],
         'transitions' => [
-            'preparePrivate' => N_STATE_PREPARE_PRIVATE,
+            'prepareBuy' => N_STATE_PREPARE_BUY,
             'preparePay' => N_STATE_PREPARE_PAY,
         ],
         'type' => 'private',
@@ -119,11 +119,11 @@ $machinestates = [
         'args' => 'argPreparePay',
         'descriptionmyturn' => clienttranslate('Choose how to pay $${debt}'),
         'possibleactions' => [
+            'buyAgain',
             'pay',
-            'undo',
         ],
         'transitions' => [
-            'preparePrivate' => N_STATE_PREPARE_PRIVATE,
+            'prepareBuy' => N_STATE_PREPARE_BUY,
         ],
         'type' => 'private',
     ],
@@ -144,6 +144,9 @@ $machinestates = [
         'description' => clienttranslate('Wait for others to finish'),
         'descriptionmyturn' => '',
         'initialprivate' => N_STATE_FLY_PRIVATE,
+        'possibleactions' => [
+            'flyAgain',
+        ],
         'transitions' => [
             'maintenance' => N_STATE_MAINTENANCE,
         ],

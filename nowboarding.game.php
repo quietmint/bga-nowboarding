@@ -19,6 +19,7 @@ class NowBoarding extends Table
     function __construct()
     {
         parent::__construct();
+        $this->bSelectGlobalsForUpdate = true;
         $this->initGameStateLabels([]);
     }
 
@@ -216,15 +217,16 @@ class NowBoarding extends Table
         $this->DbQuery("UPDATE `plane` SET `speed_remain` = `speed`");
         $this->createUndo();
         $planes = $this->getPlanesByIds();
-        $this->notifyAllPlayers('planes', '!!! stPrepare !!!', [
+        $this->notifyAllPlayers('planes', '', [
             'planes' => array_values($planes)
         ]);
     }
 
-    function argPreparePrivate(int $playerId): array
+    function argPrepareBuy(int $playerId): array
     {
         $plane = $this->getPlaneById($playerId);
         $cash = $plane->getCashRemain();
+        $wallet = $this->getPaxWallet($plane->id);
         $buys = [];
 
         // Seat
@@ -292,50 +294,26 @@ class NowBoarding extends Table
         $args = [
             'buys' => $buys,
             'cash' => $cash,
-            'undo' => $plane->debt > 0,
+            'wallet' => array_values($wallet),
         ];
-
         if ($plane->debt > 0) {
-            // Did we overpay?
-            $wallet = $this->getPaxWallet($plane->id);
-            self::debug("wallet for player {$plane->id} : " . json_encode($wallet) . " // ");
-            $args['wallet'] = $wallet;
+            $pay = $this->_argPreparePay($plane, $wallet);
+            $args['undo'] = true;
+            $args['overpay'] = $pay['overpay'];
         }
 
         return $args;
-
-
-        // $change = [];
-        // $cash = [1, 2, 3, 4, 4, 5, 5];
-        // $count = count($cash);
-        // $goal = 8;
-        // $bestOverpaid = null;
-        // $bestPerm = null;
-        // foreach ($this->generatePermutations($cash) as $perm) {
-        //     $paid = [];
-        //     $sum = 0;
-        //     for ($i = $count - 1; $sum < $goal && $i >= 0; $i--) {
-        //         $paid[] = $perm[$i];
-        //         $sum += $perm[$i];
-        //     }
-        //     $change[] = $paid;
-        //     $overpaid = $sum - $goal;
-        //     if ($bestOverpaid == null || $overpaid < $bestOverpaid) {
-        //         self::debug("found overpaid=$overpaid, paid=" . join(',', $paid) . " for goal=$goal // ");
-        //         $bestOverpaid = $overpaid;
-        //         $bestPerm = $paid;
-        //     }
-        //     if ($overpaid == 0) {
-        //         break;
-        //     }
-        // }
     }
 
     function argPreparePay(int $playerId): array
     {
         $plane = $this->getPlaneById($playerId);
         $wallet = $this->getPaxWallet($plane->id);
+        return $this->_argPreparePay($plane, $wallet);
+    }
 
+    function _argPreparePay(NPlane $plane, array $wallet): array
+    {
         $walletCount = count($wallet);
         $suggestion = null;
         $overpay = null;
@@ -347,9 +325,9 @@ class NowBoarding extends Table
                 $thisSum += $p[$i];
             }
             $thisOverpay = $thisSum - $plane->debt;
-            self::debug("found suggestion " . join(',', $thisSuggestion) . " with overpay=$thisOverpay // ");
+            // self::debug("found suggestion " . join(',', $thisSuggestion) . " with overpay=$thisOverpay // ");
             if ($suggestion == null || $thisOverpay < $overpay || $thisOverpay == $overpay && count($thisSuggestion) < count($suggestion)) {
-                self::debug("it's the best! // ");
+                // self::debug("it's the best! // ");
                 $suggestion = $thisSuggestion;
                 $overpay = $thisOverpay;
             }
@@ -360,9 +338,9 @@ class NowBoarding extends Table
 
         return [
             'debt' => $plane->debt,
-            'wallet' => $wallet,
-            'suggestion' => $suggestion,
             'overpay' => $overpay,
+            'suggestion' => $suggestion,
+            'wallet' => array_values($wallet),
         ];
     }
 
@@ -502,7 +480,7 @@ class NowBoarding extends Table
             'player_name' => $plane->name,
         ]);
 
-        $this->gamestate->nextPrivateState($plane->id, $isBuild ? 'buildUpgrade' : 'preparePrivate');
+        $this->gamestate->nextPrivateState($plane->id, $isBuild ? 'buildUpgrade' : 'prepareBuy');
     }
 
     private function buySeat(NPlane $plane): void
@@ -532,7 +510,7 @@ class NowBoarding extends Table
         if ($isBuild) {
             $this->gamestate->setPlayerNonMultiactive($plane->id, 'maintenance');
         } else {
-            $this->gamestate->nextPrivateState($plane->id, 'preparePrivate');
+            $this->gamestate->nextPrivateState($plane->id, 'prepareBuy');
         }
     }
 
@@ -562,7 +540,7 @@ class NowBoarding extends Table
             'tempIcon' => 'speed',
         ]);
 
-        $this->gamestate->nextPrivateState($plane->id, 'preparePrivate');
+        $this->gamestate->nextPrivateState($plane->id, 'prepareBuy');
     }
 
     private function buySpeed(NPlane $plane): void
@@ -593,7 +571,7 @@ class NowBoarding extends Table
         if ($isBuild) {
             $this->gamestate->setPlayerNonMultiactive($plane->id, 'maintenance');
         } else {
-            $this->gamestate->nextPrivateState($plane->id, 'preparePrivate');
+            $this->gamestate->nextPrivateState($plane->id, 'prepareBuy');
         }
     }
 
@@ -623,20 +601,29 @@ class NowBoarding extends Table
             'tempIcon' => 'speed',
         ]);
 
-        $this->gamestate->nextPrivateState($plane->id, 'preparePrivate');
+        $this->gamestate->nextPrivateState($plane->id, 'prepareBuy');
     }
 
-    function pay($paxIds): void
+    function buyAgain(): void
+    {
+        $playerId = $this->getCurrentPlayerId();
+        $this->gamestate->nextPrivateState($playerId, 'prepareBuy');
+    }
+
+    function pay($paid): void
     {
         $playerId = $this->getCurrentPlayerId();
         $wallet = $this->getPaxWallet($playerId);
         $total = 0;
         $validIds = [];
-        foreach ($wallet as $paxId => $cash) {
-            if (in_array($paxId, $paxIds)) {
-                $total += $cash;
-                $validIds[] = $paxId;
+        foreach ($paid as $cash) {
+            $paxId = array_search($cash, $wallet);
+            if ($paxId === false) {
+                throw new BgaVisibleSystemException("pay: Wallet $playerId has no \$$cash bill with validIds=" . join(',', $validIds) . " [???]");
             }
+            unset($wallet[$paxId]);
+            $total += $cash;
+            $validIds[] = $paxId;
         }
 
         $plane = $this->getPlaneById($playerId);
@@ -657,7 +644,6 @@ class NowBoarding extends Table
         $this->gamestate->setPlayerNonMultiactive($playerId, 'reveal');
     }
 
-
     function prepareDone(): void
     {
         $playerId = $this->getCurrentPlayerId();
@@ -673,6 +659,12 @@ class NowBoarding extends Table
     {
         $playerId = $this->getCurrentPlayerId();
         $this->gamestate->setPlayerNonMultiactive($playerId, 'maintenance');
+    }
+
+    function flyAgain(): void
+    {
+        $playerId = $this->getCurrentPlayerId();
+        $this->gamestate->setPlayersMultiactive([$playerId], '');
     }
 
     function move(string $location): void
@@ -905,8 +897,12 @@ class NowBoarding extends Table
 
         // Notify hour
         $hourInfo['i18n'] = ['hourDesc'];
-        $msg = $hourInfo['hour'] == 'FINALE' ? $this->msg['hourFinale'] : $this->msg['hour'];
-        $this->notifyAllPlayers('hour', $msg, $hourInfo);
+        if ($hourInfo['hour'] == 'FINALE') {
+            $hourInfo['count'] = $this->countPaxByStatus(['PORT', 'SEAT']);
+            $this->notifyAllPlayers('hour', $this->msg['hourFinale'], $hourInfo);
+        } else {
+            $this->notifyAllPlayers('hour', $this->msg['hour'], $hourInfo);
+        }
         return $hourInfo;
     }
 
@@ -1050,7 +1046,7 @@ SQL);
 
     function getPaxWallet(int $playerId): array
     {
-        $sql = "SELECT `pax_id`, `cash` FROM `pax` WHERE `status` = 'CASH' AND `player_id` = $playerId ORDER BY `pax_id`";
+        $sql = "SELECT `pax_id`, `cash` FROM `pax` WHERE `status` = 'CASH' AND `player_id` = $playerId ORDER BY `cash` DESC, `pax_id`";
         return $this->getCollectionFromDB($sql, true);
     }
 
@@ -1303,8 +1299,7 @@ SQL);
         // File a complaint for every 2 pax
         $count = $this->countPaxByStatus(['PORT', 'SEAT']);
         $complaint = floor($count / 2);
-        $this->DbQuery("UPDATE `pax` SET `status` = 'COMPLAINT' WHERE `status` IN ('PORT', 'SEAT') ORDER BY `pax_id` LIMIT $complaint");
-        $total = $this->countPaxByStatus('COMPLAINT');
+        $total = $this->countPaxByStatus('COMPLAINT') + $complaint;
         if ($complaint > 0) {
             $this->notifyAllPlayers('complaint', $this->msg['complaintFinale'], [
                 'complaint' => $complaint,
