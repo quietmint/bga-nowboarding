@@ -10,7 +10,12 @@
  * -----
  */
 
-$gameinfos = array(
+$gameinfos = [
+
+    'custom_buy_button' => [
+        'url' => 'https://www.fowers.games/collections/homepage-products/products/now-boarding',
+        'label' => 'Fowers Games',
+    ],
 
     // Name of the game in English (will serve as the basis for translation)
     'game_name' => "Now Boarding",
@@ -37,7 +42,7 @@ $gameinfos = array(
     'bgg_id' => 231567,
 
     // Players configuration that can be played (ex: 2 to 4 players)
-    'players' => array(2, 3, 4, 5),
+    'players' => [2, 3, 4, 5],
 
     // Suggest players to play with this number of players. Must be null if there is no such advice, or if there is only one possible player configuration.
     // NB: the automatic lobby will try first the lowest number of players if this is not specified. So you _have to_ specify this parameter if the lowest player number is not compatible with the default options.
@@ -99,7 +104,7 @@ $gameinfos = array(
     'diplomacy' => 5,
 
     // Colors attributed to players
-    'player_colors' => array("ff0000", "f07f16", "008000", "0000ff", "982fff"),
+    'player_colors' => ["ff0000", "f07f16", "008000", "0000ff", "982fff"],
 
     // Favorite colors support : if set to "true", support attribution of favorite colors based on player's preferences (see reattributeColorsBasedOnPreferences PHP method)
     // NB: this parameter is used only to flag games supporting this feature; you must use (or not use) reattributeColorsBasedOnPreferences PHP method to actually enable or disable the feature.
@@ -111,7 +116,7 @@ $gameinfos = array(
 
     // Game interface width range (pixels)
     // Note: game interface = space on the left side, without the column on the right
-    'game_interface_width' => array(
+    'game_interface_width' => [
 
         // Minimum width
         //  default: 740
@@ -124,15 +129,16 @@ $gameinfos = array(
         //  maximum possible value: unlimited
         //  minimum possible value: 740
         'max' => null
-    ),
+    ],
 
     // Game presentation
     // Short game presentation text that will appear on the game description page, structured as an array of paragraphs.
     // Each paragraph must be wrapped with totranslate() for translation and should not contain html (plain text without formatting).
     // A good length for this text is between 100 and 150 words (about 6 to 9 lines on a standard display)
-    'presentation' => array(
-        totranslate("Now Boarding is a real-time cooperative game in which you work together to fly a fleet of airplanes. You must deliver all the passengers to their destinations before they get too angry — and new passengers are constantly arriving! Upgrade your plane to fly faster and carry more passengers to handle the load. The twist: All players take all their turns at the same time! This allows for clever hand-offs of passengers. It's a whole new level of pick-up-and-deliver game."),
-    ),
+    'presentation' => [
+        totranslate("Now Boarding is a co-operative, simultaneous-play game in which you work together to fly a fleet of airplanes. All players take actions at the same time in this chaotic and clever twist on pick-up-and-deliver."),
+        totranslate("Coordinate your efforts to transport passengers, improve your planes, and access new flight paths so you can deliver everyone to their destination by the end of the day. But watch out for stormy weather and flaring tempers! Will three passenger complaints will put your airline out of business, or will your team be a soaring success?"),
+    ],
 
     //////// BGA SANDBOX ONLY PARAMETERS (DO NOT MODIFY)
 
@@ -143,4 +149,4 @@ $gameinfos = array(
     'turnControl' => 'simple'
 
     ////////
-);
+];
