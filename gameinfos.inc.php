@@ -1,18 +1,18 @@
 <?php
 
-/*
-    From this file, you can edit the various meta-information of your game.
-
-    Once you modified the file, don't forget to click on "Reload game informations" from the Control Panel in order in can be taken into account.
-
-    See documentation about this file here:
-    http://en.doc.boardgamearena.com/Game_meta-information:_gameinfos.inc.php
-
-*/
+/**
+ *------
+ * BGA framework: © Gregory Isabelli <gisabelli@boardgamearena.com> & Emmanuel Colin <ecolin@boardgamearena.com>
+ * Now Boarding implementation : © quietmint
+ *
+ * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
+ * See http://en.boardgamearena.com/#!doc/Studio for more information.
+ * -----
+ */
 
 $gameinfos = array(
 
-    // Name of the game in English (will serve as the basis for translation) 
+    // Name of the game in English (will serve as the basis for translation)
     'game_name' => "Now Boarding",
 
     // Game designer (or game designers, separated by commas)
@@ -35,7 +35,6 @@ $gameinfos = array(
 
     // Board game geek ID of the game
     'bgg_id' => 231567,
-
 
     // Players configuration that can be played (ex: 2 to 4 players)
     'players' => array(2, 3, 4, 5),
@@ -69,7 +68,7 @@ $gameinfos = array(
     // Example: 'tie_breaker_description' => totranslate( "Number of remaining cards in hand" ),
     'tie_breaker_description' => "",
 
-    // If in the game, all losers are equal (no score to rank them or explicit in the rules that losers are not ranked between them), set this to true 
+    // If in the game, all losers are equal (no score to rank them or explicit in the rules that losers are not ranked between them), set this to true
     // The game end result will display "Winner" for the 1st player and "Loser" for all other players
     'losers_not_ranked' => true,
 
@@ -91,10 +90,10 @@ $gameinfos = array(
     'complexity' => 3,
 
     // Luck of the game, from 0 (absolutely no luck in this game) to 5 (totally luck driven)
-    'luck' => 3,
+    'luck' => 2,
 
     // Strategy of the game, from 0 (no strategy can be setup) to 5 (totally based on strategy)
-    'strategy' => 3,
+    'strategy' => 2,
 
     // Diplomacy of the game, from 0 (no interaction in this game) to 5 (totally based on interaction and discussion between players)
     'diplomacy' => 5,
@@ -104,11 +103,11 @@ $gameinfos = array(
 
     // Favorite colors support : if set to "true", support attribution of favorite colors based on player's preferences (see reattributeColorsBasedOnPreferences PHP method)
     // NB: this parameter is used only to flag games supporting this feature; you must use (or not use) reattributeColorsBasedOnPreferences PHP method to actually enable or disable the feature.
-    'favorite_colors_support' => true,
+    'favorite_colors_support' => false,
 
     // When doing a rematch, the player order is swapped using a "rotation" so the starting player is not the same
     // If you want to disable this, set this to true
-    'disable_player_order_swap_on_rematch' => false,
+    'disable_player_order_swap_on_rematch' => true,
 
     // Game interface width range (pixels)
     // Note: game interface = space on the left side, without the column on the right
@@ -118,7 +117,7 @@ $gameinfos = array(
         //  default: 740
         //  maximum possible value: 740 (ie: your game interface should fit with a 740px width (correspond to a 1024px screen)
         //  minimum possible value: 320 (the lowest value you specify, the better the display is on mobile)
-        'min' => 740,
+        'min' => 1155,
 
         // Maximum width
         //  default: null (ie: no limit, the game interface is as big as the player's screen allows it).

@@ -36,7 +36,7 @@ $planes: "ATL" $color-green-600, "DFW" $color-purple-700, "LAX" $color-amber-600
 }
 
 .icon.cash {
-  background-image: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="512" height="512" viewBox="0 0 512 512"%3E%3Cpath fill="white" d="M448 400H64a16 16 0 0 1 0-32h384a16 16 0 0 1 0 32Zm-32 48H96a16 16 0 0 1 0-32h320a16 16 0 0 1 0 32ZM32 272H16v48a32 32 0 0 0 32 32h48v-16a64.07 64.07 0 0 0-64-64Z"%2F%3E%3Cpath fill="white" d="M480 240h16v-64h-16a96.11 96.11 0 0 1-96-96V64H128v16a96.11 96.11 0 0 1-96 96H16v64h16a96.11 96.11 0 0 1 96 96v16h256v-16a96.11 96.11 0 0 1 96-96Zm-224 64a96 96 0 1 1 96-96a96.11 96.11 0 0 1-96 96Z"%2F%3E%3Ccircle cx="256" cy="208" r="64" fill="white"%2F%3E%3Cpath fill="white" d="M416 336v16h48a32 32 0 0 0 32-32v-48h-16a64.07 64.07 0 0 0-64 64Zm64-192h16V96a32 32 0 0 0-32-32h-48v16a64.07 64.07 0 0 0 64 64ZM96 80V64H48a32 32 0 0 0-32 32v48h16a64.07 64.07 0 0 0 64-64Z"%2F%3E%3C%2Fsvg%3E');
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="24" height="24" viewBox="0 0 24 24"%3E%3Cg fill="none" stroke="white" stroke-width="1.5"%3E%3Ccircle cx="12" cy="12" r="10" opacity=".5"%2F%3E%3Cpath stroke-linecap="round" d="M12 6v12m3-8.5C15 8.12 13.657 7 12 7S9 8.12 9 9.5s1.343 2.5 3 2.5s3 1.12 3 2.5s-1.343 2.5-3 2.5s-3-1.12-3-2.5"%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E');
 }
 
 .icon.complaint {

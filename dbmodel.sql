@@ -1,3 +1,13 @@
+CREATE TABLE `stats_undo` LIKE `stats`;
+
+CREATE TABLE `ledger` (
+    `player_id` INT(10) NOT NULL,
+    `type` VARCHAR(50) NOT NULL,
+    `arg` VARCHAR(50) DEFAULT NULL,
+    `cost` INT(2) NOT NULL,
+    INDEX (`player_id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8;
+
 CREATE TABLE `pax` (
     `pax_id` INT(3) NOT NULL AUTO_INCREMENT,
     `status` ENUM(
@@ -16,6 +26,7 @@ CREATE TABLE `pax` (
     `origin` VARCHAR(50) NOT NULL,
     `destination` VARCHAR(50) NOT NULL,
     `location` VARCHAR(50) DEFAULT NULL,
+    `stops` INT(10) NOT NULL DEFAULT '0',
     `player_id` INT(10) DEFAULT NULL,
     `vip` VARCHAR(50) DEFAULT NULL,
     PRIMARY KEY (`pax_id`),
@@ -30,8 +41,8 @@ CREATE TABLE `plane` (
     `debt` INT(2) NOT NULL DEFAULT '0',
     `origin` VARCHAR(50) DEFAULT NULL,
     `location` VARCHAR(50) DEFAULT NULL,
-    `temp_speed` TINYINT(1) DEFAULT NULL,
     `temp_seat` TINYINT(1) DEFAULT NULL,
+    `temp_speed` TINYINT(1) DEFAULT NULL,
     `speed` INT(2) NOT NULL DEFAULT '3',
     `speed_remain` INT(2) NOT NULL DEFAULT '3',
     `seat` INT(2) NOT NULL DEFAULT '1',

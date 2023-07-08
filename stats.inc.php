@@ -3,99 +3,221 @@
 /**
  *------
  * BGA framework: © Gregory Isabelli <gisabelli@boardgamearena.com> & Emmanuel Colin <ecolin@boardgamearena.com>
- * NowBoarding implementation : © <Your name here> <Your email address here>
+ * Now Boarding implementation : © quietmint
  *
  * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
  * See http://en.boardgamearena.com/#!doc/Studio for more information.
  * -----
- *
- * stats.inc.php
- *
- * NowBoarding game statistics description
- *
  */
 
-/*
-    In this file, you are describing game statistics, that will be displayed at the end of the
-    game.
-    
-    !! After modifying this file, you must use "Reload  statistics configuration" in BGA Studio backoffice
-    ("Control Panel" / "Manage Game" / "Your Game")
-    
-    There are 2 types of statistics:
-    _ table statistics, that are not associated to a specific player (ie: 1 value for each game).
-    _ player statistics, that are associated to each players (ie: 1 value for each player in the game).
+require_once 'modules/constants.inc.php';
 
-    Statistics types can be "int" for integer, "float" for floating point values, and "bool" for boolean
-    
-    Once you defined your statistics there, you can start using "initStat", "setStat" and "incStat" method
-    in your game logic, using statistics names defined below.
-    
-    !! It is not a good idea to modify this file when a game is running !!
+$stats_type = [
+    'table' => [
+        'complaint' => [
+            'id' => 10,
+            'name' => totranslate('Complaints'),
+            'type' => 'int'
+        ],
 
-    If your game is already public on BGA, please read the following before any change:
-    http://en.doc.boardgamearena.com/Post-release_phase#Changes_that_breaks_the_games_in_progress
-    
-    Notes:
-    * Statistic index is the reference used in setStat/incStat/initStat PHP method
-    * Statistic index must contains alphanumerical characters and no space. Example: 'turn_played'
-    * Statistics IDs must be >=10
-    * Two table statistics can't share the same ID, two player statistics can't share the same ID
-    * A table statistic can have the same ID than a player statistics
-    * Statistics ID is the reference used by BGA website. If you change the ID, you lost all historical statistic data. Do NOT re-use an ID of a deleted statistic
-    * Statistic name is the English description of the statistic as shown to players
-    
-*/
+        'moves' => [
+            'id' => 15,
+            'name' => totranslate('Moves'),
+            'type' => 'int',
+        ],
+        'movesFAST' => [
+            'id' => 16,
+            'name' => totranslate('Move bonus from tailwinds'),
+            'type' => 'int'
+        ],
+        'movesSLOW' => [
+            'id' => 17,
+            'name' => totranslate('Move penalty from storms'),
+            'type' => 'int'
+        ],
 
-require_once('modules/constants.inc.php');
+        'pax' => [
+            'id' => 35,
+            'name' => totranslate('Passengers delivered'),
+            'type' => 'int'
+        ],
 
-$stats_type = array(
+        'stops0' => [
+            'id' => 40,
+            'name' => totranslate('Non-stop passengers'),
+            'type' => 'int'
+        ],
+        'stops1' => [
+            'id' => 41,
+            'name' => totranslate('1-stop passengers'),
+            'type' => 'int'
+        ],
+        'stops2' => [
+            'id' => 42,
+            'name' => totranslate('2-stop passengers'),
+            'type' => 'int'
+        ],
+        'stops3' => [
+            'id' => 43,
+            'name' => totranslate('3-stop passengers'),
+            'type' => 'int'
+        ],
+        'stops4' => [
+            'id' => 44,
+            'name' => totranslate('4-stop passengers'),
+            'type' => 'int'
+        ],
+        'stops5' => [
+            'id' => 45,
+            'name' => totranslate('5-stop passengers'),
+            'type' => 'int'
+        ],
+        'stops6' => [
+            'id' => 46,
+            'name' => totranslate('6-stop passengers'),
+            'type' => 'int'
+        ],
+        'stops7' => [
+            'id' => 47,
+            'name' => totranslate('7-stop and above passengers'),
+            'type' => 'int'
+        ],
+        'stopsAvg' => [
+            'id' => 39,
+            'name' => totranslate('Average stops/passenger'),
+            'type' => 'float'
+        ],
 
-    // Statistics global to table
-    "table" => array(
+        'alliances' => [
+            'id' => 52,
+            'name' => totranslate('Average alliances/player'),
+            'type' => 'float'
+        ],
+        'seat' => [
+            'id' => 53,
+            'name' => totranslate('Average seats/player'),
+            'type' => 'float'
+        ],
+        'speed' => [
+            'id' => 54,
+            'name' => totranslate('Average speed/player'),
+            'type' => 'float'
+        ],
+        'tempSeat' => [
+            'id' => 55,
+            'name' => totranslate('Temporary Seats purchased'),
+            'type' => 'int'
+        ],
+        'tempSpeed' => [
+            'id' => 56,
+            'name' => totranslate('Temporary Speed purchased'),
+            'type' => 'int'
+        ],
+    ],
 
-        "turns_number" => array(
-            "id" => 10,
-            "name" => totranslate("Number of turns"),
-            "type" => "int"
-        ),
+    'player' => [
+        'moves' => [
+            'id' => 15,
+            'name' => totranslate('Moves'),
+            'type' => 'int',
+        ],
+        'movesFAST' => [
+            'id' => 16,
+            'name' => totranslate('Move bonus from tailwinds'),
+            'type' => 'int'
+        ],
+        'movesSLOW' => [
+            'id' => 17,
+            'name' => totranslate('Move penalty from storms'),
+            'type' => 'int'
+        ],
 
-        /*
-        Examples:
+        'ATL' => [
+            'id' => 21,
+            'name' => totranslate('ATL visits'),
+            'type' => 'int'
+        ],
+        'DEN' => [
+            'id' => 22,
+            'name' => totranslate('DEN visits'),
+            'type' => 'int'
+        ],
+        'DFW' => [
+            'id' => 23,
+            'name' => totranslate('DFW visits'),
+            'type' => 'int'
+        ],
+        'JFK' => [
+            'id' => 24,
+            'name' => totranslate('JFK visits'),
+            'type' => 'int'
+        ],
+        'LAX' => [
+            'id' => 25,
+            'name' => totranslate('LAX visits'),
+            'type' => 'int'
+        ],
+        'MIA' => [
+            'id' => 26,
+            'name' => totranslate('MIA visits'),
+            'type' => 'int'
+        ],
+        'ORD' => [
+            'id' => 27,
+            'name' => totranslate('ORD visits'),
+            'type' => 'int'
+        ],
+        'SEA' => [
+            'id' => 28,
+            'name' => totranslate('SEA visits'),
+            'type' => 'int'
+        ],
+        'SFO' => [
+            'id' => 29,
+            'name' => totranslate('SFO visits'),
+            'type' => 'int'
+        ],
 
+        'pax' => [
+            'id' => 35,
+            'name' => totranslate('Passengers delivered'),
+            'type' => 'int'
+        ],
 
-        "table_teststat1" => array(   "id"=> 10,
-                                "name" => totranslate("table test stat 1"), 
-                                "type" => "int" ),
-                                
-        "table_teststat2" => array(   "id"=> 11,
-                                "name" => totranslate("table test stat 2"), 
-                                "type" => "float" )
-*/
-    ),
-
-    // Statistics existing for each player
-    "player" => array(
-
-        "turns_number" => array(
-            "id" => 10,
-            "name" => totranslate("Number of turns"),
-            "type" => "int"
-        ),
-
-        /*
-        Examples:    
-        
-        
-        "player_teststat1" => array(   "id"=> 10,
-                                "name" => totranslate("player test stat 1"), 
-                                "type" => "int" ),
-                                
-        "player_teststat2" => array(   "id"=> 11,
-                                "name" => totranslate("player test stat 2"), 
-                                "type" => "float" )
-
-*/
-    )
-
-);
+        'cash' => [
+            'id' => 50,
+            'name' => totranslate('Cash earned'),
+            'type' => 'int'
+        ],
+        'overpay' => [
+            'id' => 51,
+            'name' => totranslate('Cash overpaid'),
+            'type' => 'int'
+        ],
+        'alliances' => [
+            'id' => 52,
+            'name' => totranslate('Alliances'),
+            'type' => 'int'
+        ],
+        'seat' => [
+            'id' => 53,
+            'name' => totranslate('Seats'),
+            'type' => 'int'
+        ],
+        'speed' => [
+            'id' => 54,
+            'name' => totranslate('Speed'),
+            'type' => 'int'
+        ],
+        'tempSeat' => [
+            'id' => 55,
+            'name' => totranslate('Temporary Seats purchased'),
+            'type' => 'int'
+        ],
+        'tempSpeed' => [
+            'id' => 56,
+            'name' => totranslate('Temporary Speed purchased'),
+            'type' => 'int'
+        ],
+    ]
+];

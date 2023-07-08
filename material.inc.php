@@ -1,5 +1,15 @@
 <?php
 
+/**
+ *------
+ * BGA framework: © Gregory Isabelli <gisabelli@boardgamearena.com> & Emmanuel Colin <ecolin@boardgamearena.com>
+ * Now Boarding implementation : © quietmint
+ *
+ * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
+ * See http://en.boardgamearena.com/#!doc/Studio for more information.
+ * -----
+ */
+
 $this->hourDesc = [
     'PREFLIGHT' => clienttranslate('Preflight'),
     'MORNING' => clienttranslate('Morning'),
@@ -12,16 +22,17 @@ $this->msg = [
     'addPax' => clienttranslate('${count} passengers arrive at ${location}'),
     'alliance' => clienttranslate('${player_name} joins alliance ${alliance}'),
     'anger' => clienttranslate('${count} passengers in airports get angry'),
-    'board' => clienttranslate('${player_name} boards a ${route} passenger at ${location}'),
+    'board' => clienttranslate('${player_name} boards a passenger at ${location}'),
     'complaint' => clienttranslate('${complaint} complaints are filed by angry passengers at ${location}'),
     'complaintFinale' => clienttranslate('${complaint} complaints are filed by ${count} undelivered passengers'),
-    'deplane' => clienttranslate('${player_name} deplanes a ${route} passenger at ${location}'),
-    'deplaneDeliver' => clienttranslate('${player_name} delivers a ${route} passenger and earns ${cash}'),
+    'deplane' => clienttranslate('${player_name} deplanes a passenger at ${location}'),
+    'deplaneDeliver' => clienttranslate('${player_name} delivers a passenger to ${location} and earns ${cash}'),
     'endLose' => clienttranslate('Rough landing! Your airline goes out of business after receiving ${complaint} complaints!'),
     'endWin' => clienttranslate('Congratulations! Your airline is a soaring success!'),
     'hour' => clienttranslate('${hourDesc} round ${round} of ${total} begins'),
     'hourFinale' => clienttranslate('${hourDesc} begins. ${count} undelivered passengers remain.'),
-    'move' => clienttranslate('${player_name} flys to ${location}'),
+    'move' => clienttranslate('${player_name} flys ${fuel} moves'),
+    'movePort' => clienttranslate('${player_name} flys ${fuel} moves to ${location}'),
     'seat' => clienttranslate('${player_name} upgrades seats to ${seat}'),
     'speed' => clienttranslate('${player_name} upgrades speed to ${speed}'),
     'temp' => clienttranslate('${player_name} purchases ${temp}'),

@@ -1,5 +1,15 @@
 <?php
 
+/**
+ *------
+ * BGA framework: © Gregory Isabelli <gisabelli@boardgamearena.com> & Emmanuel Colin <ecolin@boardgamearena.com>
+ * Now Boarding implementation : © quietmint
+ *
+ * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
+ * See http://en.boardgamearena.com/#!doc/Studio for more information.
+ * -----
+ */
+
 $machinestates = [
     // BGA framework state, do not modify
     N_STATE_BEGIN => [
@@ -101,7 +111,7 @@ $machinestates = [
     N_STATE_PREPARE_BUY => [
         'name' => 'prepareBuy',
         'args' => 'argPrepareBuy',
-        'descriptionmyturn' => clienttranslate('Discuss plans and purchase upgrades ($${cash} available)'),
+        'descriptionmyturn' => clienttranslate('Discuss plans and purchase upgrades'),
         'possibleactions' => [
             'buy',
             'prepareDone',

@@ -1,5 +1,15 @@
 <?php
 
+/**
+ *------
+ * BGA framework: © Gregory Isabelli <gisabelli@boardgamearena.com> & Emmanuel Colin <ecolin@boardgamearena.com>
+ * Now Boarding implementation : © quietmint
+ *
+ * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
+ * See http://en.boardgamearena.com/#!doc/Studio for more information.
+ * -----
+ */
+
 require_once APP_GAMEMODULE_PATH . 'module/table/table.game.php';
 require_once 'modules/constants.inc.php';
 require_once 'modules/NMap.class.php';
@@ -32,15 +42,63 @@ class NowBoarding extends Table
     protected function setupNewGame($players, $options = [])
     {
         // Create players and planes
+        $playerCount = count($players);
         foreach ($players as $player_id => $player) {
             $sql = "INSERT INTO player (player_id, player_color, player_canal, player_name, player_avatar) VALUES ($player_id, '000000', '" . $player['player_canal'] . "', '" . addslashes($player['player_name']) . "', '" . addslashes($player['player_avatar']) . "')";
             $this->DbQuery($sql);
-
-            $sql = "INSERT INTO `plane` (`player_id`) VALUES ($player_id)";
-            $this->DbQuery($sql);
+            $this->DbQuery("INSERT INTO `plane` (`player_id`) VALUES ($player_id)");
         }
         $this->reloadPlayersBasicInfos();
 
+        // Erase beginner flags (affects giveExtraTime)
+        $this->DbQuery("UPDATE `player` SET `player_beginner` = NULL");
+        $this->reloadPlayersBasicInfos();
+
+        // Table statistics
+        $this->initStat('table', 'complaint', 0);
+        $this->initStat('table', 'moves', 0);
+        $this->initStat('table', 'movesFAST', 0);
+        $this->initStat('table', 'movesSLOW', 0);
+        $this->initStat('table', 'pax', 0);
+        $this->initStat('table', 'stopsAvg', 0);
+        $this->initStat('table', 'stops0', 0);
+        $this->initStat('table', 'stops1', 0);
+        $this->initStat('table', 'stops2', 0);
+        $this->initStat('table', 'stops3', 0);
+        $this->initStat('table', 'stops4', 0);
+        $this->initStat('table', 'stops5', 0);
+        $this->initStat('table', 'stops6', 0);
+        $this->initStat('table', 'stops7', 0);
+        $this->initStat('table', 'alliances', 0);
+        $this->initStat('table', 'seat', 0);
+        $this->initStat('table', 'speed', 0);
+        $this->initStat('table', 'tempSeat', 0);
+        $this->initStat('table', 'tempSpeed', 0);
+
+        // Player statistics
+        $this->initStat('player', 'moves', 0);
+        $this->initStat('player', 'movesFAST', 0);
+        $this->initStat('player', 'movesSLOW', 0);
+        $this->initStat('player', 'ATL', 0);
+        $this->initStat('player', 'DEN', 0);
+        $this->initStat('player', 'DFW', 0);
+        $this->initStat('player', 'JFK', 0);
+        $this->initStat('player', 'MIA', 0);
+        $this->initStat('player', 'ORD', 0);
+        if ($playerCount >= 4) {
+            $this->initStat('player', 'SEA', 0);
+        }
+        $this->initStat('player', 'SFO', 0);
+        $this->initStat('player', 'pax', 0);
+        $this->initStat('player', 'cash', 0);
+        $this->initStat('player', 'overpay', 0);
+        $this->initStat('player', 'alliances', 0);
+        $this->initStat('player', 'seat', 1);
+        $this->initStat('player', 'speed', 3);
+        $this->initStat('player', 'tempSeat', 0);
+        $this->initStat('player', 'tempSpeed', 0);
+
+        // Set the hour
         $this->setVar('hour', 'PREFLIGHT');
         $this->createUndo();
     }
@@ -98,7 +156,7 @@ class NowBoarding extends Table
     function argBuildAlliance(int $playerId): array
     {
         $buys = [];
-        $claimed = $this->getObjectListFromDB("SELECT `alliances` FROM `plane` WHERE `alliances` IS NOT NULL AND `player_id` != $playerId", true);
+        $claimed = $this->getObjectListFromDB("SELECT SUBSTRING_INDEX(`alliances`, ',', 1) FROM `plane` WHERE `alliances` IS NOT NULL AND `player_id` != $playerId", true);
         $playerCount = $this->getPlayersNumber();
         if ($playerCount <= 3) {
             // Exclude Seattle for 2-3 players
@@ -178,6 +236,7 @@ class NowBoarding extends Table
         } else {
             if ($hourInfo['hour'] == 'PREFLIGHT') {
                 // Create pax on the first turn
+                $this->eraseUndo();
                 $this->createPax();
                 $pax = $this->getPaxByStatus('PORT');
                 $this->notifyAllPlayers('pax', $this->msg['addPax'], [
@@ -187,7 +246,10 @@ class NowBoarding extends Table
                 ]);
             } else {
                 // Add anger/complaints on subsequent turns
-                $this->angerPax();
+                $didEndGame = $this->angerPax();
+                if ($didEndGame) {
+                    return;
+                }
             }
 
             // Advance the hour
@@ -297,8 +359,9 @@ class NowBoarding extends Table
             'wallet' => array_values($wallet),
         ];
         if ($plane->debt > 0) {
+            $ledger = $this->getLedger($playerId);
             $pay = $this->_argPreparePay($plane, $wallet);
-            $args['undo'] = true;
+            $args['ledger'] = $ledger;
             $args['overpay'] = $pay['overpay'];
         }
 
@@ -325,9 +388,7 @@ class NowBoarding extends Table
                 $thisSum += $p[$i];
             }
             $thisOverpay = $thisSum - $plane->debt;
-            // self::debug("found suggestion " . join(',', $thisSuggestion) . " with overpay=$thisOverpay // ");
             if ($suggestion == null || $thisOverpay < $overpay || $thisOverpay == $overpay && count($thisSuggestion) < count($suggestion)) {
-                // self::debug("it's the best! // ");
                 $suggestion = $thisSuggestion;
                 $overpay = $thisOverpay;
             }
@@ -356,12 +417,7 @@ class NowBoarding extends Table
         // Remove undo info
         $this->eraseUndo();
 
-        // Play the sound!
-        $this->notifyAllPlayers('sound', '', [
-            'sound' => 'chime',
-        ]);
-
-        // Revael passengers
+        // Reveal passengers
         $pax = $this->getPaxByStatus('SECRET');
         foreach ($pax as $x) {
             $x->status = 'PORT';
@@ -373,6 +429,12 @@ class NowBoarding extends Table
 
         // Reset thinking time
         $this->giveExtraTimeAll(120, true);
+
+        // Play the sound and begin flying
+        $this->notifyAllPlayers('sound', '', [
+            'sound' => 'chime',
+            'suppress' => ['yourturn'],
+        ]);
         $this->gamestate->nextState('fly');
     }
 
@@ -395,8 +457,7 @@ class NowBoarding extends Table
     function undo(): void
     {
         $playerId = $this->getCurrentPlayerId();
-        $this->DbQuery("REPLACE INTO `plane` SELECT * FROM `plane_undo` WHERE `player_id` = $playerId");
-        $this->DbQuery("REPLACE INTO `pax` SELECT * FROM `pax_undo` WHERE `player_id` = $playerId");
+        $this->applyUndo($playerId);
 
         $plane = $this->getPlaneById($playerId);
         $this->notifyAllPlayers('planes', $this->msg['undo'], [
@@ -433,7 +494,7 @@ class NowBoarding extends Table
 
     private function buyAlliancePrimary(NPlane $plane, string $alliance): void
     {
-        $owner = $this->getOwnerName("`alliances` = '$alliance'");
+        $owner = $this->getOwnerName("SUBSTRING_INDEX(`alliances`, ',', 1) = '$alliance'");
         if ($owner != null) {
             throw new BgaUserException(sprintf($this->exMsg['allianceOwner'], $owner, $alliance));
         }
@@ -452,6 +513,9 @@ class NowBoarding extends Table
             'player_id' => $plane->id,
             'player_name' => $plane->name,
         ]);
+
+        // Statistics
+        $this->setStat(1, 'alliances', $plane->id);
 
         $playerCount = $this->getPlayersNumber();
         $this->gamestate->nextPrivateState($plane->id,  $playerCount == 2 ? 'buildAlliance2' : 'buildUpgrade');
@@ -472,6 +536,7 @@ class NowBoarding extends Table
         $plane->debt += $cost;
         $plane->alliances[] = $alliance;
         $this->DbQuery("UPDATE `plane` SET `debt` = {$plane->debt}, `alliances` = '{$plane->getAlliancesSql()}' WHERE `player_id` = {$plane->id}");
+        $this->addLedger($plane->id, 'ALLIANCE', $alliance, $cost);
 
         $this->notifyAllPlayers('planes', $this->msg['alliance'], [
             'alliance' => $alliance,
@@ -479,6 +544,9 @@ class NowBoarding extends Table
             'player_id' => $plane->id,
             'player_name' => $plane->name,
         ]);
+
+        // Statistics
+        $this->setStat(count($plane->alliances), 'alliances', $plane->id);
 
         $this->gamestate->nextPrivateState($plane->id, $isBuild ? 'buildUpgrade' : 'prepareBuy');
     }
@@ -499,6 +567,7 @@ class NowBoarding extends Table
         $plane->seat++;
         $plane->seatRemain++;
         $this->DbQuery("UPDATE `plane` SET `debt` = {$plane->debt}, `seat` = {$plane->seat} WHERE `player_id` = {$plane->id}");
+        $this->addLedger($plane->id, 'SEAT', $plane->seat, $cost);
 
         $this->notifyAllPlayers('planes', $this->msg['seat'], [
             'planes' => [$plane],
@@ -506,6 +575,9 @@ class NowBoarding extends Table
             'player_name' => $plane->name,
             'seat' => $plane->seat,
         ]);
+
+        // Statistics
+        $this->setStat($plane->seat, 'seat', $plane->id);
 
         if ($isBuild) {
             $this->gamestate->setPlayerNonMultiactive($plane->id, 'maintenance');
@@ -529,6 +601,7 @@ class NowBoarding extends Table
         $plane->debt += $cost;
         $plane->tempSeat = true;
         $this->DbQuery("UPDATE `plane` SET `debt` = {$plane->debt}, `temp_seat` = 1 WHERE `player_id` = {$plane->id}");
+        $this->addLedger($plane->id, 'TEMP_SEAT', null, $cost);
 
         $this->notifyAllPlayers('planes', $this->msg['temp'], [
             'i18n' => ['temp'],
@@ -539,6 +612,9 @@ class NowBoarding extends Table
             'temp' => clienttranslate('Temporary Seat'),
             'tempIcon' => 'speed',
         ]);
+
+        // Statistics
+        $this->incStat(1, 'tempSeat', $plane->id);
 
         $this->gamestate->nextPrivateState($plane->id, 'prepareBuy');
     }
@@ -559,6 +635,7 @@ class NowBoarding extends Table
         $plane->speed++;
         $plane->speedRemain = $plane->speed;
         $this->DbQuery("UPDATE `plane` SET `debt` = {$plane->debt}, `speed` = {$plane->speed}, `speed_remain` = {$plane->speedRemain} WHERE `player_id` = {$plane->id}");
+        $this->addLedger($plane->id, 'SPEED', $plane->speed, $cost);
 
         $this->notifyAllPlayers('planes', $this->msg['speed'], [
             'planes' => [$plane],
@@ -567,6 +644,8 @@ class NowBoarding extends Table
             'speed' => $plane->speed,
         ]);
 
+        // Statistics
+        $this->setStat($plane->speed, 'speed', $plane->id);
 
         if ($isBuild) {
             $this->gamestate->setPlayerNonMultiactive($plane->id, 'maintenance');
@@ -590,6 +669,7 @@ class NowBoarding extends Table
         $plane->debt += $cost;
         $plane->tempSpeed = true;
         $this->DbQuery("UPDATE `plane` SET `debt` = {$plane->debt}, `temp_speed` = 1 WHERE `player_id` = {$plane->id}");
+        $this->addLedger($plane->id, 'TEMP_SPEED', null, $cost);
 
         $this->notifyAllPlayers('planes', $this->msg['temp'], [
             'i18n' => ['temp'],
@@ -600,6 +680,9 @@ class NowBoarding extends Table
             'temp' => clienttranslate('Temporary Speed'),
             'tempIcon' => 'speed',
         ]);
+
+        // Statistics
+        $this->incStat(1, 'tempSpeed', $plane->id);
 
         $this->gamestate->nextPrivateState($plane->id, 'prepareBuy');
     }
@@ -617,6 +700,9 @@ class NowBoarding extends Table
         $total = 0;
         $validIds = [];
         foreach ($paid as $cash) {
+            if (!$cash) {
+                continue;
+            }
             $paxId = array_search($cash, $wallet);
             if ($paxId === false) {
                 throw new BgaVisibleSystemException("pay: Wallet $playerId has no \$$cash bill with validIds=" . join(',', $validIds) . " [???]");
@@ -640,6 +726,12 @@ class NowBoarding extends Table
         $this->notifyAllPlayers('planes', '', [
             'planes' => [$plane],
         ]);
+
+        // Statistics
+        $overpay = $plane->debt - $total;
+        if ($overpay > 0) {
+            $this->incStat($overpay, 'overpay', $plane->id);
+        }
 
         $this->gamestate->setPlayerNonMultiactive($playerId, 'reveal');
     }
@@ -697,14 +789,32 @@ class NowBoarding extends Table
         }
         $this->DbQuery("UPDATE `plane` SET `location` = '{$plane->location}', `origin` = '{$plane->origin}', `speed_remain` = {$plane->speedRemain} WHERE `player_id` = {$plane->id}");
 
-        $this->notifyAllPlayers('move', $this->msg['move'], [
+        // Statistics
+        $this->notifyAllPlayers('message', 'moves: ' . $move->fuel, []);
+        $this->incStat($move->fuel, 'moves');
+        $this->incStat($move->fuel, 'moves', $playerId);
+        array_shift($move->path);
+        foreach ($move->path as $location) {
+            if (strlen($location) == 3) {
+                $this->notifyAllPlayers('message', "visited $location", []);
+                $this->incStat(1, $location, $playerId);
+            }
+            if (array_key_exists($location, $map->weather)) {
+                $type = $map->weather[$location];
+                $this->notifyAllPlayers('message', "moves$type", []);
+                $this->incStat(1, "moves$type");
+                $this->incStat(1, "moves$type", $playerId);
+            }
+        }
+
+        $msg = strlen($location) == 3 ? $this->msg['movePort'] : $this->msg['move'];
+        $this->notifyAllPlayers('move', $msg, [
+            'fuel' => $move->fuel,
             'location' => $plane->location,
             'plane' => $plane,
             'player_id' => $plane->id,
             'player_name' => $plane->name,
         ]);
-
-
 
         $this->gamestate->nextPrivateState($plane->id, 'flyPrivate');
     }
@@ -732,8 +842,8 @@ class NowBoarding extends Table
                 'location' => $other->location,
                 'player_id' => $other->id,
                 'player_name' => $other->name,
-                'route' => "{$x->origin}-{$x->destination}",
             ]);
+            $x->stops++;
             if ($other->location != $plane->location) {
                 // Erase anger if deplaned at a new location
                 $x->anger = 0;
@@ -770,7 +880,7 @@ class NowBoarding extends Table
         // Note: We preserve anger until deplane
         $x->playerId = $plane->id;
         $x->status = 'SEAT';
-        $this->DbQuery("UPDATE `pax` SET `anger` = {$x->anger}, `player_id` = {$x->playerId}, `status` = '{$x->status}' WHERE `pax_id` = {$x->id}");
+        $this->DbQuery("UPDATE `pax` SET `anger` = {$x->anger}, `player_id` = {$x->playerId}, `status` = '{$x->status}', `stops` = {$x->stops} WHERE `pax_id` = {$x->id}");
 
         // Update UI empty seats
         $planes = $this->getPlanesByIds($planeIds);
@@ -783,7 +893,6 @@ class NowBoarding extends Table
             'pax' => [$x],
             'player_id' => $plane->id,
             'player_name' => $plane->name,
-            'route' => "{$x->origin}-{$x->destination}",
         ]);
 
         $this->gamestate->nextPrivateState($plane->id, 'flyPrivate');
@@ -813,22 +922,27 @@ class NowBoarding extends Table
 
         $x->location = $plane->location;
         $args = [
+            'location' => $x->destination,
             'pax' => [$x],
             'player_id' => $plane->id,
             'player_name' => $plane->name,
-            'route' => "{$x->origin}-{$x->destination}",
         ];
         if ($x->destination == $plane->location) {
             $x->status = 'CASH';
             $msg = $this->msg['deplaneDeliver'];
-            $args['cash'] = "\${$x->cash}";
+            $args['cash'] = $x->cash;
+            $this->incStat(1, 'pax');
+            $this->incStat(1, 'pax', $playerId);
+            $this->incStat($x->cash, 'cash', $playerId);
+            $stops = min($x->stops, 7);
+            $this->incStat(1, "stops$stops");
         } else {
             $x->playerId = null;
             $x->status = 'PORT';
+            $x->stops++;
             $msg = $this->msg['deplane'];
-            $args['location'] = $x->location;
         }
-        $this->DbQuery("UPDATE `pax` SET `anger` = {$x->anger}, `location` = '{$x->location}', `player_id` = {$x->getPlayerIdSql()}, `status` = '{$x->status}' WHERE `pax_id` = {$x->id}");
+        $this->DbQuery("UPDATE `pax` SET `anger` = {$x->anger}, `location` = '{$x->location}', `player_id` = {$x->getPlayerIdSql()}, `status` = '{$x->status}', `stops` = {$x->stops} WHERE `pax_id` = {$x->id}");
 
         // Update UI empty seats
         self::debug("Refresh plane for $playerId // ");
@@ -908,14 +1022,28 @@ class NowBoarding extends Table
 
     function createUndo(): void
     {
-        $this->DbQuery("INSERT INTO `plane_undo` SELECT * FROM `plane`");
         $this->DbQuery("INSERT INTO `pax_undo` SELECT * FROM `pax` WHERE `status` = 'CASH'");
+        $this->DbQuery("INSERT INTO `plane_undo` SELECT * FROM `plane`");
+        $this->DbQuery("INSERT INTO `stats_undo` SELECT * FROM `stats` WHERE `stats_type` >= 10 AND `stats_player_id` IS NOT NULL");
+    }
+
+    function applyUndo(int $playerId): void
+    {
+        $this->DbQuery("DELETE FROM `ledger` WHERE `player_id` = $playerId");
+        $this->DbQuery("DELETE FROM `pax` WHERE `player_id` = $playerId");
+        $this->DbQuery("INSERT INTO `pax` SELECT * FROM `pax_undo` WHERE `player_id` = $playerId");
+        $this->DbQuery("DELETE FROM `plane` WHERE `player_id` = $playerId");
+        $this->DbQuery("INSERT INTO `plane` SELECT * FROM `plane_undo` WHERE `player_id` = $playerId");
+        $this->DbQuery("DELETE FROM `stats` WHERE `stats_type` >= 10 AND `stats_player_id` = $playerId");
+        $this->DbQuery("INSERT INTO `stats` SELECT * FROM `stats_undo` WHERE `stats_player_id` = $playerId");
     }
 
     function eraseUndo(): void
     {
-        $this->DbQuery("DELETE FROM `plane_undo`");
+        $this->DbQuery("DELETE FROM `ledger`");
         $this->DbQuery("DELETE FROM `pax_undo`");
+        $this->DbQuery("DELETE FROM `plane_undo`");
+        $this->DbQuery("DELETE FROM `stats_undo`");
     }
 
     function getPlayerIds(): array
@@ -1018,12 +1146,16 @@ SQL);
         }, $this->getCollectionFromDb($sql));
     }
 
-    function getPaxByStatus($status, ?int $limit = null): array
+    function getPaxByStatus($status, ?int $limit = null, ?int $playerId = null): array
     {
         if (is_array($status)) {
             $status = join("', '", $status);
         }
-        $sql = "SELECT * FROM `pax` WHERE `status` IN ('$status') ORDER BY `pax_id`";
+        $sql = "SELECT * FROM `pax` WHERE `status` IN ('$status')";
+        if ($playerId != null) {
+            $sql .= " AND `player_id` = $playerId";
+        }
+        $sql .= " ORDER BY `pax_id`";
         if ($limit != null) {
             $sql .= " LIMIT $limit";
         }
@@ -1047,7 +1179,22 @@ SQL);
     function getPaxWallet(int $playerId): array
     {
         $sql = "SELECT `pax_id`, `cash` FROM `pax` WHERE `status` = 'CASH' AND `player_id` = $playerId ORDER BY `cash` DESC, `pax_id`";
-        return $this->getCollectionFromDB($sql, true);
+        return array_map('intval', $this->getCollectionFromDB($sql, true));
+    }
+
+    function getLedger(int $playerId): array
+    {
+        $sql = "SELECT `type`, `arg`, `cost` FROM `ledger` WHERE `player_id` = $playerId ORDER BY `type`, `cost`";
+        return $this->getObjectListFromDB($sql);
+    }
+
+    function addLedger(int $playerId, string $type, ?string $arg, int $cost): void
+    {
+        if ($arg) {
+            $this->DbQuery("INSERT INTO `ledger` (`player_id`, `type`, `arg`, `cost`) VALUES ($playerId, '$type', '$arg', $cost)");
+        } else {
+            $this->DbQuery("INSERT INTO `ledger` (`player_id`, `type`, `cost`) VALUES ($playerId, '$type', $cost)");
+        }
     }
 
     function createPax(): void
@@ -1211,7 +1358,7 @@ SQL);
         return join(', ', $locations);
     }
 
-    function angerPax(): void
+    function angerPax(): bool
     {
         $pax = $this->getPaxByStatus('PORT');
         if (!empty($pax)) {
@@ -1236,24 +1383,28 @@ SQL);
                 ]);
             }
             if (!empty($complaint)) {
+                $count = count($complaint);
                 $total = $this->countPaxByStatus('COMPLAINT');
                 $this->notifyAllPlayers('complaint', $this->msg['complaint'], [
-                    'complaint' => count($complaint),
+                    'complaint' => $count,
                     'location' => $this->getPaxLocations($complaint),
                     'total' => $total,
                 ]);
+                $this->setStat($total, 'complaint');
                 if ($total >= 3) {
-                    $this->notifyAllPlayers('message', $this->msg['endLose'], [
+                    $this->notifyAllPlayers('pax', $this->msg['endLose'], [
                         'complaint' => $total,
+                        'pax' => array_values($pax),
                     ]);
-                    $this->gamestate->nextState('end');
-                    return;
+                    $this->endStats();
+                    return true;
                 }
             }
             $this->notifyAllPlayers('pax', '', [
                 'pax' => array_values($pax),
             ]);
         }
+        return false;
     }
 
     function addWeather(): void
@@ -1306,6 +1457,7 @@ SQL);
                 'count' => $count,
                 'total' => $total,
             ]);
+            $this->setStat($total, 'complaint');
         }
 
         // Determine win/lose
@@ -1317,6 +1469,36 @@ SQL);
             $this->DbQuery("UPDATE `player` SET `player_score` = 1");
             $this->notifyAllPlayers('message', $this->msg['endWin'], []);
         }
+        $this->endStats();
+    }
+
+    function endStats(): void
+    {
+        // Calculate final statistics
+        $planes = $this->getPlanesByIds();
+        $playerCount = count($planes);
+        $alliances = 0;
+        $seat = 0;
+        $speed = 0;
+        $tempSeat = 0;
+        $tempSpeed = 0;
+        foreach ($planes as $plane) {
+            $alliances += count($plane->alliances);
+            $seat += $plane->seat;
+            $speed += $plane->speed;
+            $tempSeat += intval($this->getStat('tempSeat', $plane->id));
+            $tempSpeed += intval($this->getStat('tempSpeed', $plane->id));
+        }
+        $this->setStat($alliances / $playerCount, 'alliances');
+        $this->setStat($seat / $playerCount, 'seat');
+        $this->setStat($speed / $playerCount, 'speed');
+        $this->setStat($tempSeat, 'tempSeat');
+        $this->setStat($tempSpeed, 'tempSpeed');
+
+        $stopsAvg = $this->getUniqueValueFromDB("SELECT AVG(`stops`) FROM `pax` WHERE `status` IN ('CASH', 'PAID')");
+        $this->setStat($stopsAvg, 'stopsAvg');
+
+        // End the game
         $this->gamestate->nextState('end');
     }
 
@@ -1369,28 +1551,69 @@ SQL);
     //////////// Zombie
     ////////////
 
-    function zombieTurn($state, $activePlayer)
+    function zombieTurn($state, $playerId)
     {
-        $statename = $state['name'];
+        $stateName = $state['name'];
+        self::debug("zombieTurn state name $stateName // ");
+        if ($stateName == 'build' || $stateName == 'prepare') {
+            $this->applyUndo($playerId);
+        }
+        $plane = $this->getPlaneById($playerId);
 
-        if ($state['type'] === "activeplayer") {
-            switch ($statename) {
-                default:
-                    $this->gamestate->nextState("zombiePass");
-                    break;
+        // Surrender temporary purchases
+        if ($plane->tempSeat) {
+            $this->DbQuery("UPDATE `plane` SET `temp_seat` = NULL WHERE `player_id` = {$plane->id}");
+            $this->notifyAllPlayers('message', $this->msg['tempUsed'], [
+                'i18n' => ['temp'],
+                'preserve' => ['tempIcon'],
+                'player_id' => $plane->id,
+                'player_name' => $plane->name,
+                'temp' => clienttranslate('Temporary Seat'),
+                'tempIcon' => 'seat',
+            ]);
+        }
+        if ($plane->tempSpeed) {
+            $this->DbQuery("UPDATE `plane` SET `temp_speed` = NULL WHERE `player_id` = {$plane->id}");
+            $this->notifyAllPlayers('message', $this->msg['tempUsed'], [
+                'i18n' => ['temp'],
+                'preserve' => ['tempIcon'],
+                'player_id' => $plane->id,
+                'player_name' => $plane->name,
+                'temp' => clienttranslate('Temporary Speed'),
+                'tempIcon' => 'speed',
+            ]);
+        }
+        if ($plane->tempSeat || $plane->tempSpeed) {
+            $plane->tempSeat = false;
+            $plane->tempSpeed = false;
+            $this->notifyAllPlayers('planes', '', [
+                'planes' => [$plane],
+            ]);
+        }
+
+        // Surrender passengers
+        $pax = $this->getPaxByStatus('SEAT', null, $playerId);
+        if (!empty($pax)) {
+            foreach ($pax as &$x) {
+                $x->anger = 0;
+                $x->playerId = null;
+                $x->status = 'PORT';
+                $x->stops++;
+                $this->DbQuery("UPDATE `pax` SET `anger` = {$x->anger}, `player_id` = NULL, `status` = '{$x->status}', `stops` = {$x->stops} WHERE `pax_id` = {$x->id}");
+                $this->notifyAllPlayers('message', $this->msg['deplane'], [
+                    'location' => $x->location,
+                    'player_id' => $plane->id,
+                    'player_name' => $plane->name,
+                ]);
             }
-
-            return;
+            $this->notifyAllPlayers('pax', '', [
+                'pax' => array_values($pax),
+            ]);
         }
 
-        if ($state['type'] === "multipleactiveplayer") {
-            // Make sure player is in a non blocking status for role turn
-            $this->gamestate->setPlayerNonMultiactive($activePlayer, '');
-
-            return;
-        }
-
-        throw new feException("Zombie mode not supported at this game state: " . $statename);
+        // End turn
+        $next = $stateName == 'prepare'  ? 'reveal' : 'maintenance';
+        $this->gamestate->setPlayerNonMultiactive($playerId, $next);
     }
 
     ///////////////////////////////////////////////////////////////////////////////////:

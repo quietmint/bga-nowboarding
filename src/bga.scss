@@ -1,6 +1,7 @@
 @use "colors" as *;
 
-html {
+html,
+.mode_3d #game_play_area_background {
   background: #2383ba;
 }
 
@@ -31,6 +32,11 @@ html {
   white-space: normal;
 }
 
+.paybutton {
+  background-color: $color-lime-600;
+  color: white !important;
+}
+
 .ghostbutton {
   opacity: 0.5;
 
@@ -39,30 +45,61 @@ html {
   }
 }
 
-#nbwallet {
+#nbledger {
+  --mask: conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top/16px 51% repeat-x, conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom/16px 51% repeat-x;
   background-color: $color-neutral-200;
-  color: $color-lime-800;
-  display: block;
-  margin: 10px;
-  padding: 5px;
-}
+  color: $color-neutral-700;
+  font: 14px/1.25 Consolas, monospace;
+  margin: 5px auto;
+  mask: var(--mask);
+  -webkit-mask: var(--mask);
+  text-align: left;
 
-.paybutton {
-  background-color: $color-lime-600;
-  color: white !important;
+  td {
+    padding: 3px 16px;
+  }
 
-  &.is-buy {
-    cursor: default;
+  .lhead {
+    font-weight: bold;
+    letter-spacing: 2px;
+    padding-top: 16px;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .lline {
+    border-top: 1px solid $color-neutral-600;
+  }
+
+  .lsubtotal {
+    border-top: 3px double $color-neutral-600;
+    font-weight: bold;
+  }
+
+  .lamt {
+    text-align: right;
+  }
+
+  .lneg {
+    color: $color-red-900;
   }
 }
 
 .player-board {
   background-color: $color-neutral-600;
   color: white;
-}
 
-.player-board .player-name a {
-  color: white !important;
+  .player-name a {
+    color: white !important;
+  }
+
+  .player_score_value {
+    display: none;
+  }
+
+  .fa-star {
+    display: none;
+  }
 }
 
 .bgabutton .icon {
@@ -79,10 +116,15 @@ html {
   display: inline-block;
   padding: 1px 6px;
   vertical-align: middle;
-}
 
-.nbtag.complaint {
-  background-color: $color-red-700;
+  &.complaint {
+    background-color: $color-red-700;
+  }
+
+  &.cash-green {
+    background-color: $color-lime-600;
+    margin: 0 2px;
+  }
 }
 
 .log .nbtag {
@@ -94,29 +136,13 @@ html {
   vertical-align: -2px;
 }
 
+.nblabel {
+  font-size: 13px;
+  text-align: center;
+}
+
 #nbcommon {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  justify-content: space-evenly;
-
-  .section {
-    text-align: center;
-  }
-
-  .lbl {
-    font-size: 12px;
-  }
-
-  .nbtag {
-    padding-top: 3px;
-    padding-bottom: 3px;
-  }
-
-  .icon {
-    font-size: 24px;
-    vertical-align: -6px;
-  }
+  margin-top: 0;
 }
 
 #nbrange {
@@ -129,5 +155,11 @@ html {
   flex-wrap: wrap;
   font-size: 15px;
   gap: 5px;
+  justify-content: space-evenly;
   margin: 5px 0;
+
+  .icon {
+    font-size: 22px;
+    vertical-align: -5px;
+  }
 }

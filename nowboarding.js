@@ -1,5 +1,9 @@
 define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], function (dojo, declare) {
+  const playSoundSuper = window.playSound;
+
   let lastErrorCode = null;
+  let suppressSounds = [];
+
   return declare("bgagame.nowboarding", ebg.core.gamegui, {
     constructor() {
       dojo.place("loader_mask", "overall-content", "before");
@@ -54,6 +58,18 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           this.renderPax(pax);
         }
       }
+
+      // Setup sounds
+      window.playSound = function (sound) {
+        console.log("🔊 Asked to play sound", sound);
+        const index = suppressSounds.indexOf(sound);
+        if (index > -1) {
+          suppressSounds.splice(index, 1);
+          console.warn("NO!!! suppress sound", sound);
+        } else {
+          playSoundSuper(sound);
+        }
+      };
 
       // Setup notifications
       dojo.subscribe("buildPrimary", this, "onNotify");
@@ -155,6 +171,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
             args[k] = `<span class="nbtag alliance-${args[k]}"><i class="icon logo-${args[k]}"></i> ${args[k]}</span>`;
           } else if (k == "anger") {
             args[k] = `<span class="nbtag anger-${args[k]}"><i class="icon anger-${args[k]}"></i> ${args[k]}</span>`;
+          } else if (k == "cash") {
+            args[k] = `<span class="nbtag seat"><i class="icon cash-green"></i> ${args[k]}</span>`;
           } else if (k == "seat") {
             args[k] = `<span class="nbtag seat"><i class="icon seat"></i> ${args[k]}</span>`;
           } else if (k == "speed") {
@@ -182,6 +200,55 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       }
       this.inherited(arguments);
     },
+
+    /* @Override */
+    onScreenWidthChange() {
+      // Remove broken "zoom" property added by BGA framework
+      this.gameinterface_zoomFactor = 1;
+      dojo.style("page-content", "zoom", "");
+      dojo.style("page-title", "zoom", "");
+      dojo.style("right-side-first-part", "zoom", "");
+      this.computeViewport();
+    },
+
+    computeViewport() {
+      // Force device-width during chat
+      var chatVisible = false;
+      for (var w in this.chatbarWindows) {
+        if (this.chatbarWindows[w].status == "expanded") {
+          chatVisible = true;
+          break;
+        }
+      }
+
+      // Force mobile view in landscape orientation
+      var landscape = window.orientation === -90 || window.orientation === 90;
+      var width = chatVisible ? "device-width" : 1150;
+      this.interface_min_width = width;
+      this.default_viewport = "width=" + width;
+      return this.default_viewport;
+    },
+
+    /* @Override */
+    expandChatWindow: function () {
+      this.inherited(arguments);
+      dojo.query('meta[name="viewport"]')[0].content = this.computeViewport();
+    },
+
+    /* @Override */
+    collapseChatWindow: function () {
+      this.inherited(arguments);
+      dojo.query('meta[name="viewport"]')[0].content = this.computeViewport();
+    },
+
+    /* @Override */
+    // adaptPlayersPanels: function () {
+    //   if (dojo.hasClass("ebd-body", "mobile_version")) {
+    //     dojo.style("left-side", "marginTop", dojo.position("right-side").h + "px");
+    //   } else {
+    //     dojo.style("left-side", "marginTop", "0px");
+    //   }
+    // },
 
     // ----------------------------------------------------------------------
 
@@ -212,24 +279,25 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
             this.renderBuys(args.buys);
           } else if (stateName == "prepareBuy") {
             this.addActionButton("button_prepareDone", _("Ready"), () => this.takeAction("prepareDone"));
-            if (args.undo) {
+            if (args.ledger?.length > 0) {
               this.addActionButton("button_undo", _("Start Over"), () => this.takeAction("undo"), null, false, "gray");
             }
             this.renderBuys(args.buys);
-            if (args.wallet.length > 0) {
-              this.renderWalletBuy(args.wallet, args.overpay);
-            }
+            this.renderLedger(args);
           } else if (stateName == "preparePay") {
             this.addActionButton("button_pay", _("Pay"), () => {
               const paid = [];
-              document.querySelectorAll("#nbwallet .paybutton:not(.ghostbutton)").forEach((el) => paid.push(el.dataset.cash));
+              document.querySelectorAll("#nbbuys .paybutton:not(.ghostbutton)").forEach((el) => paid.push(el.dataset.cash));
               this.takeAction("pay", { paid });
             });
             this.addActionButton("button_buyAgain", _("Go Back"), () => this.takeAction("buyAgain"), null, false, "gray");
             this.renderWalletPay(args.wallet, args.suggestion);
           } else if (stateName == "flyPrivate") {
-            const color = args.speedRemain > 0 ? "red" : "blue";
-            this.addActionButton("button_flyDone", _("End Round"), () => this.takeAction("flyDone"), null, false, color);
+            if (args.speedRemain > 0) {
+              this.addActionButton("button_flyDone", _("End Round Early"), () => this.takeAction("flyDone"), null, false, "red");
+            } else {
+              this.addActionButton("button_flyDone", _("End Round"), () => this.takeAction("flyDone"), null, false, "blue");
+            }
             // Update the possible moves
             this.deleteMoves();
             if (args?.moves) {
@@ -248,12 +316,14 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         this.renderPlane(notif.args.plane);
         this.renderPlaneGauges(notif.args.plane);
       } else if (notif.type == "complaint") {
+        suppressSounds = ["yourturn"];
         playSound("nowboarding_complaint");
         this.gamedatas.complaint = notif.args.total;
         this.renderCommon();
       } else if (notif.type == "hour") {
         this.gamedatas.hour = notif.args;
         if (this.gamedatas.hour.hour == "FINALE") {
+          suppressSounds = ["yourturn"];
           playSound("nowboarding_walkway");
         }
         this.renderCommon();
@@ -277,9 +347,11 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           this.renderPlaneManifest(plane);
         }
       } else if (notif.type == "sound") {
-        this.disableNextMoveSound();
+        suppressSounds = notif.args.suppress;
+        // this.disableNextMoveSound();
         playSound(`nowboarding_${notif.args.sound}`);
       } else if (notif.type == "weather") {
+        suppressSounds = ["yourturn"];
         playSound("nowboarding_plane");
         this.deleteWeather();
         for (const location in notif.args.weather) {
@@ -410,17 +482,17 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         const parentEl = document.getElementById("player_boards");
         parentEl.insertAdjacentHTML(
           "beforebegin",
-          `<div id="nbcommon" class="player-board">
+          `<div id="nbcommon" class="player-board gauges">
   <div class="section">
-    <div class="lbl">${_("Complaints")}</div>
+    <div class="nblabel">${_("Complaints")}</div>
     <div class="nbtag"><i class="icon complaint"></i> <span id="nbcommon-complaint"></span></div>
   </div>
   <div class="section">
-    <div class="lbl">${_("Time")}</div>
+    <div class="nblabel">${_("Time")}</div>
     <div class="nbtag hour"><i class="icon"></i> <span></span></div>
   </div>
   <div class="section">
-    <div class="lbl">${_("Map Size")}</div>
+    <div class="nblabel">${_("Map Size")}</div>
     <div class="nbtag"><input type="range" id="nbrange" min="40" max="100" step="2" value="100"></div>
   </div>
 </div>`
@@ -509,16 +581,10 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         alliancesEl = document.getElementById(`alliances-${plane.id}`);
       }
 
-      // Add/remove alliances tag
-      alliancesEl.childNodes.forEach((el) => {
-        const alliance = el.dataset.alliance;
-        if (!plane.alliances.includes(alliance)) {
-          el.remove();
-        }
-      });
-      for (const alliance of plane.alliances) {
-        const el = alliancesEl.querySelector(`.alliance-${alliance}`);
-        if (!el) {
+      // Update alliances tag
+      if (alliancesEl.childNodes.length != plane.alliances.length) {
+        alliancesEl.textContent = "";
+        for (const alliance of plane.alliances) {
           alliancesEl.insertAdjacentHTML("beforeend", `<div class="nbtag alliance alliance-${alliance}" data-alliance="${alliance}"><i class="icon logo-${alliance}"></i> ${alliance}</div>`);
         }
       }
@@ -529,8 +595,18 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         parentEl.insertAdjacentHTML(
           "beforeend",
           `<div id="gauges-${plane.id}" class="gauges">
-  <div class="nbtag cash" id="gauge-cash-${plane.id}"></div>
-  <div class="nbtag speed"><i class="icon speed"></i> <span id="gauge-speed-${plane.id}"></span></div>
+  <div class="section">
+    <div class="nblabel">${_("Cash")}</div>
+    <div class="nbtag cash"><i class="icon cash"></i> <span id="gauge-cash-${plane.id}"></span></div>
+  </div>
+  <div class="section">
+    <div class="nblabel">${_("Seats")}</div>
+    <div class="nbtag seat"><i class="icon seat"></i> <span id="gauge-seat-${plane.id}"></span></div>
+  </div>
+  <div class="section">
+    <div class="nblabel">${_("Speed")}</div>
+    <div class="nbtag speed"><i class="icon speed"></i> <span id="gauge-speed-${plane.id}"></span></div>
+  </div>
 </div>`
         );
         gaugesEl = document.getElementById(`gauges-${plane.id}`);
@@ -538,7 +614,11 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
       // Update cash tag
       const cashEl = document.getElementById(`gauge-cash-${plane.id}`);
-      cashEl.textContent = `\$${plane.cashRemain}`;
+      cashEl.textContent = plane.cashRemain;
+
+      // Update seat tag
+      const seatEl = document.getElementById(`gauge-seat-${plane.id}`);
+      seatEl.textContent = `${Math.max(0, plane.seatRemain)}/${plane.seat}`;
 
       // Update speed tag
       const speedEl = document.getElementById(`gauge-speed-${plane.id}`);
@@ -730,12 +810,69 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         return;
       }
       console.log(`🧑 Move pax ${pax.id} to ${listEl.id}`);
+
+      // Record start position
+      const start = paxEl.getBoundingClientRect();
+
+      // Make a copy and put it at start
+      const cloneEl = paxEl.cloneNode(true);
+      cloneEl.id += "-clone";
+      cloneEl.style.position = "absolute";
+      cloneEl.style.top = `${start.top + window.scrollY}px`;
+      cloneEl.style.left = `${start.left + window.scrollX}px`;
+      document.body.appendChild(cloneEl);
+
+      // Move and record end position
       listEl.appendChild(paxEl);
+      const end = paxEl.getBoundingClientRect();
+      paxEl.style.opacity = "0";
+
+      // Animate the copy to the end
+      setTimeout(() => {
+        cloneEl.addEventListener("transitionend", () => {
+          paxEl.style.opacity = null;
+          cloneEl.remove();
+        });
+        cloneEl.style.transform = `translate(${end.x - start.x}px, ${end.y - start.y}px)`;
+      }, 10);
     },
 
     deletePax(pax) {
       console.log(`❌ Delete passenger ${pax.id} (${pax.status})`);
-      this.getElement(`pax-${pax.id}`)?.remove();
+      const paxEl = document.getElementById(`pax-${pax.id}`);
+      if (!paxEl) {
+        console.warn("Delete a passenger which did not exist???");
+        return;
+      }
+
+      // Record start and end position
+      const start = paxEl.getBoundingClientRect();
+      let endEl = null;
+      if (pax.status == "CASH") {
+        endEl = document.getElementById(`gauges-${pax.playerId}`);
+      } else if (pax.status == "COMPLAINT") {
+        endEl = document.getElementById("nbcommon");
+      }
+      const end = endEl.getBoundingClientRect();
+
+      // Make a copy and put it at start
+      const cloneEl = paxEl.cloneNode(true);
+      cloneEl.id += "-clone";
+      cloneEl.style.position = "absolute";
+      cloneEl.style.top = `${start.top + window.scrollY}px`;
+      cloneEl.style.left = `${start.left + window.scrollX}px`;
+      document.body.appendChild(cloneEl);
+
+      // Delete the pax
+      paxEl.remove();
+
+      // Animate the copy to the end
+      setTimeout(() => {
+        cloneEl.addEventListener("transitionend", () => {
+          cloneEl.remove();
+        });
+        cloneEl.style.transform = `translate(${end.x - start.x}px, ${end.y - start.y}px)`;
+      }, 10);
     },
 
     renderBuys(buys) {
@@ -790,25 +927,48 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       }
     },
 
-    renderWalletBuy(wallet, overpay) {
+    renderLedger(args) {
+      const walletHtml = args.wallet.map((cash) => `<div class="nbtag cash-green"><i class="icon cash"></i> ${cash}</div>`).join("");
+      const walletSum = args.wallet.reduce((a, b) => a + b, 0);
+      let ledgerHtml = "";
+      if (args.ledger?.length > 0) {
+        for (const l of args.ledger) {
+          console.log("l", l);
+          let txt = l.type;
+          if (l.type == "ALLIANCE") {
+            txt = this.format_string_recursive(_("Purchase alliance ${alliance}"), { alliance: l.arg });
+          } else if (l.type == "SEAT") {
+            txt = this.format_string_recursive(_("Purchase seat ${seat}"), { seat: l.arg });
+          } else if (l.type == "SPEED") {
+            txt = this.format_string_recursive(_("Purchase speed ${speed}"), { speed: l.arg });
+          } else if (l.type == "TEMP_SEAT") {
+            txt = this.format_string_recursive(_("Purchase ${temp}"), { temp: _("Temporary Seat"), tempIcon: "seat" });
+          } else if (l.type == "TEMP_SPEED") {
+            txt = this.format_string_recursive(_("Purchase ${temp}"), { temp: _("Temporary Speed"), tempIcon: "speed" });
+          }
+          ledgerHtml += `<tr><td class="lline">${txt}</td><td class="lline lamt lneg">($${l.cost})</td></tr>`;
+        }
+        ledgerHtml += `<tr><td class="lsubtotal">${_("Cash available")}</td><td class="lsubtotal lamt">$${args.cash}&nbsp;</tr>`;
+        if (args.overpay) {
+          ledgerHtml += `<tr><td class="lneg">${_("Estimated overpayment")}</td><td class="lamt lneg">($${args.overpay})</tr>`;
+        }
+      }
       const parentEl = document.getElementById("generalactions");
-      parentEl.insertAdjacentHTML("beforeend", `<div id="nbwallet">${_("Wallet")}: </div>`);
-      const walletEl = document.getElementById("nbwallet");
-      for (const cash of wallet) {
-        walletEl.insertAdjacentHTML("beforeend", `<div class="action-button bgabutton paybutton is-buy">\$${cash}</div>`);
-      }
-      if (overpay) {
-        const msg = this.format_string_recursive(_("Estimated overpayment: ${overpay}"), {
-          overpay: `\$${overpay}`,
-        });
-        walletEl.insertAdjacentHTML("beforeend", `<div class="overpay-info">${msg}</div>`);
-      }
+      parentEl.insertAdjacentHTML(
+        "beforeend",
+        `<table id="nbledger">
+  <tr><td colspan="2" class="lhead">* ${_("Account Balance")} *</td></tr>
+  <tr><td class="lline">${_("Cash")} ${walletHtml}</td><td class="lline lamt">$${walletSum}&nbsp;</td></tr>
+  ${ledgerHtml}
+  <tr><td colspan="2" class="lhead"></td></tr>
+</table>`
+      );
     },
 
     renderWalletPay(wallet, suggestion) {
       const parentEl = document.getElementById("generalactions");
-      parentEl.insertAdjacentHTML("beforeend", `<div id="nbwallet">${_("Wallet")}: </div>`);
-      const walletEl = document.getElementById("nbwallet");
+      parentEl.insertAdjacentHTML("beforeend", `<div id="nbbuys"></div>`);
+      const buysEl = document.getElementById("nbbuys");
       const workingSuggestion = [...suggestion];
       let i = 0;
       for (const cash of wallet) {
@@ -819,7 +979,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           cssClass = "";
           workingSuggestion.splice(index, 1);
         }
-        walletEl.insertAdjacentHTML("beforeend", `<div id="${id}" class="action-button bgabutton paybutton ${cssClass}" data-cash="${cash}">\$${cash}</div>`);
+        buysEl.insertAdjacentHTML("beforeend", `<div id="${id}" class="action-button bgabutton paybutton ${cssClass}" data-cash="${cash}"><i class="icon cash"></i> ${cash}</div>`);
         const buyEl = document.getElementById(id);
         buyEl.addEventListener("click", (ev) => {
           buyEl.classList.toggle("ghostbutton");
@@ -831,9 +991,9 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
     updatePayButton() {
       let sum = 0;
-      document.querySelectorAll("#nbwallet .paybutton:not(.ghostbutton)").forEach((el) => (sum += parseInt(el.dataset.cash)));
+      document.querySelectorAll("#nbbuys .paybutton:not(.ghostbutton)").forEach((el) => (sum += parseInt(el.dataset.cash)));
       const buttonEl = document.getElementById("button_pay");
-      buttonEl.textContent = `${_("Pay")} \$${sum}`;
+      buttonEl.textContent = `${_("Pay")} $${sum}`;
     },
 
     renderMoves(moves) {
