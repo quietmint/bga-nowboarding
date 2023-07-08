@@ -230,28 +230,28 @@ class NowBoarding extends Table
     function stMaintenance(): void
     {
         $hourInfo = $this->getHourInfo(true);
+        if ($hourInfo['hour'] == 'PREFLIGHT') {
+            // Create pax on the first turn
+            $this->eraseUndo();
+            $this->createPax();
+            $pax = $this->getPaxByStatus('PORT');
+            $this->notifyAllPlayers('pax', $this->msg['addPax'], [
+                'count' => count($pax),
+                'pax' => array_values($pax),
+                'location' => $this->getPaxLocations($pax),
+            ]);
+        } else {
+            // Add anger/complaints on subsequent turns
+            $didEndGame = $this->angerPax();
+            if ($didEndGame) {
+                return;
+            }
+        }
+
         if ($hourInfo['hour'] == 'FINALE') {
-            // End final round
+            // Add complaints on final round
             $this->endGame();
         } else {
-            if ($hourInfo['hour'] == 'PREFLIGHT') {
-                // Create pax on the first turn
-                $this->eraseUndo();
-                $this->createPax();
-                $pax = $this->getPaxByStatus('PORT');
-                $this->notifyAllPlayers('pax', $this->msg['addPax'], [
-                    'count' => count($pax),
-                    'pax' => array_values($pax),
-                    'location' => $this->getPaxLocations($pax),
-                ]);
-            } else {
-                // Add anger/complaints on subsequent turns
-                $didEndGame = $this->angerPax();
-                if ($didEndGame) {
-                    return;
-                }
-            }
-
             // Advance the hour
             $hourInfo = $this->advanceHour($hourInfo);
             if ($hourInfo['hour'] != 'FINALE') {
@@ -260,7 +260,6 @@ class NowBoarding extends Table
                 }
                 $this->addPax($hourInfo);
             }
-
             $this->gamestate->nextState('prepare');
         }
     }
@@ -790,18 +789,15 @@ class NowBoarding extends Table
         $this->DbQuery("UPDATE `plane` SET `location` = '{$plane->location}', `origin` = '{$plane->origin}', `speed_remain` = {$plane->speedRemain} WHERE `player_id` = {$plane->id}");
 
         // Statistics
-        $this->notifyAllPlayers('message', 'moves: ' . $move->fuel, []);
         $this->incStat($move->fuel, 'moves');
         $this->incStat($move->fuel, 'moves', $playerId);
         array_shift($move->path);
         foreach ($move->path as $location) {
             if (strlen($location) == 3) {
-                $this->notifyAllPlayers('message', "visited $location", []);
                 $this->incStat(1, $location, $playerId);
             }
             if (array_key_exists($location, $map->weather)) {
                 $type = $map->weather[$location];
-                $this->notifyAllPlayers('message', "moves$type", []);
                 $this->incStat(1, "moves$type");
                 $this->incStat(1, "moves$type", $playerId);
             }
