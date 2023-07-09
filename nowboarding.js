@@ -3,6 +3,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
   let lastErrorCode = null;
   let suppressSounds = [];
+  let flyTimer = null;
 
   return declare("bgagame.nowboarding", ebg.core.gamegui, {
     constructor() {
@@ -75,6 +76,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       dojo.subscribe("buildPrimary", this, "onNotify");
       dojo.subscribe("buys", this, "onNotify");
       dojo.subscribe("complaint", this, "onNotify");
+      dojo.subscribe("flyTimer", this, "onNotify");
       dojo.subscribe("hour", this, "onNotify");
       dojo.subscribe("move", this, "onNotify");
       dojo.subscribe("pax", this, "onNotify");
@@ -82,7 +84,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       dojo.subscribe("sound", this, "onNotify");
       dojo.subscribe("weather", this, "onNotify");
       this.notifqueue.setSynchronous("complaint", 1000);
-      this.notifqueue.setSynchronous("finale", 1000);
       this.notifqueue.setSynchronous("move", 1000);
 
       // Setup preferences
@@ -257,11 +258,54 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       dojo.place("nbcommon", "player_boards", "first");
     },
 
+    /* @Override */
+    updateReflexionTime() {
+      this.inherited(arguments);
+      if (this.gamedatas.gamestate.name == "fly") {
+        const time = document.getElementById("reflexiontime_value").textContent;
+        const countdownEl = document.getElementById("nbcountdown");
+        if (countdownEl) {
+          countdownEl.textContent = time;
+        }
+      }
+    },
+
     // ----------------------------------------------------------------------
 
-    // onEnteringState(stateName, args) {},
-
-    // onLeavingState(stateName) {},
+    onEnteringState(stateName, args) {
+      if (this.gamedatas.timer) {
+        if (stateName == "fly") {
+          // Add action bar countdown
+          const destEl = document.getElementById("page-title");
+          destEl.insertAdjacentHTML("afterbegin", '<div id="nbcountdown"></div>');
+          // Start timer
+          if (flyTimer) {
+            console.log("TIMER CLEAR (fly)", flyTimer);
+            window.clearTimeout(flyTimer);
+          }
+          const seconds = 1000 + this.gamedatas.timer * 1000 + Math.random() * 5000;
+          flyTimer = window.setTimeout(() => {
+            console.warn("TIMER UP!!!!");
+            this.takeAction("flyTimer", { lock: false });
+          }, seconds);
+          console.log("TIMER START (fly)", flyTimer, seconds);
+        } else if (stateName == "maintenance") {
+          // Remove action bar countdown
+          if (this.gamedatas.noTimeLimit) {
+            document.body.classList.add("no_time_limit");
+          }
+          const countdownEl = document.getElementById("nbcountdown");
+          if (countdownEl) {
+            countdownEl.remove();
+          }
+          // Stop timer
+          if (flyTimer) {
+            console.log("TIMER CLEAR (maintenance)", flyTimer);
+            window.clearTimeout(flyTimer);
+          }
+        }
+      }
+    },
 
     onUpdateActionButtons(stateName, args) {
       console.log(`▶️ State ${stateName}`, args);
@@ -344,6 +388,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         playSound("nowboarding_complaint");
         this.gamedatas.complaint = notif.args.total;
         this.renderCommon();
+      } else if (notif.type == "flyTimer") {
+        this.showMessage(_("Time is up!"), "error");
       } else if (notif.type == "hour") {
         this.gamedatas.hour = notif.args;
         if (this.gamedatas.hour.hour == "FINALE") {
@@ -903,7 +949,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       let buysEl = document.getElementById("nbbuys");
       if (!buysEl) {
         const parentEl = document.getElementById("generalactions");
-        parentEl.insertAdjacentHTML("beforeend", `<div id="nbbuys"></div>`);
+        parentEl.insertAdjacentHTML("beforeend", `<div id="nbwrap"><div id="nbbuys"></div></div>`);
         buysEl = document.getElementById("nbbuys");
       } else {
         buysEl.textContent = "";
@@ -986,7 +1032,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           ledgerHtml += `<tr><td class="lneg">${_("Estimated overpayment")}</td><td class="lamt lneg">($${args.overpay})</tr>`;
         }
       }
-      const parentEl = document.getElementById("generalactions");
+      const parentEl = document.getElementById("nbwrap");
       parentEl.insertAdjacentHTML(
         "beforeend",
         `<table id="nbledger">

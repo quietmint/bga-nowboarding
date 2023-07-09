@@ -15,8 +15,19 @@ const N_STATE_FLY = 6;
 const N_STATE_FLY_PRIVATE = 61;
 const N_STATE_END = 99;
 
-// Options
-const N_OPTION_VERSION = 300;
+// Globals
+const N_BGA_ELO = 201;
+const N_BGA_SPEED = 200;
+const N_BGA_TIME_MAX = 8;
+const N_BGA_VERSION = 300;
+
+const N_REF_BGA_SPEED_REALTIME = [0, 1, 2, 9, 20];
+const N_REF_BGA_SPEED_UNLIMITED = [9, 20];
+
+// Game options
+const N_OPTION_TIMER = 100;
+const N_OPTION_VIP = 101;
+const N_OPTION_HANDOFF = 102;
 
 // Reference lookups
 const N_REF_ALLIANCE_COLOR = [

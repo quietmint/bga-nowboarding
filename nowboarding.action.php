@@ -102,6 +102,14 @@ class action_nowboarding extends APP_GameAction
     self::ajaxResponse();
   }
 
+  public function flyTimer()
+  {
+    self::setAjaxMode();
+    self::checkVersion();
+    $this->game->flyTimer();
+    self::ajaxResponse();
+  }
+
   public function move()
   {
     self::setAjaxMode();

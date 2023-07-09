@@ -105,23 +105,29 @@ class NowBoarding extends Table
 
     function checkVersion(int $clientVersion): void
     {
-        $gameVersion = $this->gamestate->table_globals[N_OPTION_VERSION];
-        if ($clientVersion != $gameVersion) {
+        if ($clientVersion != $this->getGlobal(N_BGA_VERSION)) {
             throw new BgaVisibleSystemException($this->exMsg['version']);
         }
     }
 
     protected function getAllDatas(): array
     {
+        $bgaSpeed = $this->getGlobal(N_BGA_SPEED);
+        $timer = 0;
+        if (in_array($bgaSpeed, N_REF_BGA_SPEED_REALTIME)) {
+            $timer = $this->getGlobal(N_OPTION_TIMER);
+        }
         $players = $this->getCollectionFromDb("SELECT player_id id, player_score score FROM player");
         return [
             'complaint' => $this->countPaxByStatus('COMPLAINT'),
             'hour' => $this->getHourInfo(),
             'map' => $this->getMap(),
+            'noTimeLimit' => in_array($bgaSpeed, N_REF_BGA_SPEED_UNLIMITED),
             'pax' => $this->filterPax($this->getPaxByStatus(['SECRET', 'PORT', 'SEAT'])),
             'planes' => $this->getPlanesByIds(),
             'players' => $players,
-            'version' => intval($this->gamestate->table_globals[N_OPTION_VERSION]),
+            'timer' => $timer,
+            'version' => $this->getGlobal(N_BGA_VERSION),
         ];
     }
 
@@ -274,7 +280,8 @@ class NowBoarding extends Table
      */
     function stPrepare()
     {
-        $this->giveExtraTimeAll();
+        // Reset time to the full amount
+        $this->giveExtraTimeAll($this->getGlobal(N_BGA_TIME_MAX));
         $this->gamestate->setAllPlayersMultiactive();
         $this->gamestate->initializePrivateStateForAllActivePlayers();
         $this->DbQuery("UPDATE `plane` SET `speed_remain` = `speed`");
@@ -416,7 +423,6 @@ class NowBoarding extends Table
      * Start the clock
      * Players transport passengers
      */
-
     function stReveal(): void
     {
         // Remove undo info
@@ -432,8 +438,16 @@ class NowBoarding extends Table
             'pax' => array_values($pax),
         ]);
 
-        // Reset thinking time
-        $this->giveExtraTimeAll(null, true);
+        // Start the timer
+        $seconds = null;
+        $timer = $this->getGlobal(N_OPTION_TIMER);
+        if ($timer) {
+            $seconds = $timer;
+            $endTime = time() + $seconds;
+            $this->setVar('flyTimer', $endTime);
+            $this->notifyAllPlayers('message', "seconds: $seconds, flyTimer: $endTime", []);
+        }
+        $this->giveExtraTimeAll($seconds);
 
         // Play the sound and begin flying
         $this->notifyAllPlayers('sound', '', [
@@ -783,18 +797,32 @@ class NowBoarding extends Table
     function flyDone(): void
     {
         $playerId = $this->getCurrentPlayerId();
+        if ($this->enforceFlyTimer()) {
+            return;
+        }
         $this->gamestate->setPlayerNonMultiactive($playerId, 'maintenance');
+    }
+
+    function flyTimer(): void
+    {
+        $this->enforceFlyTimer();
     }
 
     function flyAgain(): void
     {
         $playerId = $this->getCurrentPlayerId();
+        if ($this->enforceFlyTimer($playerId)) {
+            return;
+        }
         $this->gamestate->setPlayersMultiactive([$playerId], '');
     }
 
     function move(string $location): void
     {
         $playerId = $this->getCurrentPlayerId();
+        if ($this->enforceFlyTimer($playerId)) {
+            return;
+        }
         $plane = $this->getPlaneById($playerId);
         $map = $this->getMap();
         $possible = $map->getPossibleMoves($plane);
@@ -852,6 +880,9 @@ class NowBoarding extends Table
     function board(int $paxId): void
     {
         $playerId = $this->getCurrentPlayerId();
+        if ($this->enforceFlyTimer($playerId)) {
+            return;
+        }
         $plane = $this->getPlaneById($playerId);
         $x = $this->getPaxById($paxId, true);
         $planeIds = [$playerId];
@@ -931,6 +962,9 @@ class NowBoarding extends Table
     function deplane(int $paxId, bool $confirm = false): void
     {
         $playerId = $this->getCurrentPlayerId();
+        if ($this->enforceFlyTimer($playerId)) {
+            return;
+        }
         $plane = $this->getPlaneById($playerId);
         $x = $this->getPaxById($paxId, true);
         if ($x->status != 'SEAT') {
@@ -990,6 +1024,12 @@ class NowBoarding extends Table
     //////////// Helpers
     ////////////
 
+    function getGlobal(int $id): ?int
+    {
+        $value = $this->gamestate->table_globals[$id];
+        return $value == null ? null : intval($value);
+    }
+
     function getVar(string $key): ?string
     {
         return $this->getUniqueValueFromDB("SELECT `value` FROM `var` WHERE `key` = '$key'");
@@ -998,6 +1038,24 @@ class NowBoarding extends Table
     function setVar(string $key, string $value): void
     {
         $this->DbQuery("INSERT INTO `var` (`key`, `value`) VALUES ('$key', '$value') ON DUPLICATE KEY UPDATE `value` = '$value'");
+    }
+
+    function enforceFlyTimer(?int $playerId = null): bool
+    {
+        // We need to check BGA speed in case table switched to turn-based
+        if (
+            $this->getGlobal(N_OPTION_TIMER)
+            && in_array($this->getGlobal(N_BGA_SPEED), N_REF_BGA_SPEED_REALTIME)
+            && $this->gamestate->state()['name'] == 'fly'
+            && time() >= intval($this->getVar('flyTimer'))
+        ) {
+            if ($playerId) {
+                $this->notifyPlayer($playerId, 'flyTimer', '', []);
+            }
+            $this->gamestate->setAllPlayersNonMultiactive('maintenance');
+            return true;
+        }
+        return false;
     }
 
     function getHourInfo(bool $beforeAddPax = false): array
@@ -1113,11 +1171,12 @@ class NowBoarding extends Table
         return $this->getObjectListFromDB("SELECT `player_id` FROM `player`", true);
     }
 
-    function giveExtraTimeAll(?int $seconds = null, ?bool $reset = false)
+    function giveExtraTimeAll(?int $seconds = null)
     {
-        if ($reset && !$this->isAsync()) {
-            $this->DbQuery("UPDATE `player` SET `player_remaining_reflexion_time` = 0");
+        if ($this->isAsync()) {
+            return;
         }
+        $this->DbQuery("UPDATE `player` SET `player_remaining_reflexion_time` = 0");
         foreach ($this->getPlayerIds() as $playerId) {
             $this->giveExtraTime($playerId, $seconds);
         }

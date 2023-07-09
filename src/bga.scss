@@ -14,10 +14,19 @@ html,
   display: none;
 }
 
-.overpay-info {
-  color: $color-red-900;
-  font-size: 14px;
-  line-height: 18px;
+#nbcountdown {
+  color: red;
+  font-size: 24px;
+  left: 5px;
+  line-height: 32px;
+  position: absolute;
+  top: 5px;
+}
+
+#nbwrap {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-evenly;
 }
 
 #nbbuys {
@@ -68,7 +77,7 @@ html,
   background-color: $color-neutral-200;
   color: $color-neutral-700;
   font: 14px/1.25 Consolas, monospace;
-  margin: 5px auto;
+  margin: 10px;
   mask: var(--mask);
   -webkit-mask: var(--mask);
   text-align: left;

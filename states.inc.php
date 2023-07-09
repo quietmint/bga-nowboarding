@@ -156,6 +156,7 @@ $machinestates = [
         'initialprivate' => N_STATE_FLY_PRIVATE,
         'possibleactions' => [
             'flyAgain',
+            'flyTimer',
         ],
         'transitions' => [
             'maintenance' => N_STATE_MAINTENANCE,
@@ -171,6 +172,7 @@ $machinestates = [
             'board',
             'deplane',
             'flyDone',
+            'flyTimer',
             'move',
         ],
         'transitions' => [
