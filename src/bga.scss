@@ -25,23 +25,41 @@ html,
   margin: 10px;
 }
 
+.nbuttonwrap {
+  display: inline-block;
+  vertical-align: top;
+
+  .owner {
+    font-size: 14px;
+    font-weight: bold;
+    line-height: 1.25;
+    margin: 0 auto;
+    max-width: 6.5em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
 .buybutton {
   background-color: $color-neutral-700;
   color: white !important;
   max-width: 6.5em;
   white-space: normal;
-}
-
-.paybutton {
-  background-color: $color-lime-600;
-  color: white !important;
+  vertical-align: top;
 }
 
 .ghostbutton {
   opacity: 0.5;
+  cursor: not-allowed;
+}
 
-  &.buybutton {
-    cursor: not-allowed;
+.paybutton {
+  background-color: $color-lime-800;
+  color: white !important;
+
+  &.ghostbutton {
+    cursor: pointer;
   }
 }
 
@@ -56,19 +74,16 @@ html,
   text-align: left;
 
   td {
-    padding: 3px 16px;
+    padding: 2px 16px;
   }
 
   .lhead {
     font-weight: bold;
     letter-spacing: 2px;
     padding-top: 16px;
+    padding-bottom: 4px;
     text-align: center;
     text-transform: uppercase;
-  }
-
-  .lline {
-    border-top: 1px solid $color-neutral-600;
   }
 
   .lsubtotal {
@@ -121,8 +136,8 @@ html,
     background-color: $color-red-700;
   }
 
-  &.cash-green {
-    background-color: $color-lime-600;
+  &.cash {
+    background-color: $color-lime-800;
     margin: 0 2px;
   }
 }

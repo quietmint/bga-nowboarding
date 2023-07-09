@@ -156,7 +156,7 @@ class NowBoarding extends Table
     function argBuildAlliance(int $playerId): array
     {
         $buys = [];
-        $claimed = $this->getObjectListFromDB("SELECT SUBSTRING_INDEX(`alliances`, ',', 1) FROM `plane` WHERE `alliances` IS NOT NULL AND `player_id` != $playerId", true);
+        $claimed = [];
         $playerCount = $this->getPlayersNumber();
         if ($playerCount <= 3) {
             // Exclude Seattle for 2-3 players
@@ -164,11 +164,13 @@ class NowBoarding extends Table
         }
         $possible = array_diff(array_keys(N_REF_ALLIANCE_COLOR), $claimed);
         foreach ($possible as $alliance) {
+            $ownerId = $this->getOwnerId("SUBSTRING_INDEX(`alliances`, ',', 1) = '$alliance'");
             $buys[] = [
                 'type' => 'ALLIANCE',
                 'alliance' => $alliance,
                 'cost' => 0,
                 'enabled' => true,
+                'ownerId' => $ownerId,
             ];
         }
         return ['buys' => $buys];
@@ -304,11 +306,13 @@ class NowBoarding extends Table
 
         // Temp Seat
         $cost = 2;
-        if (!$plane->tempSeat && $this->getOwnerName("`temp_seat` = 1") == null) {
+        if (!$plane->tempSeat) {
+            $ownerId = $this->getOwnerId("`temp_seat` = 1");
             $buys[] = [
                 'type' => 'TEMP_SEAT',
                 'cost' => $cost,
                 'enabled' => $cash >= $cost,
+                'ownerId' => $ownerId,
             ];
         }
 
@@ -326,11 +330,13 @@ class NowBoarding extends Table
 
         // Temp Speed
         $cost = 1;
-        if (!$plane->tempSpeed && $this->getOwnerName("`temp_speed` = 1") == null) {
+        if (!$plane->tempSpeed) {
+            $ownerId = $this->getOwnerId("`temp_speed` = 1");
             $buys[] = [
                 'type' => 'TEMP_SPEED',
                 'cost' => $cost,
                 'enabled' => $cash >= $cost,
+                'ownerId' => $ownerId,
             ];
         }
 
@@ -427,7 +433,7 @@ class NowBoarding extends Table
         ]);
 
         // Reset thinking time
-        $this->giveExtraTimeAll(120, true);
+        $this->giveExtraTimeAll(null, true);
 
         // Play the sound and begin flying
         $this->notifyAllPlayers('sound', '', [
@@ -511,6 +517,16 @@ class NowBoarding extends Table
             'plane' => $plane,
             'player_id' => $plane->id,
             'player_name' => $plane->name,
+        ]);
+        $this->notifyAllPlayers('buys', '', [
+            'buys' => [
+                [
+                    'type' => 'ALLIANCE',
+                    'alliance' => $alliance,
+                    'ownerId' => $plane->id,
+                ]
+            ],
+            'state' => 'buildAlliance',
         ]);
 
         // Statistics
@@ -611,6 +627,15 @@ class NowBoarding extends Table
             'temp' => clienttranslate('Temporary Seat'),
             'tempIcon' => 'speed',
         ]);
+        $this->notifyAllPlayers('buys', '', [
+            'buys' => [
+                [
+                    'type' => 'TEMP_SEAT',
+                    'ownerId' => $plane->id,
+                ]
+            ],
+            'state' => 'prepareBuy',
+        ]);
 
         // Statistics
         $this->incStat(1, 'tempSeat', $plane->id);
@@ -678,6 +703,15 @@ class NowBoarding extends Table
             'player_name' => $plane->name,
             'temp' => clienttranslate('Temporary Speed'),
             'tempIcon' => 'speed',
+        ]);
+        $this->notifyAllPlayers('buys', '', [
+            'buys' => [
+                [
+                    'type' => 'TEMP_SPEED',
+                    'ownerId' => $plane->id,
+                ]
+            ],
+            'state' => 'prepareBuy',
         ]);
 
         // Statistics
@@ -1025,6 +1059,7 @@ class NowBoarding extends Table
 
     function applyUndo(int $playerId): void
     {
+        $oldPlane = $this->getPlaneById($playerId);
         $this->DbQuery("DELETE FROM `ledger` WHERE `player_id` = $playerId");
         $this->DbQuery("DELETE FROM `pax` WHERE `player_id` = $playerId");
         $this->DbQuery("INSERT INTO `pax` SELECT * FROM `pax_undo` WHERE `player_id` = $playerId");
@@ -1032,6 +1067,37 @@ class NowBoarding extends Table
         $this->DbQuery("INSERT INTO `plane` SELECT * FROM `plane_undo` WHERE `player_id` = $playerId");
         $this->DbQuery("DELETE FROM `stats` WHERE `stats_type` >= 10 AND `stats_player_id` = $playerId");
         $this->DbQuery("INSERT INTO `stats` SELECT * FROM `stats_undo` WHERE `stats_player_id` = $playerId");
+        $newPlane = $this->getPlaneById($playerId);
+
+        $buys = [];
+        if ($oldPlane->tempSeat && !$newPlane->tempSeat) {
+            $state = 'prepareBuy';
+            $buys[] = [
+                'type' => 'TEMP_SEAT',
+                'ownerId' => null,
+            ];
+        }
+        if ($oldPlane->tempSpeed && !$newPlane->tempSpeed) {
+            $state = 'prepareBuy';
+            $buys[] = [
+                'type' => 'TEMP_SPEED',
+                'ownerId' => null,
+            ];
+        }
+        if (empty($newPlane->alliances)) {
+            $state = 'buildAlliance';
+            $buys[] = [
+                'type' => 'ALLIANCE',
+                'alliance' => $oldPlane->alliances,
+                'ownerId' => null,
+            ];
+        }
+        if (!empty($buys)) {
+            $this->notifyAllPlayers('buys', '', [
+                'buys' => $buys,
+                'state' => $state,
+            ]);
+        }
     }
 
     function eraseUndo(): void
@@ -1118,6 +1184,18 @@ SELECT
 FROM
   `plane` p
   JOIN `player` b ON (b.player_id = p.player_id)
+WHERE $sqlWhere
+LIMIT 1
+SQL);
+    }
+
+    function getOwnerId(string $sqlWhere): ?string
+    {
+        return $this->getUniqueValueFromDB(<<<SQL
+SELECT
+  `player_id`
+FROM
+  `plane`
 WHERE $sqlWhere
 LIMIT 1
 SQL);

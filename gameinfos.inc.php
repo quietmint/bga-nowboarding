@@ -13,7 +13,7 @@
 $gameinfos = [
 
     'custom_buy_button' => [
-        'url' => 'https://www.fowers.games/collections/homepage-products/products/now-boarding',
+        'url' => 'https://www.fowers.games/products/now-boarding',
         'label' => 'Fowers Games',
     ],
 
