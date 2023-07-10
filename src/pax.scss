@@ -187,12 +187,15 @@
 }
 
 .pax .vip {
-  background: linear-gradient(45deg, $color-neutral-700 80%, transparent 80%);
+  background: linear-gradient(45deg, $color-neutral-700 85%, transparent 85%);
   color: $color-amber-400;
   font-weight: bold;
   grid-area: vip;
   height: 13px;
-  padding-left: 4px;
+
+  .icon {
+    margin: 0 3px;
+  }
 }
 
 .pax.is-secret {

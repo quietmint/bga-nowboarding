@@ -1,23 +1,20 @@
 <?php
 
-abstract class NNode extends APP_GameClass implements JsonSerializable
+class NNode extends APP_GameClass
 {
     public string $id;
+    public ?string $alliance;
     public array $connections = [];
 
-    protected function __construct(string $id)
+    public function __construct(string $id, ?string $alliance = null)
     {
         $this->id = $id;
+        $this->alliance = $alliance;
     }
 
-    abstract public function __toString();
-
-    public function jsonSerialize(): array
+    public function __toString(): string
     {
-        return [
-            'id' => $this->id,
-            'connections' => array_keys($this->connections),
-        ];
+        return "NNode({$this->id})";
     }
 
     public function connect(NNode $other): void

@@ -12,38 +12,26 @@
 
 require_once 'modules/constants.inc.php';
 
-$timerDesc = totranslate("Official rule: Time is strictly enforced. The flight phase will end and you cannot take actions after time is up.");
-
 $game_options = [
     N_OPTION_TIMER => [
         'name' => totranslate('Flight Phase Timer'),
-        'default' => 30,
+        'default' => 1,
         'values' => [
-            15 => [
-                'name' => totranslate('15-second timer'),
-                'description' => $timerDesc,
-                'tmdisplay' => totranslate('15-second timer'),
+            1 => [
+                'name' => totranslate('Standard time'),
+                'description' => totranslate("The flight phase lasts the standard amount of time (30 - 45 seconds depending on player count) and is strictly enforced. Players cannot take actions after time is up."),
+                'tmdisplay' => totranslate('Standard time'),
             ],
-            30 => [
-                'name' => totranslate('30-second timer'),
-                'description' => $timerDesc,
-                'tmdisplay' => totranslate('30-second timer'),
-            ],
-            45 => [
-                'name' => totranslate('45-second timer'),
-                'description' => $timerDesc,
-                'tmdisplay' => totranslate('45-second timer'),
-            ],
-            60 => [
-                'name' => totranslate('60-second timer'),
-                'description' => $timerDesc,
-                'tmdisplay' => totranslate('60-second timer'),
+            2 => [
+                'name' => totranslate('Double time'),
+                'description' => totranslate("The flight phase lasts twice as long (60 - 90 seconds depending on player count) and is strictly enforced. Players cannot take actions after time is up."),
+                'tmdisplay' => totranslate('Double time'),
                 'firstgameonly' => true,
             ],
             0 => [
-                'name' => totranslate('Relaxed timer'),
-                'description' => totranslate("House rule: Like other BGA games, time is loosely enforced by players at their discretion. The flight phase will continue and you can take actions even after time is up."),
-                'tmdisplay' => totranslate('Relaxed timer'),
+                'name' => totranslate('Relaxed time'),
+                'description' => totranslate("House rule: The flight phase time is loosely enforced by players at their discretion (like other BGA games). Players can still take actions after time is up."),
+                'tmdisplay' => totranslate('Relaxed time'),
             ],
         ],
         'displaycondition' => [

@@ -47,6 +47,15 @@ class action_nowboarding extends APP_GameAction
     self::ajaxResponse();
   }
 
+  function vip() {
+    self::setAjaxMode();
+    self::checkVersion();
+    $this->game->checkAction('vip');
+    $accept = self::getArg('accept', AT_bool, true);
+    $this->game->vip($accept);
+    self::ajaxResponse();
+  }
+
   public function buy()
   {
     self::setAjaxMode();

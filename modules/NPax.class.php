@@ -1,7 +1,10 @@
 <?php
 
+require_once 'constants.inc.php';
+
 class NPax extends APP_GameClass implements JsonSerializable
 {
+
     public int $id;
     public int $anger;
     public int $cash;
@@ -24,7 +27,7 @@ class NPax extends APP_GameClass implements JsonSerializable
         $this->playerId = $dbrow['player_id'] == null ? null : intval($dbrow['player_id']);
         $this->status = $dbrow['status'];
         $this->stops = intval($dbrow['stops']);
-        $this->vip =  $dbrow['vip'];
+        $this->vip = $dbrow['vip'];
     }
 
     public function __toString(): string
@@ -43,13 +46,21 @@ class NPax extends APP_GameClass implements JsonSerializable
             'origin' => $this->origin,
             'playerId' => $this->playerId,
             'status' => $this->status,
-            // 'stops' => $this->stops,
-            'vip' => $this->vip,
+            'vip' => $this->vip ? N_REF_VIP[$this->vip] : null,
         ];
     }
 
     public function getPlayerIdSql(): string
     {
         return $this->playerId ?? 'NULL';
+    }
+
+    public function resetAnger(): void
+    {
+        if ($this->vip == 'GRUMPY') {
+            $this->anger = 1;
+        } else if ($this->vip != 'IMPATIENT') {
+            $this->anger = 0;
+        }
     }
 }

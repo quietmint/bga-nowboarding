@@ -116,6 +116,7 @@ $machinestates = [
             'buy',
             'prepareDone',
             'undo',
+            'vip',
         ],
         'transitions' => [
             'prepareBuy' => N_STATE_PREPARE_BUY,
@@ -151,6 +152,7 @@ $machinestates = [
     N_STATE_FLY => [
         'name' => 'fly',
         'action' => 'stInitPrivate',
+        'args' => 'argFly',
         'description' => clienttranslate('Wait for others to finish'),
         'descriptionmyturn' => '',
         'initialprivate' => N_STATE_FLY_PRIVATE,

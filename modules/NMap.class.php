@@ -46,7 +46,7 @@ class NMap extends APP_GameClass implements JsonSerializable
         ];
     }
 
-    protected function addRoute(string $port1, string $port2, int $distance, ?string $alliance)
+    private function addRoute(string $port1, string $port2, int $distance, ?string $alliance)
     {
         $a = min($port1, $port2);
         $z = max($port1, $port2);
@@ -72,17 +72,17 @@ class NMap extends APP_GameClass implements JsonSerializable
         $priorNode->connect($zNode);
     }
 
-    protected function addPort(string $nodeId): NNodePort
+    private function addPort(string $nodeId): NNode
     {
-        $portNode = new NNodePort($nodeId);
+        $portNode = new NNode($nodeId);
         $this->nodes[$portNode->id] = &$portNode;
         return $portNode;
     }
 
-    protected function addHop(string $routeId, ?string $alliance): NNodeHop
+    private function addHop(string $routeId, ?string $alliance): NNode
     {
         $count = count($this->routes[$routeId]) + 1;
-        $hopNode = new NNodeHop("$routeId$count", $alliance, null);
+        $hopNode = new NNode("$routeId$count", $alliance, null);
         $this->nodes[$hopNode->id] = &$hopNode;
         return $hopNode;
     }
@@ -95,6 +95,8 @@ class NMap extends APP_GameClass implements JsonSerializable
         if ($plane->tempSpeed) {
             $fuelMax++;
         }
+        // VIP Nervous
+        $planeHasNervous = intval($this->getUniqueValueFromDB("SELECT COUNT(1) FROM `pax` WHERE `player_id` = {$plane->id} AND `status` = 'SEAT' AND `vip` = 'NERVOUS'")) > 0;
         $visited = [];
         $best = [];
         $start = new NMove(0, $this->nodes[$plane->location], []);
@@ -116,6 +118,10 @@ class NMap extends APP_GameClass implements JsonSerializable
                     }
                     // check alliance
                     if ($c['alliance'] != null && !in_array($c['alliance'], $plane->alliances)) {
+                        continue;
+                    }
+                    // check weather
+                    if ($planeHasNervous && array_key_exists($c['node']->id, $this->weather)) {
                         continue;
                     }
                     // check path overlap
@@ -154,12 +160,8 @@ class NMap extends APP_GameClass implements JsonSerializable
         }
         foreach ($node->connections as $cNode) {
             $fuel = $fuelSoFar + $weatherSpeed + 1;
-            $alliance = null;
-            if ($cNode instanceof NNodeHop) {
-                $alliance = $cNode->alliance;
-            }
             $out[] = [
-                'alliance' => $alliance,
+                'alliance' => $cNode->alliance,
                 'fuel' => $fuel,
                 'node' => $cNode,
             ];
