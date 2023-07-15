@@ -127,13 +127,12 @@ class NowBoarding extends Table
     protected function getAllDatas(): array
     {
         $players = $this->getCollectionFromDb("SELECT player_id id, player_score score FROM player");
-        $bgaSpeed = $this->getGlobal(N_BGA_SPEED);
         return [
             'complaint' => $this->countComplaint(),
             'handoff' => boolval($this->getGlobal(N_OPTION_HANDOFF)),
             'hour' => $this->getHourInfo(),
             'map' => $this->getMap(),
-            'noTimeLimit' => in_array($bgaSpeed, N_REF_BGA_SPEED_UNLIMITED),
+            'noTimeLimit' => in_array($this->getGlobal(N_BGA_CLOCK), N_REF_BGA_CLOCK_UNLIMITED),
             'pax' => $this->filterPax($this->getPaxByStatus(['SECRET', 'PORT', 'SEAT'])),
             'planes' => $this->getPlanesByIds(),
             'players' => $players,
@@ -248,6 +247,9 @@ class NowBoarding extends Table
 
     function stMaintenance(): void
     {
+        // Everybody stop snoozing
+        $this->DbQuery("UPDATE `player` SET `snooze` = 0");
+
         $hourInfo = $this->getHourInfo(true);
         if ($hourInfo['hour'] == 'PREFLIGHT') {
             // Create pax on the first turn
@@ -458,11 +460,13 @@ class NowBoarding extends Table
 
         // Start the timer
         $seconds = null;
-        $duration = $this->getGlobal(N_OPTION_TIMER) * ($this->getPlayersNumber() * 5 + 20);
-        if ($duration) {
-            $seconds = $duration;
-            $endTime = time() + $seconds;
-            $this->setVar('endTime', $endTime);
+        if (in_array($this->getGlobal(N_BGA_CLOCK), N_REF_BGA_CLOCK_REALTIME)) {
+            $duration = $this->getGlobal(N_OPTION_TIMER) * ($this->getPlayersNumber() * 5 + 20);
+            if ($duration) {
+                $seconds = $duration;
+                $endTime = time() + $seconds;
+                $this->setVar('endTime', $endTime);
+            }
         }
         $this->giveExtraTimeAll($seconds);
 
@@ -860,12 +864,18 @@ class NowBoarding extends Table
         }
     }
 
-    function flyDone(): void
+    function flyDone(bool $snooze = false): void
     {
         if ($this->enforceTimer()) {
             return;
         }
         $playerId = $this->getCurrentPlayerId();
+        if ($snooze) {
+            if (intval($this->getUniqueValueFromDB("SELECT COUNT(1) FROM `player` WHERE `player_is_multiactive` = 1 AND `player_id` != $playerId")) == 0) {
+                throw new BgaUserException(N_REF_MSG_EX['noSnooze']);
+            }
+            $this->DbQuery("UPDATE `player` SET `snooze` = 1 WHERE `player_id` = $playerId");
+        }
         $this->gamestate->setPlayerNonMultiactive($playerId, 'maintenance');
     }
 
@@ -931,6 +941,7 @@ class NowBoarding extends Table
             }
         }
 
+        // Notify UI
         $msg = strlen($location) == 3 ? N_REF_MSG['movePort'] : N_REF_MSG['move'];
         $this->notifyAllPlayers('move', $msg, [
             'fuel' => $move->fuel,
@@ -940,6 +951,7 @@ class NowBoarding extends Table
             'player_name' => $plane->name,
         ]);
 
+        $this->awakenSnoozers($playerId);
         $this->gamestate->nextPrivateState($plane->id, 'flyPrivate');
     }
 
@@ -950,17 +962,24 @@ class NowBoarding extends Table
         }
         $playerId = $this->getCurrentPlayerId();
         $plane = $this->getPlaneById($playerId);
+        $this->_board($plane, $paxId);
+        $this->awakenSnoozers($playerId);
+        $this->gamestate->nextPrivateState($plane->id, 'flyPrivate');
+    }
+
+    function _board(NPlane $plane, int $paxId): void
+    {
         $x = $this->getPaxById($paxId, true);
-        $planeIds = [$playerId];
+        $planeIds = [$plane->id];
 
         if ($this->getGlobal(N_OPTION_VIP)) {
             // VIP Celebrity
             // If this pax is a celebrity, the plane must be empty
-            if ($x->vip == 'CELEBRITY' && intval($this->getUniqueValueFromDB("SELECT COUNT(1) FROM `pax` WHERE `player_id` = $playerId AND `status` = 'SEAT'")) > 0) {
+            if ($x->vip == 'CELEBRITY' && intval($this->getUniqueValueFromDB("SELECT COUNT(1) FROM `pax` WHERE `player_id` = {$plane->id} AND `status` = 'SEAT'")) > 0) {
                 $this->vipException('CELEBRITY');
             }
             // Or, if a celebrity is on board, no boarding
-            if (intval($this->getUniqueValueFromDB("SELECT COUNT(1) FROM `pax` WHERE `player_id` = $playerId AND `status` = 'SEAT' AND `vip` = 'CELEBRITY'")) > 0) {
+            if (intval($this->getUniqueValueFromDB("SELECT COUNT(1) FROM `pax` WHERE `player_id` = {$plane->id} AND `status` = 'SEAT' AND `vip` = 'CELEBRITY'")) > 0) {
                 $this->vipException('CELEBRITY');
             }
 
@@ -970,11 +989,19 @@ class NowBoarding extends Table
             if (!empty($firstList) && !in_array($paxId, $firstList)) {
                 $this->vipException('FIRST');
             }
+
+            // VIP Double
+            // Create dummy passenger for the fugitive
+            if ($x->vip == 'DOUBLE' && $x->id > 0) {
+                $dummyId = $x->id * -1;
+                $this->DbQuery("INSERT INTO `pax` (`pax_id`, `status`, `cash`, `origin`, `destination`, `location`, `vip`) VALUES ($dummyId, 'PORT', 0, 'VIP', '{$x->destination}', '{$x->location}', '{$x->vip}')");
+                $this->_board($plane, $dummyId);
+            }
         }
 
         if ($x->status == 'SEAT') {
-            if ($x->playerId == $playerId) {
-                throw new BgaVisibleSystemException("board: $x player ID is already $playerId [???]");
+            if ($x->playerId == $plane->id) {
+                throw new BgaVisibleSystemException("board: $x player ID is already {$plane->id} [???]");
             }
             // Transfer from another plane
             // Must be together at an airport
@@ -984,6 +1011,7 @@ class NowBoarding extends Table
             }
             // Automatic deplane
             $this->_deplane($other, $paxId, true, true);
+            $planeIds[] = $other->id;
             $x = $this->getPaxById($paxId, true);
         }
 
@@ -1021,28 +1049,17 @@ class NowBoarding extends Table
         $x->status = 'SEAT';
         $this->DbQuery("UPDATE `pax` SET `anger` = {$x->anger}, `player_id` = {$x->playerId}, `status` = '{$x->status}', `stops` = {$x->stops} WHERE `pax_id` = {$x->id}");
 
-        // Update UI empty seats
+        // Notify UI
         $planes = $this->getPlanesByIds($planeIds);
         $this->notifyAllPlayers('planes', '', [
             'planes' => array_values($planes)
         ]);
-
         $this->notifyAllPlayers('pax', N_REF_MSG['board'], [
             'location' => $x->location,
             'pax' => [$x],
             'player_id' => $plane->id,
             'player_name' => $plane->name,
         ]);
-
-        // VIP Double
-        // Create second, dummy passenger for the fugitive
-        if ($this->getGlobal(N_OPTION_VIP) && $x->vip == 'DOUBLE' && $x->id > 0) {
-            $dummyId = $x->id * -1;
-            $this->DbQuery("INSERT INTO `pax` (`pax_id`, `status`, `cash`, `origin`, `destination`, `location`, `vip`) VALUES ($dummyId, 'PORT', 0, 'VIP', '{$x->destination}', '{$x->location}', '{$x->vip}')");
-            $this->board($dummyId);
-        }
-
-        $this->gamestate->nextPrivateState($plane->id, 'flyPrivate');
     }
 
     function deplane(int $paxId, bool $confirm = false): void
@@ -1053,6 +1070,7 @@ class NowBoarding extends Table
         $playerId = $this->getCurrentPlayerId();
         $plane = $this->getPlaneById($playerId);
         $this->_deplane($plane, $paxId, $confirm);
+        $this->awakenSnoozers($playerId);
         $this->gamestate->nextPrivateState($plane->id, 'flyPrivate');
     }
 
@@ -1079,12 +1097,12 @@ class NowBoarding extends Table
 
         $x->location = $plane->location;
         $args = [
-            'location' => $x->destination,
+            'location' => $x->location,
             'pax' => [$x],
             'player_id' => $plane->id,
             'player_name' => $plane->name,
         ];
-        if ($x->destination == $plane->location) {
+        if ($x->location == $x->destination) {
             $x->status = 'CASH';
             $msg = N_REF_MSG['deplaneDeliver'];
             $args['cash'] = $x->cash;
@@ -1115,11 +1133,16 @@ class NowBoarding extends Table
             $args['pax'][] = $dummy;
         }
 
-        $planes = $this->getPlanesByIds([$plane->id]);
-        $this->notifyAllPlayers('planes', '', [
-            'planes' => array_values($planes)
-        ]);
-        if (!$automatic) {
+        if ($automatic) {
+            // Notify message only
+            unset($args['pax']);
+            $this->notifyAllPlayers('message', $msg, $args);
+        } else {
+            // Notify UI
+            $planes = $this->getPlanesByIds([$plane->id]);
+            $this->notifyAllPlayers('planes', '', [
+                'planes' => array_values($planes)
+            ]);
             $this->notifyAllPlayers('pax', $msg, $args);
         }
     }
@@ -1130,8 +1153,17 @@ class NowBoarding extends Table
 
     function getGlobal(int $id): ?int
     {
-        $value = $this->gamestate->table_globals[$id];
+        $value = @$this->gamestate->table_globals[$id];
         return $value == null ? null : intval($value);
+    }
+
+    function awakenSnoozers(int $playerId): void
+    {
+        $snoozers = $this->getObjectListFromDB("SELECT `player_id` FROM `player` WHERE `player_is_multiactive` = 0 AND `snooze` = 1 AND `player_id` != $playerId", true);
+        if (!empty($snoozers)) {
+            $this->DbQuery("UPDATE `player` SET `snooze` = 0 WHERE `player_id` IN (" . join(', ', $snoozers) . ")");
+            $this->gamestate->setPlayersMultiactive($snoozers, '');
+        }
     }
 
     function getVar(string $key): ?string
@@ -1164,7 +1196,7 @@ class NowBoarding extends Table
         // We need to check BGA speed in case table switched to turn-based
         if (
             $this->getGlobal(N_OPTION_TIMER)
-            && in_array($this->getGlobal(N_BGA_SPEED), N_REF_BGA_SPEED_REALTIME)
+            && in_array($this->getGlobal(N_BGA_CLOCK), N_REF_BGA_CLOCK_REALTIME)
             && $this->gamestate->state()['name'] == 'fly'
             && time() > $this->getVarInt('endTime')
         ) {
@@ -1609,7 +1641,7 @@ SQL);
             if ($x->status == 'SECRET') {
                 // Don't display destination and VIP status
                 $x->destination = null;
-                //$x->vip = null;
+                $x->vip = null;
             }
         }
         return $pax;
@@ -1898,5 +1930,26 @@ SQL);
 
     function upgradeTableDb($fromVersion)
     {
+        $changes = [
+            [2307141730, "ALTER TABLE `DBPREFIX_player` ADD COLUMN `snooze` TINYINT(1) NOT NULL DEFAULT '0'"],
+        ];
+
+        foreach ($changes as [$version, $sql]) {
+            if ($fromVersion <= $version) {
+                try {
+                    self::warn("upgradeTableDb apply 1: fromVersion=$fromVersion, change=[ $version, $sql ]");
+                    self::applyDbUpgradeToAllDB($sql);
+                } catch (Exception $e) {
+                    // See https://studio.boardgamearena.com/bug?id=64
+                    // BGA framework can produce invalid SQL with non-existant tables when using DBPREFIX_.
+                    // The workaround is to retry the query on the base table only.
+                    self::error("upgradeTableDb apply 1 failed: fromVersion=$fromVersion, change=[ $version, $sql ]");
+                    $sql = str_replace("DBPREFIX_", "", $sql);
+                    self::warn("upgradeTableDb apply 2: fromVersion=$fromVersion, change=[ $version, $sql ]");
+                    self::applyDbUpgradeToAllDB($sql);
+                }
+            }
+        }
+        self::warn("upgradeTableDb complete: fromVersion=$fromVersion");
     }
 }

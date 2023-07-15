@@ -16,29 +16,29 @@ $game_options = [
     N_OPTION_TIMER => [
         'name' => totranslate('Flight Phase Timer'),
         'default' => 1,
+        'notdisplayedmessage' => totranslate('Off'),
         'values' => [
             1 => [
-                'name' => totranslate('Standard time'),
-                'description' => totranslate("The flight phase lasts the standard amount of time (30 - 45 seconds depending on player count) and is strictly enforced. Players cannot take actions after time is up."),
-                'tmdisplay' => totranslate('Standard time'),
+                'name' => totranslate('On'),
+                'description' => totranslate("The flight phase lasts 30 - 45 seconds (depending on player count) and time is STRICTLY ENFORCED"),
             ],
             2 => [
-                'name' => totranslate('Double time'),
-                'description' => totranslate("The flight phase lasts twice as long (60 - 90 seconds depending on player count) and is strictly enforced. Players cannot take actions after time is up."),
-                'tmdisplay' => totranslate('Double time'),
+                'name' => totranslate('Doubled'),
+                'description' => totranslate("The flight phase lasts 60 - 90 seconds (depending on player count) and time is STRICTLY ENFORCED"),
+                'tmdisplay' => totranslate('Flight Phase Timer Doubled'),
                 'firstgameonly' => true,
             ],
             0 => [
-                'name' => totranslate('Relaxed time'),
-                'description' => totranslate("House rule: The flight phase time is loosely enforced by players at their discretion (like other BGA games). Players can still take actions after time is up."),
-                'tmdisplay' => totranslate('Relaxed time'),
+                'name' => totranslate('Off'),
+                'description' => totranslate("House rule: The flight phase has no specific time limit"),
+                'tmdisplay' => totranslate('Flight Phase Timer Off'),
             ],
         ],
         'displaycondition' => [
             [
                 'type' => 'otheroption',
-                'id' => N_BGA_SPEED,
-                'value' => N_REF_BGA_SPEED_REALTIME,
+                'id' => N_BGA_CLOCK,
+                'value' => N_REF_BGA_CLOCK_REALTIME,
             ],
         ],
     ],

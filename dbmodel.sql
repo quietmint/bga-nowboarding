@@ -1,3 +1,5 @@
+ALTER TABLE `player` ADD COLUMN `snooze` TINYINT(1) NOT NULL DEFAULT '0';
+
 CREATE TABLE `stats_undo` LIKE `stats`;
 
 CREATE TABLE `ledger` (
@@ -37,6 +39,7 @@ CREATE TABLE `pax_undo` LIKE `pax`;
 
 CREATE TABLE `plane` (
     `player_id` INT(10) NOT NULL,
+    `notify` TINYINT(1) DEFAULT NULL,
     `alliances` VARCHAR(50) NOT NULL DEFAULT '',
     `debt` INT(2) NOT NULL DEFAULT '0',
     `origin` VARCHAR(50) DEFAULT NULL,

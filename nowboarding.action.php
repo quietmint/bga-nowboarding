@@ -47,7 +47,8 @@ class action_nowboarding extends APP_GameAction
     self::ajaxResponse();
   }
 
-  function vip() {
+  function vip()
+  {
     self::setAjaxMode();
     self::checkVersion();
     $this->game->checkAction('vip');
@@ -99,7 +100,8 @@ class action_nowboarding extends APP_GameAction
     self::setAjaxMode();
     self::checkVersion();
     $this->game->checkAction('flyDone');
-    $this->game->flyDone();
+    $snooze = boolval(self::getArg('snooze', AT_bool, false));
+    $this->game->flyDone($snooze);
     self::ajaxResponse();
   }
 
@@ -145,7 +147,7 @@ class action_nowboarding extends APP_GameAction
     self::checkVersion();
     $this->game->checkAction('deplane');
     $paxId = self::getArg('paxId', AT_int, true);
-    $confirm = self::getArg('confirm', AT_bool, false) || false;
+    $confirm = boolval(self::getArg('confirm', AT_bool, false));
     $this->game->deplane($paxId, $confirm);
     self::ajaxResponse();
   }

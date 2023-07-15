@@ -17,12 +17,12 @@ define('N_STATE_END', 99);
 
 // Globals
 define('N_BGA_ELO', 201);
-define('N_BGA_SPEED', 200);
+define('N_BGA_CLOCK', 200);
 define('N_BGA_TIME_MAX', 8);
 define('N_BGA_VERSION', 300);
 
-define('N_REF_BGA_SPEED_REALTIME', [0, 1, 2, 9, 20]);
-define('N_REF_BGA_SPEED_UNLIMITED', [9, 20]);
+define('N_REF_BGA_CLOCK_REALTIME', [0, 1, 2, 9]);
+define('N_REF_BGA_CLOCK_UNLIMITED', [9, 20]);
 
 // Game options
 define('N_OPTION_TIMER', 100);
@@ -88,7 +88,7 @@ define('N_REF_MSG', [
     'temp' => clienttranslate('${player_name} purchases ${temp}'),
     'tempUsed' => clienttranslate('${player_name} uses ${temp}'),
     'undo' => clienttranslate('${player_name} restarts their turn'),
-    'vip' => clienttranslate('A ${vip} VIP passenger arrives at ${location}: ${desc}'),
+    'vip' => clienttranslate('VIP: A new passenger at ${location} is ${vip} (${desc})'),
     'vipAccept' => clienttranslate('${player_name} accepts a VIP passenger this round'),
     'vipDecline' => clienttranslate('${player_name} declines a VIP passenger this round'),
     'weather' => clienttranslate('Weather forecast: Storms slow travel between ${routeSlow} while tailwinds speed travel between ${routeFast}'),
@@ -102,10 +102,11 @@ define('N_REF_MSG_EX', [
     'deplanePort' => _("You must be at an airport to deplane passengers"),
     // 'noCash' => xxx("You have insufficient funds (cost: %s, cash: %s)"),
     'noSeat' => _("You don't have enough empty seats"),
+    'noSnooze' => _("You can't snooze because you are the only active player. If you are finished, end the round."),
     'pay' => _("You must choose bills totalling at least %s, even if it results in overpayment"),
     'tempOwner' => _("%s already owns %s"),
     'version' => _("A new version of this game is now available. Please reload the page (F5)."),
-    'vip' => _("You must honor %s VIP condition: %s"),
+    'vip' => _("VIP: You must honor %s (%s)"),
 ]);
 
 define('N_REF_SEAT_COST', [

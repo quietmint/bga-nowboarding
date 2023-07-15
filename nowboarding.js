@@ -175,15 +175,18 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
             args[k] = `<span class="nbtag anger-${args[k]}"><i class="icon anger-${args[k]}"></i> ${args[k]}</span>`;
           } else if (k == "cash") {
             args[k] = `<span class="nbtag cash"><i class="icon cash"></i> ${args[k]}</span>`;
+          } else if (k == "complaint") {
+            args[k] = `<span class="nbtag complaint"><i class="icon complaint"></i> ${args[k]}</span>`;
           } else if (k == "seat") {
             args[k] = `<span class="nbtag seat"><i class="icon seat"></i> ${args[k]}</span>`;
           } else if (k == "speed") {
             args[k] = `<span class="nbtag speed"><i class="icon speed"></i> ${args[k]}</span>`;
           } else if (k == "temp") {
             args[k] = `<span class="nbtag ${args.tempIcon}"><i class="icon ${args.tempIcon}"></i> ${args[k]}</span>`;
-          } else if (k == "complaint") {
-            args[k] = `<span class="nbtag complaint"><i class="icon complaint"></i> ${args[k]}</span>`;
+          } else if (k == "vip") {
+            args[k] = `<span class="nbtag vip"><i class="icon vipstar"></i> ${args[k]}</span>`;
           } else if (k == "location" || k == "route" || k == "routeFast" || k == "routeSlow") {
+            // Generic "bold" text
             args[k] = `<b>${args[k]}</b>`;
           }
         }
@@ -331,7 +334,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
             this.addActionButton("button_prepareDone", _("Ready"), () => this.takeAction("prepareDone"));
             if (this.gamedatas.vip) {
               if (this.gamedatas.hour.vipNew) {
-                this.addActionButton("button_vip", _("Decline VIP"), () => this.takeVipAction());
+                const txt = this.format_string_recursive(_("Decline VIP (${count} remaining)"), { count: this.gamedatas.hour.vipRemain });
+                this.addActionButton("button_vip", txt, () => this.takeVipAction());
               } else if (this.gamedatas.hour.vipRemain) {
                 const txt = this.format_string_recursive(_("Accept VIP (${count} remaining)"), { count: this.gamedatas.hour.vipRemain });
                 this.addActionButton("button_vip", txt, () => this.takeVipAction());
@@ -352,6 +356,9 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
             this.addActionButton("button_buyAgain", _("Go Back"), () => this.takeAction("buyAgain"), null, false, "gray");
             this.renderWalletPay(args.wallet, args.suggestion);
           } else if (stateName == "flyPrivate") {
+            if (!this.bRealtime) {
+              this.addActionButton("button_flyDoneSnooze", _("Snooze Until Next Move"), () => this.takeAction("flyDone", { snooze: true }), null, false, "gray");
+            }
             if (args.speedRemain > 0) {
               this.addActionButton("button_flyDone", _("End Round Early"), () => this.takeAction("flyDone"), null, false, "red");
             } else {
@@ -409,7 +416,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           console.log("change the vip button", notif.args.vipNew);
           const vipEl = document.getElementById("button_vip");
           if (vipEl) {
-            vipEl.textContent = this.gamedatas.hour.vipNew ? _("Decline VIP") : this.format_string_recursive(_("Accept VIP (${count} remaining)"), { count: this.gamedatas.hour.vipRemain });
+            vipEl.textContent = this.format_string_recursive(this.gamedatas.hour.vipNew ? _("Decline VIP (${count} remaining)") : _("Accept VIP (${count} remaining)"), { count: this.gamedatas.hour.vipRemain });
           }
         }
         this.renderCommon();
@@ -897,8 +904,9 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         angerCountEl.textContent = pax.anger;
       }
       if (pax.vip) {
-        vipEl.innerHTML = '<i class="icon vipstar"></i>' + _(pax.vip.name);
+        paxEl.classList.add("is-vip");
         paxEl.title = _(pax.vip.name) + ": " + _(pax.vip.desc);
+        vipEl.innerHTML = '<i class="icon vipstar"></i>' + _(pax.vip.name);
       }
 
       // Move the pax (if necessary)
