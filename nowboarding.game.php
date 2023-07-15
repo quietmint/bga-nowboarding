@@ -77,6 +77,7 @@ class NowBoarding extends Table
         $this->initStat('player', 'DEN', 0);
         $this->initStat('player', 'DFW', 0);
         $this->initStat('player', 'JFK', 0);
+        $this->initStat('player', 'LAX', 0);
         $this->initStat('player', 'MIA', 0);
         $this->initStat('player', 'ORD', 0);
         if ($playerCount >= 4) {
