@@ -95,18 +95,17 @@ define('N_REF_MSG', [
 ]);
 
 define('N_REF_MSG_EX', [
-    // 'allianceDuplicate' => xxx("You already joined alliance %s"),
-    'allianceOwner' => _("%s already selected alliance %s"),
-    'boardPort' => _("You must be at %s to board this passenger"),
-    'boardTransfer' => _("You and %s must be at the same airport to transfer passengers"),
-    'deplanePort' => _("You must be at an airport to deplane passengers"),
-    // 'noCash' => xxx("You have insufficient funds (cost: %s, cash: %s)"),
-    'noSeat' => _("You don't have enough empty seats"),
-    'noSnooze' => _("You can't snooze because you are the only active player. If you are finished, end the round."),
-    'pay' => _("You must choose bills totalling at least %s, even if it results in overpayment"),
-    'tempOwner' => _("%s already owns %s"),
-    'version' => _("A new version of this game is now available. Please reload the page (F5)."),
-    'vip' => _("VIP: You must honor %s (%s)"),
+    'allianceOwner' => totranslate("%s already selected alliance %s"),
+    'boardDeliver' => totranslate("%s must deliver this passenger"),
+    'boardPort' => totranslate("You must be at %s to board this passenger"),
+    'boardTransfer' => totranslate("You and %s must be at the same airport to transfer passengers"),
+    'deplanePort' => totranslate("You must be at an airport to deplane passengers"),
+    'noSeat' => totranslate("You don't have enough empty seats"),
+    'noSnooze' => totranslate("You can't snooze because you are the only active player. If you are finished, end the round."),
+    'pay' => totranslate("You must choose bills totalling at least %s, even if it results in overpayment"),
+    'tempOwner' => totranslate("%s already owns %s"),
+    'version' => totranslate("A new version of this game is now available. Please reload the page (F5)."),
+    'vip' => totranslate("VIP: You must honor %s (%s)"),
 ]);
 
 define('N_REF_SEAT_COST', [

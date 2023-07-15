@@ -1,4 +1,5 @@
 @use "colors" as *;
+@use "sass:color";
 
 .manifests {
   display: flex;
@@ -69,9 +70,7 @@
 
 .manifest .location {
   color: rgb(255 255 255 / 0.5);
-  font-size: 20px;
-  line-height: 1.5;
-  font-weight: bold;
+  font: bold 20px/1.5 Consolas, monospace;
   text-align: center;
   transition: color 200ms linear;
 }
@@ -85,6 +84,12 @@
   min-height: 41px;
   min-width: 215px;
   padding: 5px;
+}
+
+.manifest.is-anger {
+  .paxlist {
+    outline: 5px dashed $color-red-400;
+  }
 }
 
 .manifest.is-active {
@@ -188,7 +193,7 @@
 
 .pax .vip {
   background: linear-gradient(45deg, $color-neutral-700 85%, transparent 85%);
-  color: $color-fuchsia-200;
+  color: $color-fuchsia-300;
   font-weight: bold;
   grid-area: vip;
   height: 13px;
@@ -231,7 +236,7 @@
   border-radius: 4px;
   border: 5px dashed rgb(255 255 255 / 0.5);
   font: 13px/1 Consolas, monospace;
-  order: 98;
+  order: 600;
   text-align: center;
   text-transform: uppercase;
   width: 210px;
@@ -241,6 +246,6 @@
   }
 
   &.temp {
-    order: 99;
+    order: 601;
   }
 }

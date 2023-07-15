@@ -58,6 +58,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           const pax = gamedatas.pax[paxId];
           this.renderPax(pax);
         }
+        this.renderWarnings();
       }
 
       // Setup sounds
@@ -430,8 +431,11 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       } else if (notif.type == "pax") {
         for (const pax of notif.args.pax) {
           this.gamedatas.pax[pax.id] = pax;
+        }
+        for (const pax of notif.args.pax) {
           this.renderPax(pax);
         }
+        this.renderWarnings();
       } else if (notif.type == "planes") {
         for (const plane of notif.args.planes) {
           this.gamedatas.planes[plane.id] = plane;
@@ -500,22 +504,12 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     },
 
     takePaxAction(paxId) {
-      const pax = this.gamedatas.pax[paxId];
       if (this.isCurrentPlayerActive()) {
+        const pax = this.gamedatas.pax[paxId];
         if (pax.status == "SEAT" && pax.playerId == this.player_id) {
-          this.takeAction("deplane", { paxId: pax.id }).catch((error) => {
-            if (error == "deplaneConfirm") {
-              const msg = this.format_string_recursive(_("This passenger will remain angry ${anger} if you return them to ${location} where they just boarded your plane"), {
-                anger: pax.anger,
-                location: pax.location,
-              });
-              this.confirmationDialog(msg, () => {
-                this.takeAction("deplane", { paxId: pax.id, confirm: true });
-              });
-            }
-          });
+          this.takeAction("deplane", { paxId: Math.abs(pax.id) });
         } else {
-          this.takeAction("board", { paxId: pax.id });
+          this.takeAction("board", { paxId: Math.abs(pax.id) });
         }
       }
     },
@@ -568,6 +562,24 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         rotation -= 360;
       }
       return rotation;
+    },
+
+    positionElement(el, start) {
+      el.style.position = "absolute";
+      el.style.top = `${start.top + window.scrollY}px`;
+      el.style.left = `${start.left + window.scrollX}px`;
+    },
+
+    translateElement(el, start, end) {
+      return new Promise((resolve) => {
+        const fallback = setTimeout(resolve, 1100);
+        el.addEventListener("transitionend", () => {
+          resolve();
+          clearTimeout(fallback);
+        });
+        el.offsetHeight; // repaint
+        el.style.transform = `translate(${end.x - start.x}px, ${end.y - start.y}px)`;
+      });
     },
 
     // Rendering
@@ -832,7 +844,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       markerEl.classList.remove("is-active", "pinging");
     },
 
-    renderPax(pax) {
+    async renderPax(pax) {
       console.log(`🧑 Render pax ${pax.id}: location=${pax.location}, playerId=${pax.playerId}, status=${pax.status}`);
 
       // Determine where the pax is and where it belongs
@@ -848,10 +860,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
       if (!listEl) {
         // Pax shouldn't exist
-        if (paxEl) {
+        if (paxEl && pax.id > 0) {
           this.deletePax(pax);
-        } else {
-          console.warn("Why did we receive this pax?");
         }
         return;
       }
@@ -888,13 +898,13 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       const cashEl = paxEl.querySelector(".cash");
 
       if (pax.status == "SECRET") {
-        paxEl.style.order = 5;
+        paxEl.style.order = 500 + pax.id;
         paxEl.classList.add("is-secret");
         angerIconEl.classList.add("question");
         angerCountEl.textContent = "";
         originEl.textContent = _("WELCOME ABOARD");
       } else {
-        paxEl.style.order = 4 - pax.anger;
+        paxEl.style.order = (4 - pax.anger) * 100 + Math.abs(pax.id);
         paxEl.classList.remove("is-secret");
         cashEl.textContent = `$${pax.cash}`;
         originEl.textContent = `${pax.origin} » `;
@@ -910,15 +920,31 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       }
 
       // Move the pax (if necessary)
-      this.movePax(pax, paxEl, listEl);
+      // Don't move VIP Double until the original moves
+      if (pax.id > 0) {
+        this.movePax(paxEl, listEl);
+        // VIP Double is handled concurrent with original
+        const double = this.gamedatas.pax[-1 * pax.id];
+        if (double) {
+          const doubleEl = document.getElementById(`pax-${double.id}`);
+          if (doubleEl) {
+            doubleEl.style.position = null;
+            doubleEl.style.top = null;
+            doubleEl.style.left = null;
+            await this.movePax(doubleEl, listEl);
+            if (double.status == "DELETED") {
+              this.deletePax(double);
+            }
+          }
+        }
+      }
     },
 
-    movePax(pax, paxEl, listEl) {
+    async movePax(paxEl, listEl) {
       if (paxEl.parentElement == listEl) {
         // Already correct, nothing to do
         return;
       }
-      console.log(`🧑 Move pax ${pax.id} to ${listEl.id}`);
 
       // Record start position
       const start = paxEl.getBoundingClientRect();
@@ -926,9 +952,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       // Make a copy and put it at start
       const cloneEl = paxEl.cloneNode(true);
       cloneEl.id += "-clone";
-      cloneEl.style.position = "absolute";
-      cloneEl.style.top = `${start.top + window.scrollY}px`;
-      cloneEl.style.left = `${start.left + window.scrollX}px`;
+      this.positionElement(cloneEl, start);
       document.body.appendChild(cloneEl);
 
       // Move and record end position
@@ -937,13 +961,9 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       paxEl.style.opacity = "0";
 
       // Animate the copy to the end
-      setTimeout(() => {
-        cloneEl.addEventListener("transitionend", () => {
-          paxEl.style.opacity = null;
-          cloneEl.remove();
-        });
-        cloneEl.style.transform = `translate(${end.x - start.x}px, ${end.y - start.y}px)`;
-      }, 10);
+      await this.translateElement(cloneEl, start, end);
+      paxEl.style.opacity = null;
+      cloneEl.remove();
     },
 
     deletePax(pax) {
@@ -962,7 +982,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         endEl = document.getElementById("nbcommon");
       }
       if (!endEl) {
-        console.warn("Delete a passenger without animation???");
         paxEl.remove();
         return;
       }
@@ -987,6 +1006,28 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         });
         cloneEl.style.transform = `translate(${end.x - start.x}px, ${end.y - start.y}px)`;
       }, 10);
+    },
+
+    renderWarnings() {
+      const airports = ["ATL", "DEN", "DFW", "JFK", "LAX", "MIA", "ORD", "SEA", "SFO"];
+      let angerAirports = {};
+      for (const paxId in this.gamedatas.pax) {
+        const pax = this.gamedatas.pax[paxId];
+        if (pax.status == "PORT" && pax.anger == 3) {
+          angerAirports[pax.location] = true;
+        }
+      }
+      console.log("angerAirports", angerAirports);
+      for (const airport of airports) {
+        const manifestEl = document.getElementById(`manifest-${airport}`);
+        if (manifestEl) {
+          manifestEl.classList.toggle("is-anger", angerAirports[airport] == true);
+        }
+        const markerEl = document.querySelector(`#nbmap .marker.node.node-${airport}`);
+        if (markerEl) {
+          markerEl.classList.toggle("pinging-anger", angerAirports[airport] == true);
+        }
+      }
     },
 
     renderBuys() {

@@ -151,7 +151,7 @@ html,
   }
 
   &.vip {
-    color: $color-fuchsia-200;
+    color: $color-fuchsia-300;
   }
 }
 
@@ -200,4 +200,18 @@ html,
 
 .flyTimer {
   font-size: 96px;
+}
+
+.pagesection .wikicontent h2,
+.pagesection .wikicontent h3 {
+  margin: 12px -12px;
+}
+
+.wikicontent .wikitable th {
+  font-weight: bold;
+}
+
+.wikicontent .wikitable th,
+.wikicontent .wikitable td {
+  border: 1px solid #888;
 }

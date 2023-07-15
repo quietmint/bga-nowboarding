@@ -10,10 +10,11 @@ class NPax extends APP_GameClass implements JsonSerializable
     public int $cash;
     public ?string $destination;
     public ?string $location;
+    public int $moves;
     public string $origin;
+    public int $optimal;
     public ?int $playerId;
     public string $status;
-    public int $stops;
     public ?string $vip;
 
     public function __construct(array $dbrow)
@@ -23,10 +24,11 @@ class NPax extends APP_GameClass implements JsonSerializable
         $this->cash = intval($dbrow['cash']);
         $this->destination = $dbrow['destination'];
         $this->location = $dbrow['location'];
+        $this->moves = intval($dbrow['moves']);
+        $this->optimal = intval($dbrow['optimal']);
         $this->origin = $dbrow['origin'];
         $this->playerId = $dbrow['player_id'] == null ? null : intval($dbrow['player_id']);
         $this->status = $dbrow['status'];
-        $this->stops = intval($dbrow['stops']);
         $this->vip = $dbrow['vip'];
     }
 

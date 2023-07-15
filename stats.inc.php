@@ -41,50 +41,9 @@ $stats_type = [
             'name' => totranslate('Passengers delivered'),
             'type' => 'int'
         ],
-
-        'stops0' => [
-            'id' => 40,
-            'name' => totranslate('Non-stop passengers'),
-            'type' => 'int'
-        ],
-        'stops1' => [
-            'id' => 41,
-            'name' => totranslate('1-stop passengers'),
-            'type' => 'int'
-        ],
-        'stops2' => [
-            'id' => 42,
-            'name' => totranslate('2-stop passengers'),
-            'type' => 'int'
-        ],
-        'stops3' => [
-            'id' => 43,
-            'name' => totranslate('3-stop passengers'),
-            'type' => 'int'
-        ],
-        'stops4' => [
-            'id' => 44,
-            'name' => totranslate('4-stop passengers'),
-            'type' => 'int'
-        ],
-        'stops5' => [
-            'id' => 45,
-            'name' => totranslate('5-stop passengers'),
-            'type' => 'int'
-        ],
-        'stops6' => [
-            'id' => 46,
-            'name' => totranslate('6-stop passengers'),
-            'type' => 'int'
-        ],
-        'stops7' => [
-            'id' => 47,
-            'name' => totranslate('7-stop and above passengers'),
-            'type' => 'int'
-        ],
-        'stopsAvg' => [
-            'id' => 39,
-            'name' => totranslate('Average stops/passenger'),
+        'efficiency' => [
+            'id' => 36,
+            'name' => totranslate('Passengers delivered move efficiency %'),
             'type' => 'float'
         ],
 

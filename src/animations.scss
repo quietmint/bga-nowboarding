@@ -1,10 +1,10 @@
 @use "colors" as *;
 
-.pinging::before {
+.pinging::before,
+.pinging-anger::before {
   content: "";
-  background: white;
   display: block;
-  animation: ping 3s cubic-bezier(0, 0, 0.2, 1) infinite;
+  animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
   border-radius: 100%;
   position: absolute;
   top: 0;
@@ -13,14 +13,18 @@
   bottom: 0;
 }
 
-.is-danger.pinging::before {
+.pinging::before {
+  background: white;
+}
+
+.pinging-anger::before {
   background: $color-red-500;
 }
 
 @keyframes ping {
   50%,
   100% {
-    transform: scale(2);
+    transform: scale(2.5);
     opacity: 0;
   }
 }

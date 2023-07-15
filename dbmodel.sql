@@ -4,14 +4,22 @@ CREATE TABLE `stats_undo` LIKE `stats`;
 
 CREATE TABLE `ledger` (
     `player_id` INT(10) NOT NULL,
-    `type` VARCHAR(50) NOT NULL,
     `arg` VARCHAR(50) DEFAULT NULL,
     `cost` INT(2) NOT NULL,
+    `type` VARCHAR(50) NOT NULL,
     INDEX (`player_id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
 
 CREATE TABLE `pax` (
     `pax_id` INT(3) NOT NULL AUTO_INCREMENT,
+    `anger` INT(1) NOT NULL DEFAULT '0',
+    `cash` INT(1) NOT NULL,
+    `destination` VARCHAR(50) NOT NULL,
+    `location` VARCHAR(50) DEFAULT NULL,
+    `moves` INT(3) NOT NULL DEFAULT '0',
+    `optimal` INT(3) NOT NULL,
+    `origin` VARCHAR(50) NOT NULL,
+    `player_id` INT(10) DEFAULT NULL,
     `status` ENUM(
         'MORNING',
         'NOON',
@@ -23,13 +31,6 @@ CREATE TABLE `pax` (
         'PAID',
         'COMPLAINT'
     ) NOT NULL,
-    `anger` INT(1) NOT NULL DEFAULT '0',
-    `cash` INT(1) NOT NULL,
-    `origin` VARCHAR(50) NOT NULL,
-    `destination` VARCHAR(50) NOT NULL,
-    `location` VARCHAR(50) DEFAULT NULL,
-    `stops` INT(10) NOT NULL DEFAULT '0',
-    `player_id` INT(10) DEFAULT NULL,
     `vip` VARCHAR(50) DEFAULT NULL,
     PRIMARY KEY (`pax_id`),
     INDEX (`status`)
@@ -39,16 +40,15 @@ CREATE TABLE `pax_undo` LIKE `pax`;
 
 CREATE TABLE `plane` (
     `player_id` INT(10) NOT NULL,
-    `notify` TINYINT(1) DEFAULT NULL,
     `alliances` VARCHAR(50) NOT NULL DEFAULT '',
     `debt` INT(2) NOT NULL DEFAULT '0',
-    `origin` VARCHAR(50) DEFAULT NULL,
     `location` VARCHAR(50) DEFAULT NULL,
+    `origin` VARCHAR(50) DEFAULT NULL,
+    `seat` INT(2) NOT NULL DEFAULT '1',
+    `speed_remain` INT(2) NOT NULL DEFAULT '3',
+    `speed` INT(2) NOT NULL DEFAULT '3',
     `temp_seat` TINYINT(1) DEFAULT NULL,
     `temp_speed` TINYINT(1) DEFAULT NULL,
-    `speed` INT(2) NOT NULL DEFAULT '3',
-    `speed_remain` INT(2) NOT NULL DEFAULT '3',
-    `seat` INT(2) NOT NULL DEFAULT '1',
     PRIMARY KEY (`player_id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
 
