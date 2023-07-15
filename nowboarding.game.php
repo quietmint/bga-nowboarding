@@ -113,7 +113,7 @@ class NowBoarding extends Table
     function checkVersion(int $clientVersion): void
     {
         if ($clientVersion != $this->getGlobal(N_BGA_VERSION)) {
-            throw new BgaVisibleSystemException($this->_(N_REF_MSG_EX['version']));
+            throw new BgaVisibleSystemException(self::_(N_REF_MSG_EX['version']));
         }
     }
 
@@ -378,7 +378,7 @@ class NowBoarding extends Table
         ];
         if ($plane->debt > 0) {
             $ledger = $this->getLedger($playerId);
-            $pay = $this->_argPreparePay($plane, $wallet);
+            $pay = self::_argPreparePay($plane, $wallet);
             $args['ledger'] = $ledger;
             $args['overpay'] = $pay['overpay'];
         }
@@ -390,7 +390,7 @@ class NowBoarding extends Table
     {
         $plane = $this->getPlaneById($playerId);
         $wallet = $this->getPaxWallet($plane->id);
-        return $this->_argPreparePay($plane, $wallet);
+        return self::_argPreparePay($plane, $wallet);
     }
 
     function _argPreparePay(NPlane $plane, array $wallet): array
@@ -640,7 +640,7 @@ class NowBoarding extends Table
     {
         $owner = $this->getOwnerName("`temp_seat` = 1");
         if ($owner != null) {
-            $this->userException('tempOwner', $owner, $this->_('Temporary Seat'));
+            $this->userException('tempOwner', $owner, self::_('Temporary Seat'));
         }
         $cost = 2;
         $cash = $plane->getCashRemain();
@@ -717,7 +717,7 @@ class NowBoarding extends Table
     {
         $owner = $this->getOwnerName("`temp_speed` = 1");
         if ($owner != null) {
-            $this->userException('tempOwner', $owner, $this->_('Temporary Speed'));
+            $this->userException('tempOwner', $owner, self::_('Temporary Speed'));
         }
         $cost = 1;
         $cash = $plane->getCashRemain();
@@ -951,7 +951,7 @@ class NowBoarding extends Table
         }
         $playerId = $this->getCurrentPlayerId();
         $plane = $this->getPlaneById($playerId);
-        $this->_board($plane, $paxId);
+        self::_board($plane, $paxId);
         $this->awakenSnoozers($playerId);
         $this->gamestate->nextPrivateState($plane->id, 'flyPrivate');
     }
@@ -976,7 +976,7 @@ class NowBoarding extends Table
                 $this->userException('boardTransfer', $other->name);
             }
             // Automatic deplane
-            $this->_deplane($other, $paxId, true);
+            self::_deplane($other, $paxId, true);
             $planeIds[] = $other->id;
             $x = $this->getPaxById($paxId, true);
         }
@@ -1008,7 +1008,7 @@ class NowBoarding extends Table
                 $this->notifyAllPlayers('pax', '', [
                     'pax' => [$double]
                 ]);
-                $this->_board($plane, $doubleId);
+                self::_board($plane, $doubleId);
                 $plane = $this->getPlaneById($plane->id);
             }
         }
@@ -1074,7 +1074,7 @@ class NowBoarding extends Table
         }
         $playerId = $this->getCurrentPlayerId();
         $plane = $this->getPlaneById($playerId);
-        $this->_deplane($plane, $paxId);
+        self::_deplane($plane, $paxId);
         $this->awakenSnoozers($playerId);
         $this->gamestate->nextPrivateState($plane->id, 'flyPrivate');
     }
@@ -1468,7 +1468,7 @@ SQL);
 
     function userException(string $msgExKey, ...$args): void
     {
-        $msg = $this->_(N_REF_MSG_EX[$msgExKey]);
+        $msg = self::_(N_REF_MSG_EX[$msgExKey]);
         if (!empty($args)) {
             $msg = sprintf($msg, ...$args);
         }
@@ -1477,7 +1477,7 @@ SQL);
 
     function vipException(string $type): void
     {
-        $this->userException('vip', $this->_(N_REF_VIP[$type]['name']), $this->_(N_REF_VIP[$type]['desc']));
+        $this->userException('vip', self::_(N_REF_VIP[$type]['name']), self::_(N_REF_VIP[$type]['desc']));
     }
 
     function getPaxWallet(int $playerId): array
