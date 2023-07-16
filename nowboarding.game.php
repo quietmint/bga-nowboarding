@@ -54,7 +54,8 @@ class NowBoarding extends Table
         $this->initStat('table', 'movesFAST', 0);
         $this->initStat('table', 'movesSLOW', 0);
         $this->initStat('table', 'pax', 0);
-        $this->initStat('table', 'efficiency', 0);
+        $this->initStat('table', 'efficiencyAvg', 0);
+        $this->initStat('table', 'efficiencyMin', 0);
         $this->initStat('table', 'alliances', 0);
         $this->initStat('table', 'seat', 0);
         $this->initStat('table', 'speed', 0);
@@ -122,7 +123,7 @@ class NowBoarding extends Table
         $players = $this->getCollectionFromDb("SELECT player_id id, player_score score FROM player");
         return [
             'complaint' => $this->countComplaint(),
-            'handoff' => boolval($this->getGlobal(N_OPTION_HANDOFF)),
+            // 'handoff' => boolval($this->getGlobal(N_OPTION_HANDOFF)),
             'hour' => $this->getHourInfo(),
             'map' => $this->getMap(),
             'noTimeLimit' => in_array($this->getGlobal(N_BGA_CLOCK), N_REF_BGA_CLOCK_UNLIMITED),
@@ -1105,6 +1106,7 @@ class NowBoarding extends Table
             $x->status = 'CASH';
             $msg = N_REF_MSG['deplaneDeliver'];
             $args['cash'] = $x->cash;
+            $args['moves'] = $x->moves;
             $this->incStat(1, 'pax');
             $this->incStat(1, 'pax', $plane->id);
             $this->incStat($x->cash, 'cash', $plane->id);
@@ -1839,8 +1841,10 @@ SQL);
         $this->setStat($tempSeat, 'tempSeat');
         $this->setStat($tempSpeed, 'tempSpeed');
 
-        $efficiency = $this->getUniqueValueFromDB("SELECT ROUND(SUM(`optimal`)/SUM(`moves`) * 100, 2) FROM `pax` WHERE `status` IN ('CASH', 'PAID')");
-        $this->setStat($efficiency, 'efficiency');
+        $efficiencyAvg = $this->getUniqueValueFromDB("SELECT ROUND(SUM(`optimal`)/SUM(`moves`) * 100, 2) FROM `pax` WHERE `status` IN ('CASH', 'PAID')");
+        $efficiencyMin = $this->getUniqueValueFromDB("SELECT MIN(ROUND(`optimal`/`moves` * 100, 2)) FROM `pax` WHERE `status` IN ('CASH', 'PAID')");
+        $this->setStat($efficiencyAvg, 'efficiencyAvg');
+        $this->setStat($efficiencyMin, 'efficiencyMin');
 
         // End the game
         $this->gamestate->nextState('end');

@@ -41,9 +41,14 @@ $stats_type = [
             'name' => totranslate('Passengers delivered'),
             'type' => 'int'
         ],
-        'efficiency' => [
+        'efficiencyAvg' => [
             'id' => 36,
-            'name' => totranslate('Passengers delivered move efficiency %'),
+            'name' => totranslate('Average efficiency %'),
+            'type' => 'float'
+        ],
+        'efficiencyMin' => [
+            'id' => 37,
+            'name' => totranslate('Minimum efficiency %'),
             'type' => 'float'
         ],
 

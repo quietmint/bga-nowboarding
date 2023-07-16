@@ -594,7 +594,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     <div class="nbtag"><i class="icon complaint"></i> <span id="nbcommon-complaint"></span></div>
   </div>
   <div class="nbsection">
-    <div class="nblabel">${_("Time")}</div>
+    <div class="nblabel">${_("Round")}</div>
     <div class="nbtag hour"><i class="icon"></i> <span></span></div>
   </div>`;
         if (this.gamedatas.vip) {
@@ -1025,6 +1025,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         }
         const markerEl = document.querySelector(`#nbmap .marker.node.node-${airport}`);
         if (markerEl) {
+          markerEl.classList.toggle("is-anger", angerAirports[airport] == true);
           markerEl.classList.toggle("pinging-anger", angerAirports[airport] == true);
         }
       }

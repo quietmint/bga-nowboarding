@@ -18,6 +18,11 @@ $game_options = [
         'default' => 1,
         'notdisplayedmessage' => totranslate('Off'),
         'values' => [
+            0 => [
+                'name' => totranslate('Off'),
+                'description' => totranslate("House rule: The flight phase has no specific time limit"),
+                'tmdisplay' => totranslate('Flight Phase Timer Off'),
+            ],
             1 => [
                 'name' => totranslate('On'),
                 'description' => totranslate("The flight phase lasts 30 - 45 seconds (depending on player count) and time is STRICTLY ENFORCED"),
@@ -28,11 +33,7 @@ $game_options = [
                 'tmdisplay' => totranslate('Flight Phase Timer Doubled'),
                 'firstgameonly' => true,
             ],
-            0 => [
-                'name' => totranslate('Off'),
-                'description' => totranslate("House rule: The flight phase has no specific time limit"),
-                'tmdisplay' => totranslate('Flight Phase Timer Off'),
-            ],
+
         ],
         'displaycondition' => [
             [
@@ -48,28 +49,13 @@ $game_options = [
         'default' => 0,
         'values' => [
             0 => [
-                'name' => totranslate('Disabled'),
+                'name' => totranslate('Off'),
             ],
             1 => [
-                'name' => totranslate('Enabled'),
-                'description' => totranslate('Increase difficulty by adding passengers with challenging conditions'),
+                'name' => totranslate('On'),
+                'description' => totranslate('VIPs add additional complications like "must board first" or "must fly alone"'),
                 'tmdisplay' => totranslate('VIP Variant'),
                 'nobeginner' => true,
-            ],
-        ],
-    ],
-
-    N_OPTION_HANDOFF => [
-        'name' => totranslate('Money Handoff Variant'),
-        'default' => 0,
-        'values' => [
-            0 => [
-                'name' => totranslate('Disabled'),
-            ],
-            1 => [
-                'name' => totranslate('Enabled'),
-                'description' => totranslate('Reduce difficulty by allowing players to exchange cash'),
-                'tmdisplay' => totranslate('Money Handoff Variant'),
             ],
         ],
     ],

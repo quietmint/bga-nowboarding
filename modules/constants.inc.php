@@ -76,7 +76,7 @@ define('N_REF_MSG', [
     'complaint' => clienttranslate('${complaint} complaints are filed by angry passengers at ${location}'),
     'complaintFinale' => clienttranslate('${complaint} complaints are filed by ${count} undelivered passengers'),
     'deplane' => clienttranslate('${player_name} deplanes a passenger at ${location}'),
-    'deplaneDeliver' => clienttranslate('${player_name} delivers a passenger to ${location} and earns ${cash}'),
+    'deplaneDeliver' => clienttranslate('${player_name} delivers a passenger to ${location} after ${moves} moves and earns ${cash}'),
     'endLose' => clienttranslate('Rough landing! Your airline goes out of business after receiving ${complaint} complaints!'),
     'endWin' => clienttranslate('Congratulations! Your airline is a soaring success!'),
     'hour' => clienttranslate('${hourDesc} round ${round} of ${total} begins'),
