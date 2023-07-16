@@ -12,6 +12,7 @@
 
 require_once APP_GAMEMODULE_PATH . 'module/table/table.game.php';
 require_once 'modules/constants.inc.php';
+require_once 'modules/NGameOverException.class.php';
 require_once 'modules/NMap.class.php';
 require_once 'modules/NMove.class.php';
 require_once 'modules/NNode.class.php';
@@ -49,11 +50,17 @@ class NowBoarding extends Table
         $this->reloadPlayersBasicInfos();
 
         // Table statistics
-        $this->initStat('table', 'complaint', 0);
+        $this->initStat('table', 'complaintPort', 0);
+        $this->initStat('table', 'complaintFinale', 0);
+        if ($this->getGlobal(N_OPTION_VIP)) {
+            $this->initStat('table', 'complaintVip', 0);
+        }
         $this->initStat('table', 'moves', 0);
         $this->initStat('table', 'movesFAST', 0);
         $this->initStat('table', 'movesSLOW', 0);
         $this->initStat('table', 'pax', 0);
+        $this->initStat('table', 'journeyAvg', 0);
+        $this->initStat('table', 'journeyMax', 0);
         $this->initStat('table', 'efficiencyAvg', 0);
         $this->initStat('table', 'efficiencyMin', 0);
         $this->initStat('table', 'alliances', 0);
@@ -244,50 +251,51 @@ class NowBoarding extends Table
         // Everybody stop snoozing
         $this->DbQuery("UPDATE `player` SET `snooze` = 0");
 
-        $hourInfo = $this->getHourInfo(true);
-        if ($hourInfo['hour'] == 'PREFLIGHT') {
-            // Create pax on the first turn
-            $this->eraseUndo();
-            $this->createPax();
-            $pax = $this->getPaxByStatus('PORT');
-            $this->notifyAllPlayers('pax', N_REF_MSG['addPax'], [
-                'count' => count($pax),
-                'pax' => array_values($pax),
-                'location' => $this->getPaxLocations($pax),
-            ]);
-        } else {
-            // Add anger/complaints on subsequent turns
-            $didEndGame = $this->angerPax();
-            if ($didEndGame) {
-                return;
-            }
-        }
-
-        if ($hourInfo['hour'] == 'FINALE') {
-            // Add complaint for every 2 pax
-            $count = $this->countPaxByStatus(['PORT', 'SEAT']);
-            $complaint = floor($count / 2);
-            $this->setVar('complaintFinale', $complaint);
-            if ($complaint > 0) {
-                $this->notifyAllPlayers('complaint', N_REF_MSG['complaintFinale'], [
-                    'complaint' => $complaint,
-                    'count' => $count,
-                    'total' => $this->countComplaint(),
+        try {
+            $hourInfo = $this->getHourInfo(true);
+            if ($hourInfo['hour'] == 'PREFLIGHT') {
+                // Create pax on the first turn
+                $this->eraseUndo();
+                $this->createPax();
+                $pax = $this->getPaxByStatus('PORT');
+                $this->notifyAllPlayers('pax', N_REF_MSG['addPax'], [
+                    'count' => count($pax),
+                    'pax' => array_values($pax),
+                    'location' => $this->getPaxLocations($pax),
                 ]);
+            } else {
+                // Add anger/complaints on subsequent turns
+                $this->angerPax();
             }
 
-            // End the game
-            $this->endGame();
-        } else {
-            // Advance the hour
-            $hourInfo = $this->advanceHour($hourInfo);
-            if ($hourInfo['hour'] != 'FINALE') {
-                if ($hourInfo['round'] == 1) {
-                    $this->addWeather();
+            if ($hourInfo['hour'] == 'FINALE') {
+                // File complaint for every 2 pax
+                $count = $this->countPaxByStatus(['PORT', 'SEAT']);
+                $complaint = floor($count / 2);
+                $this->setStat($complaint, 'complaintFinale');
+                if ($complaint > 0) {
+                    $this->notifyAllPlayers('complaint', N_REF_MSG['complaintFinale'], [
+                        'complaint' => $complaint,
+                        'count' => $count,
+                        'total' => $this->countComplaint(),
+                    ]);
                 }
-                $this->addPax($hourInfo);
+
+                // End the game
+                $this->endGame();
+            } else {
+                // Advance the hour
+                $hourInfo = $this->advanceHour($hourInfo);
+                if ($hourInfo['hour'] != 'FINALE') {
+                    if ($hourInfo['round'] == 1) {
+                        $this->addWeather();
+                    }
+                    $this->addPax($hourInfo);
+                }
+                $this->gamestate->nextState('prepare');
             }
-            $this->gamestate->nextState('prepare');
+        } catch (NGameOverException $e) {
+            $this->endGame();
         }
     }
 
@@ -1256,6 +1264,7 @@ class NowBoarding extends Table
         $advance = $hourInfo['hour'] == 'PREFLIGHT' || $hourInfo['round'] > $hourInfo['total'];
         if ($advance) {
             $nextHour = N_REF_HOUR[$hourInfo['hour']]['next'];
+            $prevHour = N_REF_HOUR[$nextHour]['prev'];
             $this->setVar('hour', $nextHour);
             $hourInfo = $this->getHourInfo(true);
         }
@@ -1266,7 +1275,17 @@ class NowBoarding extends Table
             $hourInfo['count'] = $this->countPaxByStatus(['PORT', 'SEAT']);
             $this->notifyAllPlayers('hour', N_REF_MSG['hourFinale'], $hourInfo);
         } else {
+            if ($advance && $prevHour && array_key_exists('vipRemain', $hourInfo)) {
+                $this->angerVips($prevHour);
+            }
             $this->notifyAllPlayers('hour', N_REF_MSG['hour'], $hourInfo);
+            if ($advance && array_key_exists('vipRemain', $hourInfo)) {
+                $this->notifyAllPlayers('message', N_REF_MSG['hourVip'], [
+                    'i18n' => ['hourDesc'],
+                    'count' => $hourInfo['vipRemain'],
+                    'hourDesc' => $hourInfo['hourDesc'],
+                ]);
+            }
         }
         return $hourInfo;
     }
@@ -1472,7 +1491,7 @@ SQL);
 
     function countComplaint(): int
     {
-        return $this->countPaxByStatus('COMPLAINT') + $this->getVarInt('complaintFinale') + $this->getVarInt('complaintVip');
+        return $this->countPaxByStatus('COMPLAINT') + $this->getStat('complaintFinale') + $this->getStat('complaintVip');
     }
 
     function hasVipNew(): bool
@@ -1709,7 +1728,7 @@ SQL);
         return join(', ', $locations);
     }
 
-    function angerPax(): bool
+    function angerPax(): void
     {
         $pax = $this->getPaxByStatus('PORT');
         if (!empty($pax)) {
@@ -1745,18 +1764,36 @@ SQL);
             if (!empty($complaintPax)) {
                 $count = count($complaintPax);
                 $total = $this->countComplaint();
-                $this->notifyAllPlayers('complaint', N_REF_MSG['complaint'], [
+                $this->notifyAllPlayers('complaint', N_REF_MSG['complaintPort'], [
                     'complaint' => $count,
                     'location' => $this->getPaxLocations($complaintPax),
                     'total' => $total,
                 ]);
                 if ($total >= 3) {
-                    $this->endGame();
-                    return true;
+                    throw new NGameOverException();
                 }
             }
         }
-        return false;
+    }
+
+    function angerVips(string $hour): void
+    {
+        // File complaint for every unserved VIP
+        $vips = $this->getVarArray("vip$hour");
+        $count = count($vips);
+        if ($count > 0) {
+            $this->incStat($count, 'complaintVip');
+            $total = $this->countComplaint();
+            $this->notifyAllPlayers('complaint', N_REF_MSG['complaintVip'], [
+                'i18n' => ['hourDesc'],
+                'complaint' => $count,
+                'hourDesc' => N_REF_HOUR[$hour]['desc'],
+                'total' => $total,
+            ]);
+            if ($total >= 3) {
+                throw new NGameOverException();
+            }
+        }
     }
 
     function addWeather(): void
@@ -1819,14 +1856,19 @@ SQL);
         $this->setStat($tempSeat, 'tempSeat');
         $this->setStat($tempSpeed, 'tempSpeed');
 
+        $complaintPort = $this->countPaxByStatus('COMPLAINT');
+        $journeyAvg = intval($this->getUniqueValueFromDB("SELECT AVG(`moves`) FROM `pax` WHERE `status` IN ('CASH', 'PAID')"));
+        $journeyMax = intval($this->getUniqueValueFromDB("SELECT MAX(`moves`) FROM `pax` WHERE `status` IN ('CASH', 'PAID')"));
         $efficiencyAvg = floatval($this->getUniqueValueFromDB("SELECT ROUND(SUM(`optimal`)/SUM(`moves`) * 100, 2) FROM `pax` WHERE `status` IN ('CASH', 'PAID')"));
         $efficiencyMin = floatval($this->getUniqueValueFromDB("SELECT MIN(ROUND(`optimal`/`moves` * 100, 2)) FROM `pax` WHERE `status` IN ('CASH', 'PAID')"));
+        $this->setStat($complaintPort, 'complaintPort');
+        $this->setStat($journeyAvg, 'journeyAvg');
+        $this->setStat($journeyMax, 'journeyMax');
         $this->setStat($efficiencyAvg, 'efficiencyAvg');
         $this->setStat($efficiencyMin, 'efficiencyMin');
 
         // Calculate final score
         $complaint = $this->countComplaint();
-        $this->setStat($complaint, 'complaint');
         if ($complaint >= 3) {
             $this->DbQuery("UPDATE `player` SET `player_score` = -$complaint");
             $this->notifyAllPlayers('message', N_REF_MSG['endLose'], [

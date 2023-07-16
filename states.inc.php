@@ -169,7 +169,7 @@ $machinestates = [
     N_STATE_FLY_PRIVATE => [
         'name' => 'flyPrivate',
         'args' => 'argFlyPrivate',
-        'descriptionmyturn' => clienttranslate('Go! (${speedRemain} speed remaining)'),
+        'descriptionmyturn' => clienttranslate('Go!'),
         'possibleactions' => [
             'board',
             'deplane',

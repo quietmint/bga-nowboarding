@@ -85,7 +85,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       dojo.subscribe("sound", this, "onNotify");
       dojo.subscribe("weather", this, "onNotify");
       this.notifqueue.setSynchronous("complaint", 2000);
-      this.notifqueue.setSynchronous("flyTimer", 5000);
+      this.notifqueue.setSynchronous("flyTimer", 5500);
 
       // Setup preferences
       this.setupPrefs();
@@ -361,7 +361,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
               this.addActionButton("button_flyDoneSnooze", _("Snooze Until Next Move"), () => this.takeAction("flyDone", { snooze: true }), null, false, "gray");
             }
             if (args.speedRemain > 0) {
-              this.addActionButton("button_flyDone", _("End Round Early"), () => this.takeAction("flyDone"), null, false, "red");
+              const txt = this.format_string_recursive(_("End Round Early (${speedRemain} speed remaining)"), { speedRemain: args.speedRemain });
+              this.addActionButton("button_flyDone", txt, () => this.takeAction("flyDone"), null, false, "red");
             } else {
               this.addActionButton("button_flyDone", _("End Round"), () => this.takeAction("flyDone"), null, false, "blue");
             }

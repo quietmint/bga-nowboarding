@@ -14,9 +14,19 @@ require_once 'modules/constants.inc.php';
 
 $stats_type = [
     'table' => [
-        'complaint' => [
+        'complaintPort' => [
             'id' => 10,
-            'name' => totranslate('Complaints'),
+            'name' => totranslate('Complaints: Passengers waiting'),
+            'type' => 'int'
+        ],
+        'complaintFinale' => [
+            'id' => 11,
+            'name' => totranslate('Complaints: Passengers not delivered'),
+            'type' => 'int'
+        ],
+        'complaintVip' => [
+            'id' => 12,
+            'name' => totranslate('Complaints: VIPs not accepted'),
             'type' => 'int'
         ],
 
@@ -39,6 +49,16 @@ $stats_type = [
         'pax' => [
             'id' => 35,
             'name' => totranslate('Passengers delivered'),
+            'type' => 'int'
+        ],
+        'journeyAvg' => [
+            'id' => 38,
+            'name' => totranslate('Average moves/passenger'),
+            'type' => 'int'
+        ],
+        'journeyMax' => [
+            'id' => 39,
+            'name' => totranslate('Maximum moves/passenger'),
             'type' => 'int'
         ],
         'efficiencyAvg' => [

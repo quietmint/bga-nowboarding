@@ -40,24 +40,29 @@ define('N_REF_ALLIANCE_COLOR', [
 
 define('N_REF_HOUR', [
     'PREFLIGHT' => [
+        'desc' => clienttranslate('Preflight'),
         'next' => 'MORNING',
-        'desc' => clienttranslate('Preflight')
+        'prev' => null,
     ],
     'MORNING' => [
+        'desc' => clienttranslate('Morning'),
         'next' => 'NOON',
-        'desc' => clienttranslate('Morning')
+        'prev' => null,
     ],
     'NOON' => [
+        'desc' => clienttranslate('Afternoon'),
         'next' => 'NIGHT',
-        'desc' => clienttranslate('Afternoon')
+        'prev' => 'MORNING',
     ],
     'NIGHT' => [
+        'desc' => clienttranslate('Evening'),
         'next' => 'FINALE',
-        'desc' => clienttranslate('Evening')
+        'prev' => 'NOON',
     ],
     'FINALE' => [
+        'desc' => clienttranslate('Final Round'),
         'next' => null,
-        'desc' => clienttranslate('Final Round')
+        'prev' => 'NIGHT',
     ],
 ]);
 
@@ -73,14 +78,16 @@ define('N_REF_MSG', [
     'alliance' => clienttranslate('${player_name} joins alliance ${alliance}'),
     'anger' => clienttranslate('${count} passengers in airports get angry'),
     'board' => clienttranslate('${player_name} boards a passenger at ${location}'),
-    'complaint' => clienttranslate('${complaint} complaints are filed by angry passengers at ${location}'),
     'complaintFinale' => clienttranslate('${complaint} complaints are filed by ${count} undelivered passengers'),
+    'complaintPort' => clienttranslate('${complaint} complaints are filed by angry passengers at ${location}'),
+    'complaintVip' => clienttranslate('${complaint} complaints are filed by VIPs not accepted during ${hourDesc}'),
     'deplane' => clienttranslate('${player_name} deplanes a passenger at ${location}'),
     'deplaneDeliver' => clienttranslate('${player_name} delivers a passenger to ${location} after ${moves} moves and earns ${cash}'),
     'endLose' => clienttranslate('Rough landing! Your airline goes out of business after receiving ${complaint} complaints!'),
     'endWin' => clienttranslate('Congratulations! Your airline is a soaring success!'),
     'hour' => clienttranslate('${hourDesc} round ${round} of ${total} begins'),
     'hourFinale' => clienttranslate('${hourDesc} begins. ${count} undelivered passengers remain.'),
+    'hourVip' => clienttranslate('VIP: ${count} VIPs must be accepted during ${hourDesc}'),
     'move' => clienttranslate('${player_name} flys ${fuel} moves'),
     'movePort' => clienttranslate('${player_name} flys ${fuel} moves to ${location}'),
     'seat' => clienttranslate('${player_name} upgrades seats to ${seat}'),
