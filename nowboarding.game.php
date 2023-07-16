@@ -264,7 +264,19 @@ class NowBoarding extends Table
         }
 
         if ($hourInfo['hour'] == 'FINALE') {
-            // Add complaints on final round
+            // Add complaint for every 2 pax
+            $count = $this->countPaxByStatus(['PORT', 'SEAT']);
+            $complaint = floor($count / 2);
+            $this->setVar('complaintFinale', $complaint);
+            if ($complaint > 0) {
+                $this->notifyAllPlayers('complaint', N_REF_MSG['complaintFinale'], [
+                    'complaint' => $complaint,
+                    'count' => $count,
+                    'total' => $this->countComplaint(),
+                ]);
+            }
+
+            // End the game
             $this->endGame();
         } else {
             // Advance the hour
@@ -1738,12 +1750,8 @@ SQL);
                     'location' => $this->getPaxLocations($complaintPax),
                     'total' => $total,
                 ]);
-                $this->setStat($total, 'complaint');
                 if ($total >= 3) {
-                    $this->notifyAllPlayers('message', N_REF_MSG['endLose'], [
-                        'complaint' => $total,
-                    ]);
-                    $this->endStats();
+                    $this->endGame();
                     return true;
                 }
             }
@@ -1790,36 +1798,6 @@ SQL);
 
     function endGame(): void
     {
-        // End final round
-        // File a complaint for every 2 pax
-        $count = $this->countPaxByStatus(['PORT', 'SEAT']);
-        $complaint = floor($count / 2);
-        $this->setVar('complaintFinale', $complaint);
-        $total = $this->countComplaint();
-        if ($complaint > 0) {
-            $this->notifyAllPlayers('complaint', N_REF_MSG['complaintFinale'], [
-                'complaint' => $complaint,
-                'count' => $count,
-                'total' => $total,
-            ]);
-            $this->setStat($total, 'complaint');
-        }
-
-        // Determine win/lose
-        if ($total >= 3) {
-            $this->DbQuery("UPDATE `player` SET `player_score` = -$total");
-            $this->notifyAllPlayers('message', N_REF_MSG['endLose'], [
-                'complaint' => $total,
-            ]);
-        } else {
-            $this->DbQuery("UPDATE `player` SET `player_score` = 1");
-            $this->notifyAllPlayers('message', N_REF_MSG['endWin'], []);
-        }
-        $this->endStats();
-    }
-
-    function endStats(): void
-    {
         // Calculate final statistics
         $planes = $this->getPlanesByIds();
         $playerCount = count($planes);
@@ -1841,12 +1819,26 @@ SQL);
         $this->setStat($tempSeat, 'tempSeat');
         $this->setStat($tempSpeed, 'tempSpeed');
 
-        $efficiencyAvg = $this->getUniqueValueFromDB("SELECT ROUND(SUM(`optimal`)/SUM(`moves`) * 100, 2) FROM `pax` WHERE `status` IN ('CASH', 'PAID')");
-        $efficiencyMin = $this->getUniqueValueFromDB("SELECT MIN(ROUND(`optimal`/`moves` * 100, 2)) FROM `pax` WHERE `status` IN ('CASH', 'PAID')");
+        $efficiencyAvg = floatval($this->getUniqueValueFromDB("SELECT ROUND(SUM(`optimal`)/SUM(`moves`) * 100, 2) FROM `pax` WHERE `status` IN ('CASH', 'PAID')"));
+        $efficiencyMin = floatval($this->getUniqueValueFromDB("SELECT MIN(ROUND(`optimal`/`moves` * 100, 2)) FROM `pax` WHERE `status` IN ('CASH', 'PAID')"));
         $this->setStat($efficiencyAvg, 'efficiencyAvg');
         $this->setStat($efficiencyMin, 'efficiencyMin');
 
-        // End the game
+        // Calculate final score
+        $complaint = $this->countComplaint();
+        $this->setStat($complaint, 'complaint');
+        if ($complaint >= 3) {
+            $this->DbQuery("UPDATE `player` SET `player_score` = -$complaint");
+            $this->notifyAllPlayers('message', N_REF_MSG['endLose'], [
+                'complaint' => $complaint,
+            ]);
+        } else {
+            $delivered = intval($this->getStat('pax'));
+            $this->DbQuery("UPDATE `player` SET `player_score` = $delivered");
+            $this->notifyAllPlayers('message', N_REF_MSG['endWin'], []);
+        }
+
+        // Really end the game
         $this->gamestate->nextState('end');
     }
 
