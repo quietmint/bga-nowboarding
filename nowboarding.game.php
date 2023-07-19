@@ -1024,7 +1024,7 @@ class NowBoarding extends Table
             // Create the fugitive
             if ($x->vip == 'DOUBLE' && $x->id > 0) {
                 $doubleId = $x->id * -1;
-                $this->DbQuery("INSERT INTO `pax` (`pax_id`, `status`, `cash`, `origin`, `destination`, `location`, `vip`) VALUES ($doubleId, 'PORT', 0, '{$x->origin}', '{$x->destination}', '{$x->location}', '{$x->vip}')");
+                $this->DbQuery("INSERT INTO `pax` (`pax_id`, `cash`, `destination`, `location`, `optimal`, `origin`, `status`, `vip`) VALUES ($doubleId, 0, '{$x->destination}', '{$x->location}', {$x->optimal}, '{$x->origin}', 'PORT', '{$x->vip}')");
                 $double = $this->getPaxById($doubleId);
                 $this->notifyAllPlayers('pax', '', [
                     'pax' => [$double]
@@ -1661,7 +1661,7 @@ SQL);
                 [$destination, $origin, $cash] = $x;
                 $opt = $optimal[$origin][$destination];
                 if ($origin == $plane->alliances[0]) {
-                    $sql = "INSERT INTO pax (`cash`, `destination`, `location`, `optimal`, `origin`, `status`) VALUES ($cash, '$destination', '$origin', $opt, '$origin', 'PORT')";
+                    $sql = "INSERT INTO `pax` (`cash`, `destination`, `location`, `optimal`, `origin`, `status`) VALUES ($cash, '$destination', '$origin', $opt, '$origin', 'PORT')";
                     $this->DbQuery($sql);
                     unset($pax[$k]);
                     $startingPax[] = $x;
@@ -1677,7 +1677,7 @@ SQL);
             foreach ($hourPax as $x) {
                 [$destination, $origin, $cash] = $x;
                 $opt = $optimal[$origin][$destination];
-                $sql = "INSERT INTO pax (`cash`, `destination`, `optimal`, `origin`, `status`) VALUES ($cash, '$destination', $opt, '$origin', '$status')";
+                $sql = "INSERT INTO `pax` (`cash`, `destination`, `optimal`, `origin`, `status`) VALUES ($cash, '$destination', $opt, '$origin', '$status')";
                 $this->DbQuery($sql);
             }
         }
@@ -2028,5 +2028,53 @@ SQL);
             }
         }
         self::warn("upgradeTableDb complete: fromVersion=$fromVersion");
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////:
+    ////////// Production bug report handler
+    //////////
+
+    public function loadBug($reportId): void
+    {
+        $db = explode('_', self::getUniqueValueFromDB("SELECT SUBSTRING_INDEX(DATABASE(), '_', -2)"));
+        $game = $db[0];
+        $tableId = $db[1];
+        self::notifyAllPlayers('loadBug', "Trying to load <a href='https://boardgamearena.com/bug?id=$reportId' target='_blank'>bug report $reportId</a>", [
+            'urls' => [
+                "https://studio.boardgamearena.com/admin/studio/getSavedGameStateFromProduction.html?game=$game&report_id=$reportId&table_id=$tableId",
+                "https://studio.boardgamearena.com/table/table/loadSaveState.html?table=$tableId&state=1",
+                "https://studio.boardgamearena.com/1/$game/$game/loadBugSQL.html?table=$tableId&report_id=$reportId",
+                "https://studio.boardgamearena.com/admin/studio/clearGameserverPhpCache.html?game=$game",
+            ]
+        ]);
+    }
+
+    public function loadBugSQL($reportId): void
+    {
+        $studioPlayer = self::getCurrentPlayerId();
+        $playerIds = self::getObjectListFromDb("SELECT player_id FROM player", true);
+
+        $sql = [
+            "UPDATE global SET global_value=2 WHERE global_id=1 AND global_value=99"
+        ];
+        foreach ($playerIds as $pId) {
+            $sql[] = "UPDATE global SET global_value=$studioPlayer WHERE global_value=$pId";
+            $sql[] = "UPDATE pax SET player_id=$studioPlayer WHERE player_id=$pId";
+            $sql[] = "UPDATE pax_undo SET player_id=$studioPlayer WHERE player_id=$pId";
+            $sql[] = "UPDATE plane SET player_id=$studioPlayer WHERE player_id=$pId";
+            $sql[] = "UPDATE plane_undo SET player_id=$studioPlayer WHERE player_id=$pId";
+            $sql[] = "UPDATE player SET player_id=$studioPlayer WHERE player_id=$pId";
+            $sql[] = "UPDATE stats SET stats_player_id=$studioPlayer WHERE stats_player_id=$pId";
+            $sql[] = "UPDATE stats_undo SET stats_player_id=$studioPlayer WHERE stats_player_id=$pId";
+            $studioPlayer++;
+        }
+        $msg = "<b>Loaded <a href='https://boardgamearena.com/bug?id=$reportId' target='_blank'>bug report $reportId</a></b><hr><ul><li>" . implode(';</li><li>', $sql) . ';</li></ul>';
+        self::warn($msg);
+        self::notifyAllPlayers('message', $msg, []);
+
+        foreach ($sql as $q) {
+            self::DbQuery($q);
+        }
+        self::reloadPlayersBasicInfos();
     }
 }

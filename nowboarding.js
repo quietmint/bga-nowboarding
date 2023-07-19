@@ -96,7 +96,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           const url = n.args.urls.shift();
           console.log("Fetching URL", url);
           dojo.xhrGet({
-            url: url,
+            url: url + "&request_token=" + bgaConfig.requestToken,
             load(success) {
               console.log("Success for URL", url, success);
               if (n.args.urls.length > 0) {
