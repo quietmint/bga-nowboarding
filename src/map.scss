@@ -1,4 +1,5 @@
 @use "colors" as *;
+@use "sass:color";
 
 #nbscale {
   margin: auto;
@@ -21,27 +22,62 @@
   transform: translate(-50%, -50%);
 }
 
-.marker.node {
-  border-color: white;
+.port.node,
+.move.node,
+.weather.node {
   border-radius: 100%;
-  height: 6%;
-  transition: border-color 200ms linear;
-  width: 3%;
+  box-shadow: 3px 4px 0px rgb(0 0 0 / 0.25);
 }
 
-.is-anger.node {
-  z-index: 9;
-  border: 4px dashed $color-red-800;
-}
+.port.node {
+  align-items: center;
+  background-image: linear-gradient(180deg, $color-neutral-300, $color-neutral-50);
+  color: $color-neutral-500;
+  display: flex;
+  font-size: 1.5cqw;
+  font-weight: bold;
+  height: 7%;
+  justify-content: center;
+  text-align: center;
+  width: 3.5%;
+  z-index: 1;
 
-.is-active.node {
-  z-index: 9;
-  border: 4px dashed white;
+  .leadline {
+    border-right: 4px dashed rgba(255, 255, 255, 0.5);
+    border-top: 4px dashed rgba(255, 255, 255, 0.5);
+    position: absolute;
+    transition: border-color 200ms linear;
+
+    &.curved {
+      border-top-right-radius: 8px;
+    }
+
+    &.left {
+      border-left: 4px dashed rgba(255, 255, 255, 0.5);
+      border-right: none;
+      border-top-left-radius: 8px;
+      border-top-right-radius: 0;
+    }
+  }
+
+  &.is-anger {
+    color: $color-red-800;
+
+    .leadline {
+      border-color: color.change($color-red-800, $alpha: 0.5);
+    }
+  }
+
+  &.is-active {
+    z-index: 9;
+
+    .leadline {
+      border-color: white;
+    }
+  }
 }
 
 .move.node {
-  border-radius: 100%;
-  box-shadow: 3px 4px 0px rgb(0 0 0 / 0.25), 0px 0px 3px white;
   cursor: pointer;
   font-size: 2cqw;
   font-weight: bold;
@@ -78,17 +114,23 @@
 
 .weather.node {
   align-items: center;
-  background-image: linear-gradient(-30deg, #1a237e, #01579b);
-  border-radius: 100%;
-  box-shadow: 3px 4px 0px rgb(0 0 0 / 0.25), 0px 0px 3px white;
+  background-image: linear-gradient(180deg, #1a237e, #01579b);
   display: flex;
-  height: 8%;
+  height: 7%;
   justify-content: center;
-  width: 4%;
+  transition: opacity 1s linear;
+  width: 3.5%;
   z-index: 1;
-}
 
-.weather.node .icon {
-  height: 85%;
-  width: 85%;
+  .icon {
+    height: 85%;
+    width: 85%;
+  }
+
+  .fuel {
+    color: $color-amber-200;
+    font-size: 1cqw;
+    position: absolute;
+    top: 20%;
+  }
 }

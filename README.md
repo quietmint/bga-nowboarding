@@ -10,6 +10,8 @@ This adaptation includes the following licensed material, used with permission. 
 
 - [Game Icons](https://game-icons.net/), licensed under [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/)
 
+- [Ionicons](https://ionic.io/ionicons), licensed under [MIT](https://opensource.org/license/mit/)
+
 - [Material Design Icons](https://pictogrammers.com/library/mdi/), licensed under [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0)
 
 - [Phosphor Icons](https://phosphoricons.com/), licensed under [MIT](https://opensource.org/license/mit/)

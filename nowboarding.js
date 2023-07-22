@@ -1,6 +1,5 @@
 define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], function (dojo, declare) {
   const playSoundSuper = window.playSound;
-
   let suppressSounds = [];
   let flyTimer = null;
 
@@ -36,6 +35,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           this.renderMapManifest(node, manifestContainer[node]);
         }
       }
+      this.renderMapLeads();
       for (const location in gamedatas.map.weather) {
         const token = gamedatas.map.weather[location];
         this.createWeather(location, token);
@@ -57,7 +57,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           const pax = gamedatas.pax[paxId];
           this.renderPax(pax);
         }
-        this.renderWarnings();
+        this.renderMapCounts();
       }
 
       // Setup sounds
@@ -166,6 +166,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       dojo.style("page-title", "zoom", "");
       dojo.style("right-side-first-part", "zoom", "");
       this.computeViewport();
+      this.renderMapLeads();
     },
 
     computeViewport() {
@@ -207,7 +208,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       this.inherited(arguments);
       if (this.gamedatas.gamestate.name == "fly" && this.gamedatas.gamestate.args.endTime) {
         const seconds = this.gamedatas.gamestate.args.endTime - Date.now() / 1000;
-        console.log("seconds", seconds, "sound?", this.gamedatas.gamestate.args.sound);
         if (!this.gamedatas.gamestate.args.sound && seconds <= 7) {
           // Play the clock sound only once, at 7 seconds
           playSoundSuper("time_alarm");
@@ -222,16 +222,15 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
     playSound(sound) {
       if (this.gamedatas.gamestate.name == "fly" && this.gamedatas.gamestate.args.endTime && sound == "time_alarm") {
-        console.log("🔈 Suppress sound", sound);
+        console.warn("🔈 Suppress sound", sound);
         return;
       }
       const index = suppressSounds.indexOf(sound);
       if (index > -1) {
         suppressSounds.splice(index, 1);
-        console.log("🔈 Suppress sound", sound);
+        console.warn("🔈 Suppress sound", sound);
         return;
       }
-      console.log("🔊 Play sound", sound);
       playSoundSuper(sound);
     },
 
@@ -366,7 +365,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         for (const newBuy of notif.args.buys) {
           for (const buy of this.buys) {
             if (buy.type == newBuy.type && buy.alliance == newBuy.alliance) {
-              console.log("updated the owner", buy, newBuy);
               buy.ownerId = newBuy.ownerId;
               break;
             }
@@ -420,7 +418,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         for (const pax of notif.args.pax) {
           this.renderPax(pax);
         }
-        this.renderWarnings();
+        this.renderMapCounts();
       } else if (notif.type == "planes") {
         for (const plane of notif.args.planes) {
           this.gamedatas.planes[plane.id] = plane;
@@ -608,6 +606,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         const nbrange = document.getElementById("nbrange");
         nbrange.addEventListener("input", (ev) => {
           nbscale.style.width = `${nbrange.value}%`;
+          this.renderMapLeads();
           try {
             localStorage.setItem("nowboarding.scale", nbrange.value);
           } catch (e) {
@@ -816,8 +815,15 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     },
 
     renderMapNode(node) {
-      this.mapEl.insertAdjacentHTML("beforeend", `<div id="node-${node}" class="marker node node-${node}"></div>`);
       if (node.length == 3) {
+        // port
+        this.mapEl.insertAdjacentHTML(
+          "beforeend",
+          `<div id="node-${node}" class="port node node-${node}">
+  <div id="leadline-${node}" class="leadline"></div>
+  <i class="icon people"></i><span id="nodecount-${node}">0</span>
+</div>`
+        );
         const nodeEl = document.getElementById(`node-${node}`);
         nodeEl.addEventListener("mouseenter", (ev) => {
           this.onEnterMapManifest(node);
@@ -825,6 +831,126 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         nodeEl.addEventListener("mouseleave", (ev) => {
           this.onLeaveMapManifest(node);
         });
+      } else {
+        // hop
+        this.mapEl.insertAdjacentHTML("beforeend", `<div id="node-${node}" class="hop node node-${node}"></div>`);
+      }
+    },
+
+    renderMapLeads() {
+      const airports = ["ATL", "DEN", "DFW", "JFK", "LAX", "MIA", "ORD", "SEA", "SFO"];
+      for (const airport of airports) {
+        const leadEl = document.getElementById(`leadline-${airport}`);
+        if (leadEl) {
+          const manifestEl = document.getElementById(`paxlist-${airport}`);
+          const manifestPos = manifestEl.getBoundingClientRect();
+          const parentId = manifestEl.parentElement.parentElement.id;
+          const nodeEl = document.getElementById(`node-${airport}`);
+          const nodePos = nodeEl.getBoundingClientRect();
+          const nodeLeftMid = nodePos.left + nodePos.width / 2;
+          const isBetweenLeft = nodeLeftMid >= manifestPos.left && nodeLeftMid <= manifestPos.left + manifestPos.width;
+
+          if (parentId == "manifests-top") {
+            // straight lead up
+            let height = nodePos.top - manifestPos.top - manifestPos.height - 8;
+            leadEl.style.height = `${height}px`;
+            leadEl.style.width = "0px";
+            leadEl.style.top = null;
+            leadEl.style.bottom = `${nodePos.height}px`;
+            leadEl.style.left = null;
+            leadEl.style.right = null;
+          } else if (parentId == "manifests-bottom") {
+            let height = manifestPos.top - nodePos.top - nodePos.height - 8;
+            let width = 0;
+            if (isBetweenLeft) {
+              // straight lead down
+              leadEl.style.height = `${height}px`;
+              leadEl.style.width = "0px";
+              leadEl.style.top = `${nodePos.height}px`;
+              leadEl.style.bottom = null;
+              leadEl.style.left = null;
+              leadEl.style.right = null;
+              leadEl.classList.toggle("curved", false);
+            } else {
+              // curved lead down
+              height += nodePos.height / 2;
+              if (manifestPos.left > nodePos.left) {
+                // curved lead right down
+                width = manifestPos.left + manifestPos.width * 0.15 - nodePos.left - nodePos.width - 8;
+                leadEl.style.left = `${nodePos.width}px`;
+                leadEl.style.right = null;
+                leadEl.classList.toggle("left", false);
+              } else {
+                // curved to the left down (DFW)
+                width = nodePos.left - manifestPos.left - manifestPos.width * 0.85 - 8;
+                leadEl.style.left = null;
+                leadEl.style.right = `${nodePos.width}px`;
+                leadEl.classList.toggle("left", true);
+              }
+              leadEl.style.height = `${height}px`;
+              leadEl.style.width = `${width}px`;
+              leadEl.style.top = `${nodePos.height / 2}px`;
+              leadEl.style.bottom = null;
+              leadEl.classList.toggle("curved", true);
+
+              // let rotation = this.getRotation(nodeEl, manifestEl);
+              // height = Math.hypot(width, height);
+              // const tX = Math.sin(toRadians(rotation)) * (height / 2 + nodePos.height / 2) * -1;
+              // const tY = Math.cos(toRadians(rotation)) * (height / 2 + nodePos.width / 2);
+              // leadEl.style.height = `${height}px`;
+              // leadEl.style.transform = `translate(${tX}px, ${tY}px) rotate(${rotation}deg)`;
+              // function toRadians(angle) {
+              //   return angle * (Math.PI / 180);
+              // }
+            }
+          } else if (parentId == "manifests-right") {
+            let height = manifestPos.top - nodePos.top - nodePos.height / 2 - 8;
+            if (height > 4) {
+              // curved lead right + down
+              let height = manifestPos.top - nodePos.top - nodePos.height / 2 - 8;
+              let width = manifestPos.left + manifestPos.width * 0.25 - nodePos.left - nodePos.width - 8;
+              leadEl.style.height = `${height}px`;
+              leadEl.style.width = `${width}px`;
+              leadEl.style.top = `${nodePos.height / 2}px`;
+              leadEl.style.bottom = null;
+              leadEl.style.left = `${nodePos.width}px`;
+              leadEl.style.right = null;
+              leadEl.classList.toggle("curved", true);
+            } else {
+              // straight lead right
+              let width = manifestPos.left - nodePos.left - nodePos.width - 8;
+              leadEl.style.height = "0px";
+              leadEl.style.width = `${width}px`;
+              leadEl.style.top = null;
+              leadEl.style.bottom = null;
+              leadEl.style.left = `${nodePos.width}px`;
+              leadEl.style.right = null;
+              leadEl.classList.toggle("curved", false);
+            }
+          }
+        }
+      }
+    },
+
+    renderMapCounts() {
+      const airports = ["ATL", "DEN", "DFW", "JFK", "LAX", "MIA", "ORD", "SEA", "SFO"];
+      const pax = Object.values(this.gamedatas.pax).filter((x) => x.status == "PORT" || x.status == "SECRET");
+      for (const airport of airports) {
+        const isAngry = pax.some((x) => x.location == airport && x.anger == 3);
+        const manifestEl = document.getElementById(`manifest-${airport}`);
+        if (manifestEl) {
+          manifestEl.classList.toggle("is-anger", isAngry);
+        }
+        const nodeEl = document.getElementById(`node-${airport}`);
+        if (nodeEl) {
+          nodeEl.classList.toggle("is-anger", isAngry);
+          nodeEl.classList.toggle("pinging-anger", isAngry);
+          const countEl = document.getElementById(`nodecount-${airport}`);
+          if (countEl) {
+            const paxCount = pax.filter((x) => x.location == airport).length;
+            countEl.textContent = paxCount;
+          }
+        }
       }
     },
 
@@ -996,28 +1122,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       paxEl.remove();
 
       // Animate the copy to the end
-
-    renderWarnings() {
-      const airports = ["ATL", "DEN", "DFW", "JFK", "LAX", "MIA", "ORD", "SEA", "SFO"];
-      let angerAirports = {};
-      for (const paxId in this.gamedatas.pax) {
-        const pax = this.gamedatas.pax[paxId];
-        if (pax.status == "PORT" && pax.anger == 3) {
-          angerAirports[pax.location] = true;
-        }
-      }
-      console.log("angerAirports", angerAirports);
-      for (const airport of airports) {
-        const manifestEl = document.getElementById(`manifest-${airport}`);
-        if (manifestEl) {
-          manifestEl.classList.toggle("is-anger", angerAirports[airport] == true);
-        }
-        const markerEl = document.querySelector(`#nbmap .marker.node.node-${airport}`);
-        if (markerEl) {
-          markerEl.classList.toggle("is-anger", angerAirports[airport] == true);
-          markerEl.classList.toggle("pinging-anger", angerAirports[airport] == true);
-        }
-      }
       await this.translateElement(cloneEl, start, end);
       cloneEl.remove();
     },
@@ -1089,7 +1193,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       let ledgerHtml = "";
       if (args.ledger?.length > 0) {
         for (const l of args.ledger) {
-          console.log("l", l);
           let txt = l.type;
           if (l.type == "ALLIANCE") {
             txt = this.format_string_recursive(_("Purchase alliance ${alliance}"), { alliance: l.arg });
@@ -1162,7 +1265,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         const moveEl = document.getElementById(`move-${move.location}`);
         moveEl.addEventListener("click", (e) => {
           let dialog = null;
-          console.log("location", plane.location, "plane", JSON.stringify(plane));
           if (plane.location.length == 3) {
             const pax = Object.values(this.gamedatas.pax);
             if (
