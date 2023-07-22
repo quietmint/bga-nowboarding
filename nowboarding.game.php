@@ -1296,8 +1296,11 @@ class NowBoarding extends Table
 
             if ($this->getGlobal(N_OPTION_VIP)) {
                 $vips = $this->getVarArray("vip$hour");
-                $hourInfo['vipNew'] = $this->hasVipNew();
-                $hourInfo['vipRemain'] = count($vips);
+                $vipNew = $this->hasVipNew();
+                $vipRemain = count($vips);
+                $hourInfo['vipNeed'] = !$vipNew && $vipRemain > 0 && $vipRemain >= ($total - $round + 1);
+                $hourInfo['vipNew'] = $vipNew;
+                $hourInfo['vipRemain'] = $vipRemain;
             }
         }
         return $hourInfo;

@@ -290,14 +290,31 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
             this.buys = args.buys;
             this.renderBuys();
           } else if (stateName == "prepareBuy") {
-            this.addActionButton("button_prepareDone", _("Ready"), () => this.takeAction("prepareDone"));
+            this.addActionButton("button_prepareDone", _("Ready"), () => {
+              let dialog = null;
+              if (this.gamedatas.vip && this.gamedatas.hour.vipNeed) {
+                const roundRemain = this.gamedatas.hour.total - this.gamedatas.hour.round + 1;
+                dialog = this.format_string_recursive(_("You did not accept a VIP, but ${vipRemain} VIPs remain and ${hourDesc} ends in ${roundRemain} rounds"), {
+                  hourDesc: this.gamedatas.hour.hourDesc,
+                  roundRemain,
+                  vipRemain: this.gamedatas.hour.vipRemain,
+                });
+              }
+              if (dialog) {
+                this.confirmationDialog(dialog, () => {
+                  this.takeAction("prepareDone");
+                });
+              } else {
+                this.takeAction("prepareDone");
+              }
+            });
             if (this.gamedatas.vip) {
               if (this.gamedatas.hour.vipNew) {
                 const txt = this.format_string_recursive(_("Decline VIP (${vipRemain} remaining)"), { vipRemain: this.gamedatas.hour.vipRemain });
                 this.addActionButton("button_vip", txt, () => this.takeVipAction());
               } else if (this.gamedatas.hour.vipRemain) {
-                const txt = this.format_string_recursive(_("Accept VIP (${count} remaining)"), { count: this.gamedatas.hour.vipRemain });
-                this.addActionButton("button_vip", txt, () => this.takeVipAction());
+                const txt = this.format_string_recursive(_("Accept VIP (${vipRemain} remaining)"), { vipRemain: this.gamedatas.hour.vipRemain });
+                this.addActionButton("button_vip", txt, () => this.takeVipAction(), null, false, this.gamedatas.hour.vipNeed ? "red" : "blue");
               }
             }
             if (args.ledger?.length > 0) {
@@ -375,11 +392,14 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         if ((this.gamedatas.hour.vipNew || this.gamedatas.hour.vipRemain) && this.gamedatas.gamestate.private_state?.name == "prepareBuy") {
           const vipEl = document.getElementById("button_vip");
           if (vipEl) {
-            vipEl.textContent = this.format_string_recursive(this.gamedatas.hour.vipNew ? _("Decline VIP (${count} remaining)") : _("Accept VIP (${count} remaining)"), { count: this.gamedatas.hour.vipRemain });
+            vipEl.textContent = this.format_string_recursive(this.gamedatas.hour.vipNew ? _("Decline VIP (${vipRemain} remaining)") : _("Accept VIP (${vipRemain} remaining)"), { vipRemain: this.gamedatas.hour.vipRemain });
+            vipEl.classList.toggle("bgabutton_blue", !this.gamedatas.hour.vipNeed);
+            vipEl.classList.toggle("bgabutton_red", this.gamedatas.hour.vipNeed);
           }
         }
         this.renderCommon();
       } else if (notif.type == "move") {
+        this.gamedatas.planes[notif.args.plane.id] = notif.args.plane;
         if (notif.args.player_id == this.player_id) {
           // Erase possible moves
           this.deleteMoves();
@@ -1126,14 +1146,42 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     },
 
     renderMoves(moves) {
-      const alliance = this.gamedatas.planes[this.player_id].alliances[0];
+      const plane = this.gamedatas.planes[this.player_id];
+      const alliance = plane.alliances[0];
       let moveCount = 0;
       for (const i in moves) {
         const move = moves[i];
         this.mapEl.insertAdjacentHTML("beforeend", `<div id="move-${move.location}" class="move node node-${move.location} gradient-${alliance}">${move.fuel}</div>`);
         const moveEl = document.getElementById(`move-${move.location}`);
         moveEl.addEventListener("click", (e) => {
-          this.takeAction("move", move);
+          let dialog = null;
+          console.log("location", plane.location, "plane", JSON.stringify(plane));
+          if (plane.location.length == 3) {
+            const pax = Object.values(this.gamedatas.pax);
+            if (
+              this.gamedatas.hour.hour == "MORNING" &&
+              this.gamedatas.hour.round == 1 && // during the first round
+              pax.filter((x) => x.playerId == plane.id && x.status == "SEAT").length == 0 && // plane is empty
+              pax.filter((x) => x.location == plane.location && x.status == "PORT").length > 0 // airport is not
+            ) {
+              // Forgot to board
+              dialog = this.format_string_recursive(_("You are leaving ${location} without boarding passengers") + "<br><br>" + _("Before moving, click passengers waiting at the airport to board them. This reminder only displays during the first round."), {
+                location: plane.location,
+              });
+            } else if (pax.filter((x) => x.playerId == plane.id && x.status == "SEAT" && x.destination == plane.location).length > 0) {
+              // Forgot to deliver
+              dialog = this.format_string_recursive(_("You are leaving ${location} without delivering passengers"), {
+                location: plane.location,
+              });
+            }
+          }
+          if (dialog) {
+            this.confirmationDialog(dialog, () => {
+              this.takeAction("move", move);
+            });
+          } else {
+            this.takeAction("move", move);
+          }
         });
         moveCount++;
       }
