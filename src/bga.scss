@@ -1,6 +1,7 @@
 @use "colors" as *;
 
 html,
+#loader_mask,
 .mode_3d #game_play_area_background {
   background: #2383ba;
 }

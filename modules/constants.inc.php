@@ -76,7 +76,7 @@ define('N_REF_HOUR_PAX', [
 define('N_REF_MSG', [
     'addPax' => clienttranslate('${count} passengers arrive at ${location}'),
     'alliance' => clienttranslate('${player_name} joins alliance ${alliance}'),
-    'anger' => clienttranslate('${count} passengers in airports get angry'),
+    'anger' => clienttranslate('${count} passengers at airports get angry'),
     'board' => clienttranslate('${player_name} boards a passenger at ${location}'),
     'complaintFinale' => clienttranslate('${complaint} complaints are filed by ${count} undelivered passengers'),
     'complaintPort' => clienttranslate('${complaint} complaints are filed by angry passengers at ${location}'),
@@ -86,7 +86,7 @@ define('N_REF_MSG', [
     'endLose' => clienttranslate('Rough landing! Your airline goes out of business after receiving ${complaint} complaints!'),
     'endWin' => clienttranslate('Congratulations! Your airline is a soaring success!'),
     'hour' => clienttranslate('${hourDesc} round ${round} of ${total} begins'),
-    'hourFinale' => clienttranslate('${hourDesc} begins. ${count} undelivered passengers remain.'),
+    'hourFinale' => clienttranslate('${hourDesc} begins with ${count} undelivered passengers remaining'),
     'hourVip' => clienttranslate('VIP: ${count} VIPs must be accepted during ${hourDesc}'),
     'move' => clienttranslate('${player_name} flys ${fuel} moves'),
     'movePort' => clienttranslate('${player_name} flys ${fuel} moves to ${location}'),
@@ -134,7 +134,7 @@ define('N_REF_SPEED_COST', [
 define('N_REF_VIP', [
     'BABY' => [
         'name' => clienttranslate('Crying Baby'),
-        'desc' => clienttranslate('Other pasengers at same airport gain 2 anger per turn'),
+        'desc' => clienttranslate('Other pasengers at their airport gain 2 anger per turn'),
         'hours' => ['MORNING', 'NOON'],
     ],
     'CELEBRITY' => [
@@ -144,7 +144,7 @@ define('N_REF_VIP', [
     ],
     'DIRECT' => [
         'name' => clienttranslate('Direct Flight'),
-        'desc' => clienttranslate('Only deplanes at destination'),
+        'desc' => clienttranslate('Only deplanes at their destination'),
         'hours' => ['NIGHT'],
     ],
     'DOUBLE' => [
@@ -154,7 +154,7 @@ define('N_REF_VIP', [
     ],
     'FIRST' => [
         'name' => clienttranslate('First In Line'),
-        'desc' => clienttranslate('Must board before other passengers at the same airport'),
+        'desc' => clienttranslate('Must board before other passengers at their airport'),
         'hours' => ['NOON'],
     ],
     'GRUMPY' => [
@@ -175,6 +175,7 @@ define('N_REF_VIP', [
 ]);
 
 define('N_REF_WEATHER_SPEED', [
-    'FAST' => -1,
-    'SLOW' => 1,
+    'FAST' => 0,
+    'SLOW' => 2,
+    null => 1,
 ]);

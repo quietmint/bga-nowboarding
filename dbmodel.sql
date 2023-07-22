@@ -46,9 +46,10 @@ CREATE TABLE `plane` (
     `origin` VARCHAR(50) DEFAULT NULL,
     `seat` INT(2) NOT NULL DEFAULT '1',
     `speed_remain` INT(2) NOT NULL DEFAULT '3',
+    `speed_penalty` TINYINT(1) NOT NULL DEFAULT '0',
     `speed` INT(2) NOT NULL DEFAULT '3',
-    `temp_seat` TINYINT(1) DEFAULT NULL,
-    `temp_speed` TINYINT(1) DEFAULT NULL,
+    `temp_seat` TINYINT(1) NOT NULL DEFAULT '0',
+    `temp_speed` TINYINT(1) NOT NULL DEFAULT '0',
     PRIMARY KEY (`player_id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
 
@@ -61,6 +62,7 @@ CREATE TABLE `var` (
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
 
 CREATE TABLE `weather` (
+    `hour` VARCHAR(50) NOT NULL,
     `location` VARCHAR(50) NOT NULL,
     `token` ENUM('FAST', 'SLOW') NOT NULL,
     PRIMARY KEY (`location`)

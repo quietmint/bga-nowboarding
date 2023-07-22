@@ -51,7 +51,7 @@ class action_nowboarding extends APP_GameAction
   {
     self::setAjaxMode();
     self::checkVersion();
-    $this->game->checkAction('vip');
+    
     $accept = self::getArg('accept', AT_bool, true);
     $this->game->vip($accept);
     self::ajaxResponse();
@@ -61,7 +61,6 @@ class action_nowboarding extends APP_GameAction
   {
     self::setAjaxMode();
     self::checkVersion();
-    $this->game->checkAction('buy');
     $type = self::getArg('type', AT_alphanum, true);
     $alliance = self::getArg('alliance', AT_alphanum, false);
     $this->game->buy($type, $alliance);
@@ -80,7 +79,6 @@ class action_nowboarding extends APP_GameAction
   {
     self::setAjaxMode();
     self::checkVersion();
-    $this->game->checkAction('pay');
     $paid = explode(',', self::getArg('paid', AT_numberlist, true));
     $this->game->pay($paid);
     self::ajaxResponse();
@@ -90,7 +88,6 @@ class action_nowboarding extends APP_GameAction
   {
     self::setAjaxMode();
     self::checkVersion();
-    $this->game->checkAction('prepareDone');
     $this->game->prepareDone();
     self::ajaxResponse();
   }
@@ -99,7 +96,6 @@ class action_nowboarding extends APP_GameAction
   {
     self::setAjaxMode();
     self::checkVersion();
-    $this->game->checkAction('flyDone');
     $snooze = boolval(self::getArg('snooze', AT_bool, false));
     $this->game->flyDone($snooze);
     self::ajaxResponse();
@@ -125,7 +121,6 @@ class action_nowboarding extends APP_GameAction
   {
     self::setAjaxMode();
     self::checkVersion();
-    $this->game->checkAction('move');
     $location = self::getArg('location', AT_alphanum, true);
     $this->game->move($location);
     self::ajaxResponse();
@@ -135,7 +130,6 @@ class action_nowboarding extends APP_GameAction
   {
     self::setAjaxMode();
     self::checkVersion();
-    $this->game->checkAction('board');
     $paxId = self::getArg('paxId', AT_int, true);
     $this->game->board($paxId);
     self::ajaxResponse();
@@ -145,7 +139,6 @@ class action_nowboarding extends APP_GameAction
   {
     self::setAjaxMode();
     self::checkVersion();
-    $this->game->checkAction('deplane');
     $paxId = self::getArg('paxId', AT_int, true);
     $this->game->deplane($paxId);
     self::ajaxResponse();

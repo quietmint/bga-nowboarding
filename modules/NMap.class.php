@@ -99,9 +99,7 @@ class NMap extends APP_GameClass implements JsonSerializable
         $planeHasNervous = intval($this->getUniqueValueFromDB("SELECT COUNT(1) FROM `pax` WHERE `player_id` = {$plane->id} AND `status` = 'SEAT' AND `vip` = 'NERVOUS'")) > 0;
         $visited = [];
         $best = [];
-        $start = new NMove(0, $this->nodes[$plane->location], []);
-        self::debug("getPossibleMoves start: $start // ");
-        $queue = [$start];
+        $queue = [new NMove(intval($plane->speedPenalty), $this->nodes[$plane->location], [], false)];
         while (!empty($queue)) {
             $nextQueue = [];
             foreach ($queue as $move) {
@@ -111,29 +109,44 @@ class NMap extends APP_GameClass implements JsonSerializable
                     self::debug("getPossibleMoves best: $move // ");
                     $best[$move->location] = $move;
                 }
-                foreach ($this->getConnectionsFuel($move->node, $move->fuel) as $c) {
-                    // check fuel
-                    if ($c['fuel'] > $fuelMax) {
+                foreach ($move->node->connections as $connectedNode) {
+                    $weather = $this->getNodeWeather($connectedNode);
+                    $fuel = $move->fuel + N_REF_WEATHER_SPEED[$weather];
+                    $path = $pathString . $connectedNode->id . "/";
+                    $penalty = false;
+
+                    // VIP Nervous: Can't travel through weather
+                    if ($planeHasNervous && $weather != null) {
                         continue;
                     }
-                    // check alliance
-                    if ($c['alliance'] != null && !in_array($c['alliance'], $plane->alliances)) {
+
+                    // Can't exceed maximum fuel
+                    if ($fuel > $fuelMax) {
+                        if ($weather == 'SLOW' && $fuel - 1 == $fuelMax) {
+                            // Except for the final move onto a storm, allow them to move 1 now + 1 penalty later
+                            $penalty = true;
+                            $fuel -= 1;
+                        } else {
+                            continue;
+                        }
+                    }
+
+                    // Can't travel on special routes without the alliance
+                    if ($connectedNode->alliance != null && !in_array($connectedNode->alliance, $plane->alliances)) {
                         continue;
                     }
-                    // check weather
-                    if ($planeHasNervous && array_key_exists($c['node']->id, $this->weather)) {
+
+                    // Can't backtrace
+                    if (in_array($connectedNode->id, $move->path)) {
                         continue;
                     }
-                    // check path overlap
-                    if (in_array($c['node']->id, $move->path)) {
+
+                    // Can't repeat exact same path
+                    if (array_key_exists($path, $visited)) {
                         continue;
                     }
-                    $c['path'] = $pathString . $c['node']->id . "/";
-                    // check path visited
-                    if (array_key_exists($c['path'], $visited)) {
-                        continue;
-                    }
-                    $nextQueue[] = new NMove($c['fuel'], $c['node'], $move->path);
+
+                    $nextQueue[] = new NMove($fuel, $connectedNode, $move->path, $penalty);
                 }
             }
             $queue = $nextQueue;
@@ -150,22 +163,12 @@ class NMap extends APP_GameClass implements JsonSerializable
         return $best;
     }
 
-    private function getConnectionsFuel(NNode $node, int $fuelSoFar): array
+    private function getNodeWeather(NNode $node): ?string
     {
-        $out = [];
-        $weatherSpeed = 0;
+        $weather = null;
         if (array_key_exists($node->id, $this->weather)) {
-            $weatherToken = $this->weather[$node->id];
-            $weatherSpeed = N_REF_WEATHER_SPEED[$weatherToken];
+            $weather = $this->weather[$node->id];
         }
-        foreach ($node->connections as $cNode) {
-            $fuel = $fuelSoFar + $weatherSpeed + 1;
-            $out[] = [
-                'alliance' => $cNode->alliance,
-                'fuel' => $fuel,
-                'node' => $cNode,
-            ];
-        }
-        return $out;
+        return $weather;
     }
 }

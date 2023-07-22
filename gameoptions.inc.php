@@ -26,14 +26,13 @@ $game_options = [
             1 => [
                 'name' => totranslate('On'),
                 'description' => totranslate("The flight phase lasts 30 - 45 seconds (depending on player count) and time is STRICTLY ENFORCED"),
+                'nobeginner' => true,
             ],
             2 => [
                 'name' => totranslate('Doubled'),
                 'description' => totranslate("The flight phase lasts 60 - 90 seconds (depending on player count) and time is STRICTLY ENFORCED"),
                 'tmdisplay' => totranslate('Flight Phase Timer Doubled'),
-                'firstgameonly' => true,
             ],
-
         ],
         'displaycondition' => [
             [
@@ -53,7 +52,7 @@ $game_options = [
             ],
             1 => [
                 'name' => totranslate('On'),
-                'description' => totranslate('VIPs add additional complications like "must board first" or "must fly alone"'),
+                'description' => totranslate('Adds complications like "must board first" or "must fly alone"'),
                 'tmdisplay' => totranslate('VIP Variant'),
                 'nobeginner' => true,
             ],

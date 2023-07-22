@@ -10,8 +10,10 @@ class NPlane extends APP_GameClass implements JsonSerializable
     public string $name;
     public ?string $origin;
     public int $seat;
+    public int $moves;
     public int $seatRemain;
     public int $speed;
+    public bool $speedPenalty;
     public int $speedRemain;
     public bool $tempSeat;
     public bool $tempSpeed;
@@ -28,9 +30,10 @@ class NPlane extends APP_GameClass implements JsonSerializable
         $this->seat = intval($dbrow['seat']);
         $this->seatRemain = intval($dbrow['seat_remain']);
         $this->speed = intval($dbrow['speed']);
+        $this->speedPenalty = boolval($dbrow['speed_penalty']);
         $this->speedRemain = intval($dbrow['speed_remain']);
-        $this->tempSeat = $dbrow['temp_seat'] != null;
-        $this->tempSpeed = $dbrow['temp_speed'] != null;
+        $this->tempSeat = boolval($dbrow['temp_seat']);
+        $this->tempSpeed = boolval($dbrow['temp_speed']);
     }
 
     public function __toString(): string
@@ -65,15 +68,5 @@ class NPlane extends APP_GameClass implements JsonSerializable
     public function getCashRemain(): int
     {
         return $this->cash - $this->debt;
-    }
-
-    public function getTempSeatSql(): string
-    {
-        return $this->tempSeat ? '1' : 'NULL';
-    }
-
-    public function getTempSpeedSql(): string
-    {
-        return $this->tempSpeed ? '1' : 'NULL';
     }
 }

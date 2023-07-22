@@ -6,14 +6,16 @@ class NMove extends APP_GameClass implements JsonSerializable
     public string $location;
     public NNode $node;
     public array $path;
+    public bool $penalty;
 
-    public function __construct(int $fuel, NNode $node, array $path)
+    public function __construct(int $fuel, NNode $node, array $path, bool $penalty)
     {
         $this->fuel = $fuel;
         $this->location = $node->id;
         $this->node = $node;
         $this->path = $path;
         $this->path[] = $node->id;
+        $this->penalty = $penalty;
     }
 
     public function __toString(): string
@@ -26,8 +28,6 @@ class NMove extends APP_GameClass implements JsonSerializable
         return [
             'fuel' => $this->fuel,
             'location' => $this->location,
-            'path' => $this->path,
-            'origin' => $this->getOrigin(),
         ];
     }
 
