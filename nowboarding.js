@@ -407,8 +407,15 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         this.movePlane(notif.args.plane);
         this.renderPlaneGauges(notif.args.plane);
       } else if (notif.type == "pax") {
+        let sound = false;
         for (const pax of notif.args.pax) {
           this.gamedatas.pax[pax.id] = pax;
+          if (pax.playerId == this.player_id && pax.status == "CASH") {
+            sound = true;
+          }
+        }
+        if (sound) {
+          playSound("nowboarding_cash");
         }
         for (const pax of notif.args.pax) {
           this.renderPax(pax);
