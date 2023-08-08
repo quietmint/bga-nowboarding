@@ -442,6 +442,10 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
     onPrefChange(id, value) {
       console.log("Preference changed", id, value);
+      if (id == 150) {
+        document.body.classList.toggle("no-animation", value == 2);
+        document.body.classList.toggle("no-pinging", value > 0);
+      }
     },
 
     // Utilities
@@ -805,13 +809,15 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
   <div id="paxlist-${manifestId}" class="paxlist"></div>
 </div>`
       );
-      const manifestEl = document.getElementById(`manifest-${manifestId}`);
-      manifestEl.addEventListener("mouseenter", (ev) => {
-        this.onEnterMapManifest(manifestId);
-      });
-      manifestEl.addEventListener("mouseleave", (ev) => {
-        this.onLeaveMapManifest(manifestId);
-      });
+      if (!document.body.classList.contains("mobile_version")) {
+        const manifestEl = document.getElementById(`manifest-${manifestId}`);
+        manifestEl.addEventListener("mouseenter", (ev) => {
+          this.onEnterMapManifest(manifestId);
+        });
+        manifestEl.addEventListener("mouseleave", (ev) => {
+          this.onLeaveMapManifest(manifestId);
+        });
+      }
     },
 
     renderMapNode(node) {
@@ -824,13 +830,15 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
   <i class="icon people"></i><span id="nodecount-${node}">0</span>
 </div>`
         );
-        const nodeEl = document.getElementById(`node-${node}`);
-        nodeEl.addEventListener("mouseenter", (ev) => {
-          this.onEnterMapManifest(node);
-        });
-        nodeEl.addEventListener("mouseleave", (ev) => {
-          this.onLeaveMapManifest(node);
-        });
+        if (!document.body.classList.contains("mobile_version")) {
+          const nodeEl = document.getElementById(`node-${node}`);
+          nodeEl.addEventListener("mouseenter", (ev) => {
+            this.onEnterMapManifest(node);
+          });
+          nodeEl.addEventListener("mouseleave", (ev) => {
+            this.onLeaveMapManifest(node);
+          });
+        }
       } else {
         // hop
         this.mapEl.insertAdjacentHTML("beforeend", `<div id="node-${node}" class="hop node node-${node}"></div>`);
@@ -1177,12 +1185,14 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           });
         }
         if (buy.type == "ALLIANCE") {
-          buyEl.addEventListener("mouseenter", (ev) => {
-            this.onEnterMapManifest(buy.alliance);
-          });
-          buyEl.addEventListener("mouseleave", (ev) => {
-            this.onLeaveMapManifest(buy.alliance);
-          });
+          if (!document.body.classList.contains("mobile_version")) {
+            buyEl.addEventListener("mouseenter", (ev) => {
+              this.onEnterMapManifest(buy.alliance);
+            });
+            buyEl.addEventListener("mouseleave", (ev) => {
+              this.onLeaveMapManifest(buy.alliance);
+            });
+          }
         }
       }
     },

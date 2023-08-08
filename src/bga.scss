@@ -1,5 +1,9 @@
 @use "colors" as *;
 
+html {
+  text-size-adjust: none;
+}
+
 html,
 #loader_mask,
 .mode_3d #game_play_area_background {
@@ -203,9 +207,20 @@ html,
   font-size: 96px;
 }
 
+.mobile_version .wikicontent {
+  font-size: 32px;
+}
+
+.wikicontent p {
+  margin-bottom: 0.5em;
+  margin-top: 0.5em;
+}
+
 .pagesection .wikicontent h2,
 .pagesection .wikicontent h3 {
+  font-size: 100%;
   margin: 12px -12px;
+  padding: 1em;
 }
 
 .wikicontent .wikitable th {
@@ -215,4 +230,5 @@ html,
 .wikicontent .wikitable th,
 .wikicontent .wikitable td {
   border: 1px solid #888;
+  padding: 0.4em;
 }

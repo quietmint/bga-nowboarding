@@ -59,3 +59,15 @@ $game_options = [
         ],
     ],
 ];
+
+$game_preferences = [
+    N_PREF_ANIMATION => [
+        'name' => totranslate('Animation'),
+        'needReload' => false,
+        'values' => [
+            0 => ['name' => totranslate('Enabled')],
+            1 => ['name' => totranslate('Enabled except airport pinging')],
+            2 => ['name' => totranslate('Disabled')],
+        ],
+    ],
+];

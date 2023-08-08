@@ -29,6 +29,9 @@ define('N_OPTION_TIMER', 100);
 define('N_OPTION_VIP', 101);
 define('N_OPTION_HANDOFF', 102);
 
+// Game preferences
+define('N_PREF_ANIMATION', 150);
+
 // Reference lookups
 define('N_REF_ALLIANCE_COLOR', [
     'ATL' => '16a34a', // green

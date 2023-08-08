@@ -11,6 +11,11 @@
   left: 0;
   right: 0;
   bottom: 0;
+
+  body.no-pinging & {
+    animation: none !important;
+    display: none !important;
+  }
 }
 
 .pinging::before {

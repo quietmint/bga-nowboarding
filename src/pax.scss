@@ -12,6 +12,10 @@
     outline: 4px dashed rgb(255 255 255 / 0.5);
     overflow: hidden auto;
     transition: outline 200ms linear;
+
+    body.no-animation & {
+      transition: none !important;
+    }
   }
 }
 
@@ -72,6 +76,10 @@
     font: bold 20px/1.5 Consolas, monospace;
     text-align: center;
     transition: color 200ms linear;
+
+    body.no-animation & {
+      transition: none !important;
+    }
   }
 }
 
@@ -126,6 +134,10 @@
   transition: transform 1s ease-out;
   width: 215px;
   z-index: 20;
+
+  body.no-animation & {
+    transition: none !important;
+  }
 }
 
 .pax .anger {
