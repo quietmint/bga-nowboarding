@@ -67,7 +67,9 @@ class NowBoarding extends Table
         $this->initStat('table', 'seat', 0);
         $this->initStat('table', 'speed', 0);
         $this->initStat('table', 'tempSeat', 0);
+        $this->initStat('table', 'tempSeatUnused', 0);
         $this->initStat('table', 'tempSpeed', 0);
+        $this->initStat('table', 'tempSpeedUnused', 0);
 
         // Player statistics
         $this->initStat('player', 'moves', 0);
@@ -91,7 +93,9 @@ class NowBoarding extends Table
         $this->initStat('player', 'seat', 1);
         $this->initStat('player', 'speed', 3);
         $this->initStat('player', 'tempSeat', 0);
+        $this->initStat('player', 'tempSeatUnused', 0);
         $this->initStat('player', 'tempSpeed', 0);
+        $this->initStat('player', 'tempSpeedUnused', 0);
 
         // Setup weather
         $this->setVar('hour', 'PREFLIGHT');
@@ -348,6 +352,33 @@ class NowBoarding extends Table
         $this->notifyAllPlayers('planes', '', [
             'planes' => array_values($planes)
         ]);
+
+        foreach ($planes as $plane) {
+            if ($plane->tempSeat) {
+                $this->notifyAllPlayers('message', N_REF_MSG['tempUnused'], [
+                    'i18n' => ['temp'],
+                    'preserve' => ['tempIcon'],
+                    'player_id' => $plane->id,
+                    'player_name' => $plane->name,
+                    'temp' => clienttranslate('Temporary Seat'),
+                    'tempIcon' => 'seat',
+                ]);
+                $this->incStat(1, 'tempSeatUnused');
+                $this->incStat(1, 'tempSeatUnused', $plane->id);
+            }
+            if ($plane->tempSpeed) {
+                $this->notifyAllPlayers('message', N_REF_MSG['tempUnused'], [
+                    'i18n' => ['temp'],
+                    'preserve' => ['tempIcon'],
+                    'player_id' => $plane->id,
+                    'player_name' => $plane->name,
+                    'temp' => clienttranslate('Temporary Speed'),
+                    'tempIcon' => 'speed',
+                ]);
+                $this->incStat(1, 'tempSpeedUnused');
+                $this->incStat(1, 'tempSpeedUnused', $plane->id);
+            }
+        }
     }
 
     public function argPrepareBuy(int $playerId): array
@@ -371,15 +402,13 @@ class NowBoarding extends Table
 
         // Temp Seat
         $cost = 2;
-        if (!$plane->tempSeat) {
-            $ownerId = $this->getOwnerId("`temp_seat` = 1");
-            $buys[] = [
-                'type' => 'TEMP_SEAT',
-                'cost' => $cost,
-                'enabled' => $cash >= $cost,
-                'ownerId' => $ownerId,
-            ];
-        }
+        $ownerId = $this->getOwnerId("`temp_seat` = 1");
+        $buys[] = [
+            'type' => 'TEMP_SEAT',
+            'cost' => $cost,
+            'enabled' => $cash >= $cost,
+            'ownerId' => $ownerId,
+        ];
 
         // Speed
         if ($plane->speed < 9) {
@@ -395,15 +424,13 @@ class NowBoarding extends Table
 
         // Temp Speed
         $cost = 1;
-        if (!$plane->tempSpeed) {
-            $ownerId = $this->getOwnerId("`temp_speed` = 1");
-            $buys[] = [
-                'type' => 'TEMP_SPEED',
-                'cost' => $cost,
-                'enabled' => $cash >= $cost,
-                'ownerId' => $ownerId,
-            ];
-        }
+        $ownerId = $this->getOwnerId("`temp_speed` = 1");
+        $buys[] = [
+            'type' => 'TEMP_SPEED',
+            'cost' => $cost,
+            'enabled' => $cash >= $cost,
+            'ownerId' => $ownerId,
+        ];
 
         // Alliances
         $cost = 7;

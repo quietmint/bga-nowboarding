@@ -92,9 +92,19 @@ $stats_type = [
             'name' => totranslate('Temporary Seats purchased'),
             'type' => 'int'
         ],
+        'tempSeatUnused' => [
+            'id' => 57,
+            'name' => totranslate('Temporary Seats unused'),
+            'type' => 'int'
+        ],
         'tempSpeed' => [
             'id' => 56,
             'name' => totranslate('Temporary Speed purchased'),
+            'type' => 'int'
+        ],
+        'tempSpeedUnused' => [
+            'id' => 58,
+            'name' => totranslate('Temporary Speed unused'),
             'type' => 'int'
         ],
     ],
@@ -198,9 +208,19 @@ $stats_type = [
             'name' => totranslate('Temporary Seats purchased'),
             'type' => 'int'
         ],
+        'tempSeatUnused' => [
+            'id' => 57,
+            'name' => totranslate('Temporary Seats unused'),
+            'type' => 'int'
+        ],
         'tempSpeed' => [
             'id' => 56,
             'name' => totranslate('Temporary Speed purchased'),
+            'type' => 'int'
+        ],
+        'tempSpeedUnused' => [
+            'id' => 58,
+            'name' => totranslate('Temporary Speed unused'),
             'type' => 'int'
         ],
     ]

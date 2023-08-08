@@ -97,6 +97,7 @@ define('N_REF_MSG', [
     'speed' => clienttranslate('${player_name} upgrades speed to ${speed}'),
     'temp' => clienttranslate('${player_name} purchases ${temp}'),
     'tempUsed' => clienttranslate('${player_name} uses ${temp}'),
+    'tempUnused' => clienttranslate('${player_name} didn\'t use ${temp} last round, so it is unavailable for purchase'),
     'undo' => clienttranslate('${player_name} restarts their turn'),
     'vip' => clienttranslate('VIP: A new passenger at ${location} is ${vip} (${desc})'),
     'vipAccept' => clienttranslate('${player_name} accepts a VIP passenger this round'),
