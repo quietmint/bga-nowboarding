@@ -65,5 +65,5 @@ CREATE TABLE `weather` (
     `hour` VARCHAR(50) NOT NULL,
     `location` VARCHAR(50) NOT NULL,
     `token` ENUM('FAST', 'SLOW') NOT NULL,
-    PRIMARY KEY (`location`)
+    PRIMARY KEY (`hour`, `location`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;

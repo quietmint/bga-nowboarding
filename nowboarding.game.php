@@ -125,9 +125,12 @@ class NowBoarding extends Table
                 $route = $map->routes[$routeId];
                 // Select a random node on this route
                 $node = $route[array_rand($route)];
-                $this->DbQuery("INSERT INTO weather (`hour`, `location`, `token`) VALUES ('$hour', '{$node->id}', '$token')");
+                $this->DbQuery("INSERT INTO `weather` (`hour`, `location`, `token`) VALUES ('$hour', '{$node->id}', '$token')");
             }
         }
+
+        // Final round keeps the same weather
+        $this->DbQuery("INSERT INTO `weather` (`hour`, `location`, `token`) SELECT 'FINALE', `location`, `token` FROM `weather` WHERE `hour` = 'NIGHT'");
     }
 
     private function setupVips(int $playerCount): void
@@ -2054,6 +2057,8 @@ SQL);
             [2307191554, "ALTER TABLE `DBPREFIX_plane_undo` ADD COLUMN `speed_penalty` TINYINT(1) NOT NULL DEFAULT '0'"],
             [2307191554, "DELETE FROM `DBPREFIX_weather`"],
             [2307191554, "ALTER TABLE `DBPREFIX_weather` ADD COLUMN `hour` VARCHAR(50) NOT NULL"],
+            [2307222151, "ALTER TABLE `DBPREFIX_weather` DROP PRIMARY KEY, ADD PRIMARY KEY(`hour`, `location`)"],
+            [2307222151, "INSERT INTO `DBPREFIX_weather` (`hour`, `location`, `token`) SELECT 'FINALE', `location`, `token` FROM `DBPREFIX_weather` WHERE `hour` = 'NIGHT'"],
         ];
 
         foreach ($changes as [$version, $sql]) {
