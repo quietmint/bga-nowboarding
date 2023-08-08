@@ -1360,16 +1360,13 @@ class NowBoarding extends Table
             $this->notifyAllPlayers('hour', N_REF_MSG['hourFinale'], $hourInfo);
         } else {
             $this->notifyAllPlayers('hour', N_REF_MSG['hour'], $hourInfo);
-        }
-
-        if ($advance) {
-            // Notify weather
-            $weather = $this->getWeather($hourInfo['hour']);
-            if (!empty($weather)) {
+            if ($advance) {
+                // Weather speed penalty
                 $this->DbQuery("UPDATE `plane` SET `speed_penalty` = 0 WHERE `location` NOT IN (SELECT `location` FROM `weather` WHERE `hour` = '{$hourInfo['hour']}' AND `token` = 'SLOW')");
                 $this->DbQuery("UPDATE `plane` SET `speed_penalty` = 1 WHERE `location` IN (SELECT `location` FROM `weather` WHERE `hour` = '{$hourInfo['hour']}' AND `token` = 'SLOW')");
 
                 // Notify weather
+                $weather = $this->getWeather($hourInfo['hour']);
                 $desc = [];
                 foreach ($weather as $location => $token) {
                     $desc[$token][] = substr($location, 0, 3) . "-" . substr($location, 3, 3);
@@ -1379,15 +1376,15 @@ class NowBoarding extends Table
                     'routeSlow' => join(', ', $desc['SLOW']),
                     'weather' => $weather,
                 ]);
-            }
 
-            // Notify VIP count
-            if (!$finale && $vip) {
-                $this->notifyAllPlayers('message', N_REF_MSG['hourVip'], [
-                    'i18n' => ['hourDesc'],
-                    'count' => $hourInfo['vipRemain'],
-                    'hourDesc' => $hourInfo['hourDesc'],
-                ]);
+                // Notify VIP count
+                if ($vip) {
+                    $this->notifyAllPlayers('message', N_REF_MSG['hourVip'], [
+                        'i18n' => ['hourDesc'],
+                        'count' => $hourInfo['vipRemain'],
+                        'hourDesc' => $hourInfo['hourDesc'],
+                    ]);
+                }
             }
         }
         return $hourInfo;
