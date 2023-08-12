@@ -992,7 +992,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
       if (!listEl) {
         // Pax shouldn't exist
-        if (paxEl && pax.id > 0) {
+        if (paxEl && (pax.status == "DELETED" || pax.id > 0)) {
           this.deletePax(pax);
         }
         return;
@@ -1064,9 +1064,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
             doubleEl.style.top = null;
             doubleEl.style.left = null;
             await this.movePax(doubleEl, listEl);
-            if (double.status == "DELETED") {
-              this.deletePax(double);
-            }
           }
         }
       }

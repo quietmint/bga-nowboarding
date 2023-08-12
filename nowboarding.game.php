@@ -1097,7 +1097,7 @@ class NowBoarding extends Table
             // Create the fugitive
             if ($x->vip == 'DOUBLE' && $x->id > 0) {
                 $doubleId = $x->id * -1;
-                $this->DbQuery("INSERT INTO `pax` (`pax_id`, `cash`, `destination`, `location`, `optimal`, `origin`, `status`, `vip`) VALUES ($doubleId, 0, '{$x->destination}', '{$x->location}', {$x->optimal}, '{$x->origin}', 'PORT', '{$x->vip}')");
+                $this->DbQuery("INSERT INTO `pax` (`pax_id`, `anger`, `cash`, `destination`, `location`, `optimal`, `origin`, `status`, `vip`) VALUES ($doubleId, {$x->anger}, 0, '{$x->destination}', '{$x->location}', {$x->optimal}, '{$x->origin}', 'PORT', '{$x->vip}')");
                 $double = $this->getPaxById($doubleId);
                 $this->notifyAllPlayers('pax', '', [
                     'pax' => [$double]
