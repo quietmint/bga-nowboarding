@@ -54,6 +54,9 @@ class NowBoarding extends Table
         $this->initStat('table', 'complaintFinale', 0);
         if ($this->getGlobal(N_OPTION_VIP)) {
             $this->initStat('table', 'complaintVip', 0);
+            $this->initStat('table', 'vipMORNING', 0);
+            $this->initStat('table', 'vipNOON', 0);
+            $this->initStat('table', 'vipNIGHT', 0);
         }
         $this->initStat('table', 'moves', 0);
         $this->initStat('table', 'movesFAST', 0);
@@ -153,6 +156,7 @@ class NowBoarding extends Table
         }
         foreach ($vipsByHour as $hour => $keys) {
             $this->setVar("vip$hour", $keys);
+            $this->setStat(count($keys), "vip$hour");
         }
     }
 

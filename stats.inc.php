@@ -107,6 +107,22 @@ $stats_type = [
             'name' => totranslate('Temporary Speed unused'),
             'type' => 'int'
         ],
+
+        'vipMORNING' => [
+            'id' => 70,
+            'name' => totranslate('VIPs in Morning'),
+            'type' => 'int'
+        ],
+        'vipNOON' => [
+            'id' => 71,
+            'name' => totranslate('VIPs in Afternoon'),
+            'type' => 'int'
+        ],
+        'vipNIGHT' => [
+            'id' => 72,
+            'name' => totranslate('VIPs in Evening'),
+            'type' => 'int'
+        ],
     ],
 
     'player' => [
