@@ -544,7 +544,7 @@ class NowBoarding extends Table
                 $this->setVar('endTime', $endTime);
             }
         }
-        $this->giveExtraTimeAll($seconds);
+        $this->giveExtraTimeAll($seconds + 10);
 
         // Play the sound and begin flying
         $this->notifyAllPlayers('sound', '', [
@@ -1460,7 +1460,6 @@ class NowBoarding extends Table
         if ($this->isAsync()) {
             return;
         }
-        $this->DbQuery("UPDATE `player` SET `player_remaining_reflexion_time` = 0");
         foreach ($this->getPlayerIds() as $playerId) {
             $this->giveExtraTime($playerId, $seconds);
         }
