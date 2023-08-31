@@ -207,6 +207,34 @@ html,
   font-size: 96px;
 }
 
+/* Transparent chat */
+.chatwindowlogs {
+  background-color: transparent;
+}
+
+.mobile_version .chatwindowlogs {
+  background-color: #ebd5bd;
+}
+
+.chatwindowlogs_zone .roundedbox.chatlog .roundedboxinner {
+  background-color: #f5eadecc;
+}
+
+.chatwindowlogs_zone .roundedbox.chatlog.ownchatlog .roundedboxinner {
+  background-color: #fffc;
+}
+
+#logs .timestamp,
+.chatwindowlogs_zone .timestamp {
+  color: white;
+  text-shadow: 1px 1px black;
+}
+
+.load_previous_message {
+  background: #fff8;
+}
+
+/* Wiki */
 .mobile_version .wikicontent {
   font-size: 32px;
 }
