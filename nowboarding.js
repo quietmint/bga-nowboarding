@@ -29,7 +29,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         DFW: "manifests-bottom",
         MIA: "manifests-bottom",
       };
-      for (const node of gamedatas.map.nodes) {
+      for (const node in gamedatas.map.nodes) {
         this.renderMapNode(node);
         if (node.length == 3) {
           this.renderMapManifest(node, manifestContainer[node]);
@@ -1268,7 +1268,12 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       let moveCount = 0;
       for (const i in moves) {
         const move = moves[i];
-        this.mapEl.insertAdjacentHTML("beforeend", `<div id="move-${move.location}" class="move node node-${move.location} gradient-${alliance}">${move.fuel}</div>`);
+        move.alliance = this.gamedatas.map.nodes[move.location];
+        let subtagHtml = "";
+        if (move.alliance) {
+          subtagHtml = `<div class="subtag alliance-${move.alliance}"><i class="icon logo-${move.alliance}"></i></div>`;
+        }
+        this.mapEl.insertAdjacentHTML("beforeend", `<div id="move-${move.location}" class="move node node-${move.location} gradient-${alliance}">${subtagHtml}${move.fuel}</div>`);
         const moveEl = document.getElementById(`move-${move.location}`);
         moveEl.addEventListener("click", (e) => {
           let dialog = null;

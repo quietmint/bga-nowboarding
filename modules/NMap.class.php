@@ -40,8 +40,12 @@ class NMap extends APP_GameClass implements JsonSerializable
 
     public function jsonSerialize(): array
     {
+        $nodes = [];
+        foreach ($this->nodes as $id => $node) {
+            $nodes[$id] = $node->alliance;
+        }
         return [
-            'nodes' => array_keys($this->nodes),
+            'nodes' => $nodes,
             'weather' => $this->weather,
         ];
     }
