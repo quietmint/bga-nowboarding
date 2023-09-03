@@ -1941,13 +1941,20 @@ SQL);
         // Calculate final score
         $complaint = $this->countComplaint();
         if ($complaint >= 3) {
-            $this->DbQuery("UPDATE `player` SET `player_score` = -$complaint");
+            $this->DbQuery("UPDATE `player` SET `player_score` = 0");
             $this->notifyAllPlayers('message', N_REF_MSG['endLose'], [
                 'complaint' => $complaint,
             ]);
         } else {
-            $delivered = intval($this->getStat('pax'));
-            $this->DbQuery("UPDATE `player` SET `player_score` = $delivered");
+            $timer = $this->getGlobal(N_OPTION_TIMER);
+            $timeFactor = 2;
+            if ($timer == 1) { // Normal timer
+                $timeFactor = 6;
+            } else if ($timer == 2) { // Double timer
+                $timeFactor = 3;
+            }
+            $score = $playerCount * $timeFactor;
+            $this->DbQuery("UPDATE `player` SET `player_score` = $score");
             $this->notifyAllPlayers('message', N_REF_MSG['endWin'], []);
         }
 
