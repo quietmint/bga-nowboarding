@@ -48,7 +48,7 @@ class NPax extends APP_GameClass implements JsonSerializable
             'origin' => $this->origin,
             'playerId' => $this->playerId,
             'status' => $this->status,
-            'vip' => $this->vip ? N_REF_VIP[$this->vip] : null,
+            'vip' => $this->vip ? N_REF_VIP[$this->vip] + ['vip' => $this->vip] : null,
         ];
     }
 

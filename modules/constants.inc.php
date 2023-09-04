@@ -81,6 +81,7 @@ define('N_REF_MSG', [
     'alliance' => clienttranslate('${player_name} joins alliance ${alliance}'),
     'anger' => clienttranslate('${count} passengers at airports get angry'),
     'board' => clienttranslate('${player_name} boards a passenger at ${location}'),
+    'boardTransfer' => clienttranslate('${player_name} boards a passenger at ${location} (transferred from ${player_name2})'),
     'complaintFinale' => clienttranslate('${complaint} complaints are filed by ${count} undelivered passengers'),
     'complaintPort' => clienttranslate('${complaint} complaints are filed by angry passengers at ${location}'),
     'complaintVip' => clienttranslate('${complaint} complaints are filed by VIPs not accepted during ${hourDesc}'),

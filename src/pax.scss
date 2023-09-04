@@ -89,9 +89,12 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
-  min-height: 41px;
-  min-width: 215px;
+  min-width: 210px;
   padding: 5px;
+
+  &.is-map {
+    min-height: 85px;
+  }
 }
 
 .manifest.is-anger {
@@ -119,6 +122,36 @@
   }
 }
 
+.paxslot {
+  flex: 0 0 auto;
+  height: 40px;
+  position: relative;
+  width: 210px;
+
+  &.is-empty .emptyseat,
+  &.is-moving .emptyseat {
+    display: block;
+  }
+}
+
+.emptyseat {
+  background: rgb(255 255 255 / 0.25);
+  border-radius: 4px;
+  border: 4px dashed rgb(255 255 255 / 0.5);
+  box-sizing: border-box;
+  display: none;
+  font: 13px/1 Consolas, monospace;
+  height: 40px;
+  position: absolute;
+  text-align: center;
+  text-transform: uppercase;
+  width: 210px;
+
+  .icon {
+    font-size: 32px;
+  }
+}
+
 .pax {
   border-color: $color-neutral-700;
   color: $color-neutral-700;
@@ -130,9 +163,11 @@
   grid-template:
     "anger vip" auto
     "anger ticket" 1fr / auto 1fr;
+  height: 40px;
+  position: absolute;
   text-transform: uppercase;
   transition: transform 1s ease-out;
-  width: 215px;
+  width: 210px;
   z-index: 20;
 
   body.no-animation & {
@@ -204,14 +239,18 @@
 }
 
 .pax .vip {
-  background: linear-gradient(45deg, $color-neutral-700 85%, transparent 85%);
+  background: linear-gradient(45deg, $color-neutral-700 87%, transparent 87%);
   color: $color-fuchsia-300;
   font-weight: bold;
   grid-area: vip;
   height: 13px;
+  overflow: hidden;
+  padding-right: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 
   .icon {
-    margin: 0 3px;
+    margin-right: 2px;
   }
 }
 
@@ -228,7 +267,7 @@
   }
 
   .destination {
-    display: none;
+    text-shadow: none;
   }
 }
 
@@ -240,24 +279,5 @@
 
   .destination {
     text-shadow: 1px 1px black;
-  }
-}
-
-.emptyseat {
-  background: rgb(255 255 255 / 0.25);
-  border-radius: 4px;
-  border: 4px dashed rgb(255 255 255 / 0.5);
-  font: 13px/1 Consolas, monospace;
-  order: 600;
-  text-align: center;
-  text-transform: uppercase;
-  width: 210px;
-
-  .icon {
-    font-size: 32px;
-  }
-
-  &.temp {
-    order: 601;
   }
 }

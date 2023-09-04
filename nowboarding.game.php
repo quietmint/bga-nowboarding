@@ -523,13 +523,20 @@ class NowBoarding extends Table
         $pax = $this->getPaxByStatus('SECRET');
         foreach ($pax as $x) {
             $x->status = 'PORT';
+            $this->DbQuery("UPDATE `pax` SET `status` = 'PORT' WHERE `pax_id` = {$x->id}");
             if ($x->vip) {
                 $msg = N_REF_MSG['vip'];
                 $args['desc'] = N_REF_VIP[$x->vip]['desc'];
                 $args['vip'] = N_REF_VIP[$x->vip]['name'];
                 $args['location'] = $x->location;
+
+                // VIP Double
+                // Create the fugitive
+                if ($x->vip == 'DOUBLE') {
+                    $doubleId = $x->id * -1;
+                    $this->DbQuery("INSERT INTO `pax` (`pax_id`, `cash`, `destination`, `location`, `optimal`, `origin`, `status`, `vip`) VALUES ($doubleId, 0, '{$x->destination}', '{$x->location}', {$x->optimal}, '{$x->origin}', '{$x->status}', '{$x->vip}')");
+                }
             }
-            $this->DbQuery("UPDATE `pax` SET `status` = 'PORT' WHERE `pax_id` = {$x->id}");
         }
         $args['pax'] = array_values($pax);
         $this->notifyAllPlayers('pax', $msg, $args);
@@ -1059,6 +1066,8 @@ class NowBoarding extends Table
         $x = $this->getPaxById($paxId, true);
         $planeIds = [$plane->id];
 
+        $msg = N_REF_MSG['board'];
+        $args = [];
         if ($x->status == 'SEAT') {
             if ($x->playerId == $plane->id) {
                 throw new BgaVisibleSystemException("board: $x player ID is already {$plane->id} [???]");
@@ -1073,7 +1082,9 @@ class NowBoarding extends Table
             if ($other->location != $plane->location || strlen($plane->location) != 3) {
                 $this->userException('boardTransfer', $other->name);
             }
-            // Automatic deplane
+            // Implicit deplane
+            $msg = N_REF_MSG['boardTransfer'];
+            $args['player_name2'] = $other->name;
             self::_deplane($other, $paxId, true);
             $planeIds[] = $other->id;
             $x = $this->getPaxById($paxId, true);
@@ -1098,15 +1109,9 @@ class NowBoarding extends Table
             }
 
             // VIP Double
-            // Create the fugitive
+            // Board the fugitive (must be BEFORE the real pax)
             if ($x->vip == 'DOUBLE' && $x->id > 0) {
-                $doubleId = $x->id * -1;
-                $this->DbQuery("INSERT INTO `pax` (`pax_id`, `anger`, `cash`, `destination`, `location`, `optimal`, `origin`, `status`, `vip`) VALUES ($doubleId, {$x->anger}, 0, '{$x->destination}', '{$x->location}', {$x->optimal}, '{$x->origin}', 'PORT', '{$x->vip}')");
-                $double = $this->getPaxById($doubleId);
-                $this->notifyAllPlayers('pax', '', [
-                    'pax' => [$double]
-                ]);
-                self::_board($plane, $doubleId);
+                self::_board($plane, $x->id * -1);
                 $plane = $this->getPlaneById($plane->id);
             }
         }
@@ -1148,20 +1153,15 @@ class NowBoarding extends Table
         // Notify UI (except for VIP Double)
         if ($x->id > 0) {
             $planes = $this->getPlanesByIds($planeIds);
-            $pax = [$x];
-            if ($x->vip == 'DOUBLE') {
-                $double = $this->getPaxById($x->id * -1);
-                array_unshift($pax, $double);
-            }
             $this->notifyAllPlayers('planes', '', [
                 'planes' => array_values($planes)
             ]);
-            $this->notifyAllPlayers('pax', N_REF_MSG['board'], [
+            $this->notifyAllPlayers('pax', $msg, [
                 'location' => $x->location,
-                'pax' => $pax,
+                'pax' => [$x],
                 'player_id' => $plane->id,
                 'player_name' => $plane->name,
-            ]);
+            ] + $args);
         }
     }
 
@@ -1178,7 +1178,7 @@ class NowBoarding extends Table
         $this->gamestate->nextPrivateState($plane->id, 'flyPrivate');
     }
 
-    private function _deplane(NPlane $plane, int $paxId, bool $automatic = false): void
+    private function _deplane(NPlane $plane, int $paxId, bool $transfer = false): void
     {
         $x = $this->getPaxById($paxId, true);
         if ($x->status != 'SEAT') {
@@ -1188,12 +1188,19 @@ class NowBoarding extends Table
             $this->userException('deplanePort');
         }
 
+        // VIP Double
+        // Deplane the fugitive (must be BEFORE the real pax)
+        if ($x->vip == 'DOUBLE' && $x->id > 0) {
+            self::_deplane($plane, $x->id * -1);
+        }
+
         if ($x->location != $plane->location) {
             // Erase anger if deplaned at a new location
             $x->resetAnger();
         }
-
         $x->location = $plane->location;
+
+        $msg = N_REF_MSG['deplane'];
         $args = [
             'location' => $x->location,
             'pax' => [$x],
@@ -1201,8 +1208,8 @@ class NowBoarding extends Table
             'player_name' => $plane->name,
         ];
         if ($x->location == $x->destination) {
-            $x->status = 'CASH';
             $msg = N_REF_MSG['deplaneDeliver'];
+            $x->status = 'CASH';
             $args['cash'] = $x->cash;
             $args['moves'] = $x->moves;
             $this->incStat(1, 'pax');
@@ -1210,30 +1217,16 @@ class NowBoarding extends Table
             $this->incStat($x->cash, 'cash', $plane->id);
         } else {
             // VIP Direct
-            if ($this->getGlobal(N_OPTION_VIP) && $x->vip == 'DIRECT') {
+            if ($x->vip == 'DIRECT') {
                 $this->vipException('DIRECT');
             }
             $x->playerId = null;
             $x->status = 'PORT';
-            $msg = N_REF_MSG['deplane'];
         }
         $this->DbQuery("UPDATE `pax` SET `anger` = {$x->anger}, `location` = '{$x->location}', `player_id` = {$x->getPlayerIdSql()}, `status` = '{$x->status}' WHERE `pax_id` = {$x->id}");
 
-        // VIP Double
-        // Delete the fugitive
-        if ($this->getGlobal(N_OPTION_VIP) && $x->vip == 'DOUBLE') {
-            $double = $this->getPaxById($x->id * -1, true);
-            $double->status = 'DELETED';
-            $this->DbQuery("DELETE FROM `pax` WHERE `pax_id` = {$double->id}");
-            array_unshift($args['pax'], $double);
-        }
-
-        if ($automatic) {
-            // Notify message only
-            unset($args['pax']);
-            $this->notifyAllPlayers('message', $msg, $args);
-        } else {
-            // Notify UI
+        // Notify UI (except for transfers and VIP Double)
+        if (!$transfer && $x->id > 0) {
             $planes = $this->getPlanesByIds([$plane->id]);
             $this->notifyAllPlayers('planes', '', [
                 'planes' => array_values($planes)
@@ -1619,7 +1612,7 @@ SQL);
 
     private function getPaxWallet(int $playerId): array
     {
-        $sql = "SELECT `pax_id`, `cash` FROM `pax` WHERE `status` = 'CASH' AND `player_id` = $playerId ORDER BY `cash` DESC, `pax_id`";
+        $sql = "SELECT `pax_id`, `cash` FROM `pax` WHERE `cash` > 0 AND `status` = 'CASH' AND `player_id` = $playerId ORDER BY `cash` DESC, `pax_id`";
         return array_map('intval', $this->getCollectionFromDB($sql, true));
     }
 
@@ -1820,7 +1813,10 @@ SQL);
                 $x->vip = null;
             }
         }
-        return $pax;
+        // VIP Double is never included (managed by client)
+        return array_filter($pax, function ($x) {
+            return $x->id > 0;
+        });
     }
 
     private function getPaxLocations(array $pax): string
@@ -1946,14 +1942,11 @@ SQL);
                 'complaint' => $complaint,
             ]);
         } else {
-            $timer = $this->getGlobal(N_OPTION_TIMER);
-            $timeFactor = 2;
-            if ($timer == 1) { // Normal timer
-                $timeFactor = 6;
-            } else if ($timer == 2) { // Double timer
-                $timeFactor = 3;
+            $score = $playerCount * $playerCount + 10;
+            if ($this->getGlobal(N_OPTION_TIMER) != 1) {
+                // Half score with double/unlimited timer
+                $score = ceil($score / 2);
             }
-            $score = $playerCount * $timeFactor;
             $this->DbQuery("UPDATE `player` SET `player_score` = $score");
             $this->notifyAllPlayers('message', N_REF_MSG['endWin'], []);
         }
@@ -2059,14 +2052,16 @@ SQL);
                 $x->playerId = null;
                 $x->status = 'PORT';
                 $this->DbQuery("UPDATE `pax` SET `anger` = {$x->anger}, `player_id` = NULL, `status` = '{$x->status}' WHERE `pax_id` = {$x->id}");
-                $this->notifyAllPlayers('message', N_REF_MSG['deplane'], [
-                    'location' => $x->location,
-                    'player_id' => $plane->id,
-                    'player_name' => $plane->name,
-                ]);
+                if ($x->id > 0) {
+                    $this->notifyAllPlayers('message', N_REF_MSG['deplane'], [
+                        'location' => $x->location,
+                        'player_id' => $plane->id,
+                        'player_name' => $plane->name,
+                    ]);
+                }
             }
             $this->notifyAllPlayers('pax', '', [
-                'pax' => array_values($pax),
+                'pax' => array_values($this->filterPax($pax)),
             ]);
         }
 
@@ -2093,6 +2088,10 @@ SQL);
             [2307191554, "ALTER TABLE `DBPREFIX_weather` ADD COLUMN `hour` VARCHAR(50) NOT NULL"],
             [2307222151, "ALTER TABLE `DBPREFIX_weather` DROP PRIMARY KEY, ADD PRIMARY KEY(`hour`, `location`)"],
             [2307222151, "INSERT INTO `DBPREFIX_weather` (`hour`, `location`, `token`) SELECT 'FINALE', `location`, `token` FROM `DBPREFIX_weather` WHERE `hour` = 'NIGHT'"],
+            [2309031701, "DELETE FROM `DBPREFIX_pax` WHERE `pax_id` < 0"],
+            [2309031701, "DELETE FROM `DBPREFIX_pax_undo` WHERE `pax_id` < 0"],
+            [2309031701, "INSERT INTO `DBPREFIX_pax` (`pax_id`, `anger`, `cash`, `destination`, `location`, `moves`, `optimal`, `origin`, `player_id`, `status`, `vip`) SELECT `pax_id` * -1 AS `pax_id`, `anger`, 0 AS `cash`, `destination`, `location`, `moves`, `optimal`, `origin`, `player_id`, `status`, `vip` FROM `DBPREFIX_pax` WHERE `vip` = 'DOUBLE'"],
+            [2309031701, "INSERT INTO `DBPREFIX_pax_undo` (`pax_id`, `anger`, `cash`, `destination`, `location`, `moves`, `optimal`, `origin`, `player_id`, `status`, `vip`) SELECT `pax_id` * -1 AS `pax_id`, `anger`, 0 AS `cash`, `destination`, `location`, `moves`, `optimal`, `origin`, `player_id`, `status`, `vip` FROM `DBPREFIX_pax_undo` WHERE `vip` = 'DOUBLE'"],
         ];
 
         foreach ($changes as [$version, $sql]) {
