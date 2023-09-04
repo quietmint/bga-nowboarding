@@ -1,5 +1,7 @@
 {OVERALL_GAME_HEADER}
 
+<a id="browser-error" href="https://browsehappy.com/" target="_blank"></a>
+
 <audio id="audiosrc_nowboarding_cash" src="{GAMETHEMEURL}img/cash.mp3" preload="none" autobuffer></audio>
 <audio id="audiosrc_o_nowboarding_cash" src="{GAMETHEMEURL}img/cash.ogg" preload="none" autobuffer></audio>
 <audio id="audiosrc_nowboarding_chime" src="{GAMETHEMEURL}img/chime.mp3" preload="none" autobuffer></audio>

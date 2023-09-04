@@ -1,5 +1,6 @@
 define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], function (dojo, declare) {
   const playSoundSuper = window.playSound;
+  let browserError = false;
   let suppressSounds = [];
   let flyTimer = null;
 
@@ -11,12 +12,24 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     setup(gamedatas) {
       console.log("🐣 Setup", gamedatas);
 
+      // Unsupported browser check
+      this.mapEl = document.getElementById("nbmap");
+      if (!getComputedStyle(this.mapEl).containerType) {
+        browserError = true;
+        console.error("🪦 Unsupported browser", navigator.userAgent);
+        const txtError = _("Your outdated browser is not supported");
+        const txtAbandon = _("Abandon the game (no penalty)");
+        const errorEl = document.getElementById("browser-error");
+        errorEl.style.display = "block";
+        errorEl.insertAdjacentHTML("afterbegin", `<div>${txtError}</div><div class="ua" title="User-Agent">${navigator.userAgent}</div><div id="errorAbandon" class="bgabutton bgabutton_blue" onclick="$('ingame_menu_abandon').click();return false">${txtAbandon}</div>`);
+        return;
+      }
+
       // Setup common
       this.renderCommon();
 
       // Setup map
       const playerCount = Object.keys(gamedatas.players).length;
-      this.mapEl = document.getElementById("nbmap");
       this.mapEl.classList.add(playerCount >= 4 ? "map45" : "map23");
       const manifestContainer = {
         SEA: "manifests-top",
@@ -56,7 +69,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         for (const paxId in gamedatas.pax) {
           const pax = gamedatas.pax[paxId];
           this.renderPax(pax);
-          if (pax.vip?.vip == "DOUBLE") {
+          if (pax.vip && pax.vip.vip == "DOUBLE") {
             const double = { ...pax, id: pax.id * -1, cash: 0 };
             gamedatas.pax[double.id] = double;
             this.renderPax(double);
@@ -220,6 +233,9 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     /* @Override */
     updatePlayerOrdering() {
       this.inherited(arguments);
+      if (browserError) {
+        return;
+      }
       dojo.place("nbcommon", "player_boards", "first");
     },
 
@@ -257,6 +273,9 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     // ----------------------------------------------------------------------
 
     onEnteringState(stateName, args) {
+      if (browserError) {
+        return;
+      }
       if (stateName == "fly") {
         this.stabilizerOn();
         if (args.args.endTime) {
@@ -294,6 +313,9 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     },
 
     onUpdateActionButtons(stateName, args) {
+      if (browserError) {
+        return;
+      }
       console.log(`▶️ State ${stateName}`, args);
       if (!this.isSpectator) {
         // Inactive players can undo or go back
@@ -342,7 +364,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
                 this.addActionButton("button_vip", txt, () => this.takeVipAction(), null, false, this.gamedatas.hour.vipNeed ? "red" : "blue");
               }
             }
-            if (args.ledger?.length > 0) {
+            if (args.ledger && args.ledger.length > 0) {
               this.addActionButton("button_undo", _("Start Over"), () => this.takeAction("undo"), null, false, "gray");
             }
             this.buys = args.buys;
@@ -368,7 +390,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
             }
             // Update the possible moves
             this.deleteMoves();
-            if (args?.moves) {
+            if (args && args.moves) {
               this.renderMoves(args.moves);
             }
           }
@@ -384,7 +406,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         this.renderPlane(notif.args.plane);
         this.renderPlaneGauges(notif.args.plane);
       } else if (notif.type == "buys") {
-        if (notif.args.state != this.gamedatas.gamestate.private_state?.name) {
+        if (this.gamedatas.gamestate.private_state == null || this.gamedatas.gamestate.private_state.name != notif.args.state) {
           console.warn("Ignore buys notification because we are in the wrong state");
           return;
         }
@@ -413,7 +435,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           suppressSounds = ["yourturn"];
           playSound("nowboarding_walkway");
         }
-        if ((this.gamedatas.hour.vipNew || this.gamedatas.hour.vipRemain) && this.gamedatas.gamestate.private_state?.name == "prepareBuy") {
+        if ((this.gamedatas.hour.vipNew || this.gamedatas.hour.vipRemain) && this.gamedatas.gamestate.private_state && this.gamedatas.gamestate.private_state.name == "prepareBuy") {
           const vipEl = document.getElementById("button_vip");
           if (vipEl) {
             vipEl.textContent = this.format_string_recursive(this.gamedatas.hour.vipNew ? _("Decline VIP (${vipRemain} remaining)") : _("Accept VIP (${vipRemain} remaining)"), { vipRemain: this.gamedatas.hour.vipRemain });
@@ -438,7 +460,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
             sound = true;
           }
           this.renderPax(pax);
-          if (pax.vip?.vip == "DOUBLE") {
+          if (pax.vip && pax.vip.vip == "DOUBLE") {
             const double = { ...pax, id: pax.id * -1, cash: 0 };
             this.gamedatas.pax[double.id] = double;
             this.renderPax(double);
@@ -754,7 +776,10 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       } else if (!plane.location && planeEl) {
         // Delete plane
         console.log(`❌ Delete plane ${plane.id}`);
-        this.getElement(`plane-${plane.id}`)?.remove();
+        const planeEl = this.getElement(`plane-${plane.id}`);
+        if (planeEl) {
+          planeEl.remove();
+        }
         // Update panel
         this.swapClass(`overall_player_board_${plane.id}`, "panel-");
       }
@@ -1280,7 +1305,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       const walletHtml = args.wallet.map((cash) => `<div class="nbtag cash"><i class="icon cash"></i> ${cash}</div>`).join("");
       const walletSum = args.wallet.reduce((a, b) => a + b, 0);
       let ledgerHtml = "";
-      if (args.ledger?.length > 0) {
+      if (args.ledger && args.ledger.length > 0) {
         for (const l of args.ledger) {
           let txt = l.type;
           if (l.type == "ALLIANCE") {
