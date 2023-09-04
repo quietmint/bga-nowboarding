@@ -14,16 +14,16 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
       // Unsupported browser check
       this.mapEl = document.getElementById("nbmap");
-      if (!getComputedStyle(this.mapEl).containerType) {
-        browserError = true;
-        console.error("🪦 Unsupported browser", navigator.userAgent);
-        const txtError = _("Your outdated browser is not supported");
-        const txtAbandon = _("Abandon the game (no penalty)");
-        const errorEl = document.getElementById("browser-error");
-        errorEl.style.display = "block";
-        errorEl.insertAdjacentHTML("afterbegin", `<div>${txtError}</div><div class="ua" title="User-Agent">${navigator.userAgent}</div><div id="errorAbandon" class="bgabutton bgabutton_blue" onclick="$('ingame_menu_abandon').click();return false">${txtAbandon}</div>`);
-        return;
-      }
+      // if (!getComputedStyle(this.mapEl).containerType) {
+      //   browserError = true;
+      //   console.error("🪦 Unsupported browser", navigator.userAgent);
+      //   const txtError = _("Your outdated browser is not supported");
+      //   const txtAbandon = _("Abandon the game (no penalty)");
+      //   const errorEl = document.getElementById("browser-error");
+      //   errorEl.style.display = "block";
+      //   errorEl.insertAdjacentHTML("afterbegin", `<div>${txtError}</div><div class="ua" title="User-Agent">${navigator.userAgent}</div><div id="errorAbandon" class="bgabutton bgabutton_blue" onclick="$('ingame_menu_abandon').click();return false">${txtAbandon}</div>`);
+      //   return;
+      // }
 
       // Setup common
       this.renderCommon();
@@ -48,7 +48,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           this.renderMapManifest(node, manifestContainer[node]);
         }
       }
-      this.renderMapLeads();
+      this.resizeMap();
       for (const location in gamedatas.map.weather) {
         const token = gamedatas.map.weather[location];
         this.createWeather(location, token);
@@ -199,7 +199,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       dojo.style("page-title", "zoom", "");
       dojo.style("right-side-first-part", "zoom", "");
       this.computeViewport();
-      this.renderMapLeads();
+      this.resizeMap();
     },
 
     computeViewport() {
@@ -701,7 +701,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         const nbrange = document.getElementById("nbrange");
         nbrange.addEventListener("input", (ev) => {
           nbscale.style.width = `${nbrange.value}%`;
-          this.renderMapLeads();
+          this.resizeMap();
           try {
             localStorage.setItem("nowboarding.scale", nbrange.value);
           } catch (e) {
@@ -959,6 +959,13 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           txt = this.format_string_recursive(_("Special Route: Restricted to alliance ${specialRoute}"), { specialRoute: alliance });
         }
         this.mapEl.insertAdjacentHTML("beforeend", `<div id="node-${node}" class="hop node node-${node}" title="${txt}"></div>`);
+      }
+    },
+
+    resizeMap() {
+      if (this.mapEl) {
+        this.mapEl.style.setProperty("--map-width", this.mapEl.clientWidth + "px");
+        this.renderMapLeads();
       }
     },
 
