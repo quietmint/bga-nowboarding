@@ -231,6 +231,11 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     },
 
     /* @Override */
+    adaptPlayersPanels() {
+      // do nothing
+    },
+
+    /* @Override */
     updatePlayerOrdering() {
       this.inherited(arguments);
       if (browserError) {
