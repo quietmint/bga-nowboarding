@@ -295,7 +295,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
     onUpdateActionButtons(stateName, args) {
       console.log(`▶️ State ${stateName}`, args);
-      if (!this.is_spectator) {
+      if (!this.isSpectator) {
         // Inactive players can undo or go back
         if (stateName == "build" || stateName == "buildAlliance2" || stateName == "buildUpgrade" || stateName == "prepare") {
           this.addActionButton("button_undo", _("Start Over"), () => this.takeAction("undo"), null, false, "gray");
