@@ -441,7 +441,7 @@ class NowBoarding extends Table
         $cost = 7;
         $claimed = $plane->alliances;
         $playerCount = $this->getPlayersNumber();
-        if ($playerCount <= 3) {
+        if ($playerCount <= 3 && $this->getGlobal(N_OPTION_MAP) != N_MAP_SEA) {
             // Exclude Seattle for 2-3 players
             $claimed[] = 'SEA';
         }
@@ -1703,7 +1703,7 @@ SQL);
                 ['SFO', 'JFK', 4],
             );
         }
-        if ($playerCount >= 4 || $optionMap == N_MAP_SEA)  {
+        if ($playerCount >= 4 || $optionMap == N_MAP_SEA) {
             // Include SEA with 4+ players
             $airports[] = 'SEA';
             array_push(
