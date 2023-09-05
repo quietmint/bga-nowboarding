@@ -216,7 +216,7 @@ class NowBoarding extends Table
         $buys = [];
         $claimed = [];
         $playerCount = $this->getPlayersNumber();
-        if ($playerCount <= 3) {
+        if ($playerCount <= 3 && $this->getGlobal(N_OPTION_MAP) != N_MAP_SEA) {
             // Exclude Seattle for 2-3 players
             $claimed[] = 'SEA';
         }
@@ -242,8 +242,10 @@ class NowBoarding extends Table
     {
         $buys = [];
         $claimed = $this->getObjectListFromDB("SELECT `alliances` FROM `plane` WHERE `player_id` = $playerId", true);
-        // Exclude Seattle for 2-3 players
-        $claimed[] = 'SEA';
+        if ($this->getGlobal(N_OPTION_MAP) != N_MAP_SEA) {
+            // Exclude Seattle for 2-3 players
+            $claimed[] = 'SEA';
+        }
         $possible = array_diff(array_keys(N_REF_ALLIANCE_COLOR), $claimed);
         foreach ($possible as $alliance) {
             $buys[] = [
@@ -1462,7 +1464,7 @@ class NowBoarding extends Table
         $playerCount = $this->getPlayersNumber();
         $hour = $this->getVar('hour');
         $weather = $this->getWeather($hour);
-        return new NMap($playerCount, $weather);
+        return new NMap($playerCount, $this->getGlobal(N_OPTION_MAP), $weather);
     }
 
     private function getWeather(string $hour): array
@@ -1634,6 +1636,7 @@ SQL);
     {
         $planes = $this->getPlanesByIds();
         $playerCount = count($planes);
+        $optionMap = $this->getGlobal(N_OPTION_MAP);
         $airports = ['ATL', 'DEN', 'DFW', 'LAX', 'MIA', 'ORD', 'SFO'];
         $pax = [
             ['ATL', 'DEN', 2],
@@ -1679,7 +1682,7 @@ SQL);
             ['SFO', 'MIA', 4],
             ['SFO', 'ORD', 3],
         ];
-        if ($playerCount >= 3) {
+        if ($playerCount >= 3 || $optionMap == N_MAP_JFK || $optionMap == N_MAP_SEA) {
             // Include JFK with 3+ players
             $airports[] = 'JFK';
             array_push(
@@ -1700,7 +1703,7 @@ SQL);
                 ['SFO', 'JFK', 4],
             );
         }
-        if ($playerCount >= 4) {
+        if ($playerCount >= 4 || $optionMap == N_MAP_SEA)  {
             // Include SEA with 4+ players
             $airports[] = 'SEA';
             array_push(

@@ -27,7 +27,9 @@ define('N_REF_BGA_CLOCK_UNLIMITED', [9, 20]);
 // Game options
 define('N_OPTION_TIMER', 100);
 define('N_OPTION_VIP', 101);
-define('N_OPTION_HANDOFF', 102);
+define('N_OPTION_MAP', 110);
+define('N_MAP_JFK', 1);
+define('N_MAP_SEA', 2);
 
 // Game preferences
 define('N_PREF_ANIMATION', 150);

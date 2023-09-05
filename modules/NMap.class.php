@@ -2,11 +2,12 @@
 
 class NMap extends APP_GameClass implements JsonSerializable
 {
+    public string $name;
     public array $nodes = [];
     public array $routes = [];
     public array $weather = [];
 
-    public function __construct(int $playerCount, array $weather)
+    public function __construct(int $playerCount, int $optionMap, array $weather)
     {
         // Build the map
         $this->addRoute('ATL', 'DEN', 3, null);
@@ -24,14 +25,16 @@ class NMap extends APP_GameClass implements JsonSerializable
         $this->addRoute('LAX', 'MIA', 4, 'LAX');
         $this->addRoute('LAX', 'SFO', 1, null);
 
-        if ($playerCount >= 4) {
+        if ($playerCount >= 4 || $optionMap == N_MAP_SEA) {
             // 4-5 player map with Seattle
+            $this->name = "map45";
             $this->addRoute('SEA', 'DEN', 2, 'SEA');
             $this->addRoute('SEA', 'JFK', 4, 'SEA');
             $this->addRoute('SEA', 'ORD', 3, 'ORD');
             $this->addRoute('SEA', 'SFO', 2, null);
         } else {
             // 2-3 player map without Seattle
+            $this->name = "map23";
             $this->addRoute('ORD', 'SFO', 3, 'ORD');
         }
 
@@ -45,6 +48,7 @@ class NMap extends APP_GameClass implements JsonSerializable
             $nodes[$id] = $node->alliance;
         }
         return [
+            'name' => $this->name,
             'nodes' => $nodes,
             'weather' => $this->weather,
         ];

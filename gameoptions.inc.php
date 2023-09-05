@@ -58,6 +58,37 @@ $game_options = [
             ],
         ],
     ],
+
+    N_OPTION_MAP => [
+        'level' => 'additional',
+        'name' => totranslate('Map Size'),
+        'default' => 0,
+        'values' => [
+            0 => [
+                'name' => totranslate('Normal'),
+            ],
+            N_MAP_JFK => [
+                'name' => totranslate('Add JFK (2 players)'),
+                'description' => totranslate('Unofficial house rule: Increase difficulty by playing on a larger map intended for more players'),
+                'tmdisplay' => totranslate('Add JFK (2 players)'),
+                'nobeginner' => true,
+                'beta' => true,
+            ],
+            N_MAP_SEA => [
+                'name' => totranslate('Add JFK and SEA (2-3 players)'),
+                'description' => totranslate('Unofficial house rule: Increase difficulty by playing on a larger map intended for more players'),
+                'tmdisplay' => totranslate('Add JFK and SEA (2-3 players)'),
+                'nobeginner' => true,
+                'beta' => true,
+            ],
+        ],
+        'displaycondition' => [
+            [
+                'type' => 'maxplayers',
+                'value' => [2, 3],
+            ],
+        ],
+    ],
 ];
 
 $game_preferences = [

@@ -29,15 +29,14 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       this.renderCommon();
 
       // Setup map
-      const playerCount = Object.keys(gamedatas.players).length;
-      this.mapEl.classList.add(playerCount >= 4 ? "map45" : "map23");
+      this.mapEl.classList.add(gamedatas.map.name);
       const manifestContainer = {
         SEA: "manifests-top",
-        SFO: playerCount >= 4 ? "manifests-bottom" : "manifests-top",
+        SFO: gamedatas.map.name == "map45" ? "manifests-bottom" : "manifests-top",
         DEN: "manifests-top",
         ORD: "manifests-top",
         JFK: "manifests-top",
-        ATL: playerCount >= 4 ? "manifests-right" : "manifests-bottom",
+        ATL: gamedatas.map.name == "map45" ? "manifests-right" : "manifests-bottom",
         LAX: "manifests-bottom",
         DFW: "manifests-bottom",
         MIA: "manifests-bottom",
