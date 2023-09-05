@@ -7,7 +7,7 @@ class NMap extends APP_GameClass implements JsonSerializable
     public array $routes = [];
     public array $weather = [];
 
-    public function __construct(int $playerCount, int $optionMap, array $weather)
+    public function __construct(int $playerCount, ?int $optionMap, array $weather)
     {
         // Build the map
         $this->addRoute('ATL', 'DEN', 3, null);
