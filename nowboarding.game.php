@@ -172,7 +172,6 @@ class NowBoarding extends Table
         $players = $this->getCollectionFromDb("SELECT player_id id, player_score score FROM player");
         return [
             'complaint' => $this->countComplaint(),
-            // 'handoff' => boolval($this->getGlobal(N_OPTION_HANDOFF)),
             'hour' => $this->getHourInfo(),
             'map' => $this->getMap(),
             'noTimeLimit' => in_array($this->getGlobal(N_BGA_CLOCK), N_REF_BGA_CLOCK_UNLIMITED),
@@ -1851,10 +1850,16 @@ SQL);
                     $this->DbQuery("UPDATE `pax` SET `anger` = {$x->anger} WHERE `pax_id` = {$x->id}");
                     $angerPax[] = $x;
                 } else {
-                    // File complaint
-                    $x->status = 'COMPLAINT';
-                    $this->DbQuery("UPDATE `pax` SET `anger` = {$x->anger}, `status` = 'COMPLAINT' WHERE `pax_id` = {$x->id}");
-                    $complaintPax[] = $x;
+                    if ($x->id > 0) {
+                        // File complaint
+                        $x->status = 'COMPLAINT';
+                        $this->DbQuery("UPDATE `pax` SET `anger` = {$x->anger}, `status` = 'COMPLAINT' WHERE `pax_id` = {$x->id}");
+                        $complaintPax[] = $x;
+                    } else {
+                        // VIP Double
+                        // Delete the fugitive
+                        $this->DbQuery("DELETE FROM `pax` WHERE `pax_id` = {$x->id}");
+                    }
                 }
             }
             $this->notifyAllPlayers('pax', '', [
