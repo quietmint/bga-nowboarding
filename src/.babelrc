@@ -5,7 +5,7 @@
       {
         "bugfixes": true,
         "debug": true,
-        "targets": "last 2 versions, > 0.2%, not dead"
+        "targets": "> 0.2%, not dead, not android > 0"
       }
     ]
   ],
