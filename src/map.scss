@@ -2,11 +2,11 @@
 @use "sass:color";
 
 #nbscale {
+  --map-width: 950px;
   min-width: 980px;
 }
 
 #nbmap {
-  --map-width: 950px;
   background-repeat: no-repeat;
   background-size: contain;
   height: calc(var(--map-width) * 0.5);

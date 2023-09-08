@@ -15,6 +15,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       this.renderCommon();
 
       // Setup map
+      this.scaleEl = document.getElementById("nbscale");
       this.mapEl = document.getElementById("nbmap");
       this.mapEl.classList.add(gamedatas.map.name);
       const manifestContainer = {
@@ -673,10 +674,9 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         parentEl.insertAdjacentHTML("beforebegin", commonHtml);
         commonEl = document.getElementById("nbcommon");
 
-        const nbscale = document.getElementById("nbscale");
         const nbrange = document.getElementById("nbrange");
         nbrange.addEventListener("input", (ev) => {
-          nbscale.style.width = `${nbrange.value}%`;
+          this.scaleEl.style.width = `${nbrange.value}%`;
           this.resizeMap();
           try {
             localStorage.setItem("nowboarding.scale", nbrange.value);
@@ -925,8 +925,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     },
 
     resizeMap() {
-      if (this.mapEl) {
-        this.mapEl.style.setProperty("--map-width", this.mapEl.clientWidth + "px");
+      if (this.scaleEl && this.mapEl) {
+        this.scaleEl.style.setProperty("--map-width", this.mapEl.clientWidth + "px");
         this.renderMapLeads();
       }
     },
