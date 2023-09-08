@@ -81,6 +81,19 @@
       transition: none !important;
     }
   }
+
+  .emptytxt {
+    align-items: center;
+    top: 30px;
+    color: rgb(255 255 255 / 0.5);
+    display: flex;
+    font: bold 17px/1 Consolas, monospace;
+    justify-content: center;
+    margin: 30px;
+    position: absolute;
+    text-align: center;
+    transition: color 200ms linear;
+  }
 }
 
 .paxlist {
@@ -119,6 +132,11 @@
 
   .paxlist {
     flex-direction: column-reverse;
+  }
+
+  .emptytxt {
+    bottom: 30px;
+    top: unset;
   }
 }
 

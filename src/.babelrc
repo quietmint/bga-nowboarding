@@ -1,0 +1,14 @@
+{
+  "presets": [
+    [
+      "@babel/preset-env",
+      {
+        "bugfixes": true,
+        "debug": true,
+        "targets": "last 2 versions, > 0.2%, not dead"
+      }
+    ]
+  ],
+  "sourceMaps": true,
+  "sourceType": "script"
+}

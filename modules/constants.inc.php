@@ -18,7 +18,6 @@ define('N_STATE_END', 99);
 // Globals
 define('N_BGA_ELO', 201);
 define('N_BGA_CLOCK', 200);
-define('N_BGA_TIME_MAX', 8);
 define('N_BGA_VERSION', 300);
 
 define('N_REF_BGA_CLOCK_REALTIME', [0, 1, 2, 9]);

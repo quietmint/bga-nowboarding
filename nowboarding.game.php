@@ -348,7 +348,7 @@ class NowBoarding extends Table
     public function stPrepare()
     {
         // Reset time to the full amount
-        $this->giveExtraTimeAll($this->getGlobal(N_BGA_TIME_MAX));
+        $this->giveExtraTimeAll(9999);
         $this->gamestate->setAllPlayersMultiactive();
         $this->gamestate->initializePrivateStateForAllActivePlayers();
         $this->DbQuery("UPDATE `plane` SET `speed_remain` = `speed`");
@@ -551,8 +551,10 @@ class NowBoarding extends Table
                 $endTime = time() + $seconds;
                 $this->setVar('endTime', $endTime);
             }
+        } else {
+            $this->setVar('endTime', null);
         }
-        $this->giveExtraTimeAll($seconds + 10);
+        $this->giveExtraTimeAll($seconds + 60);
 
         // Play the sound and begin flying
         $this->notifyAllPlayers('sound', '', [
@@ -577,7 +579,7 @@ class NowBoarding extends Table
             'moves' => $map->getPossibleMoves($plane),
             'paxDrop' => [],
             'paxPickup' => [],
-            'speedRemain' => max(0, $plane->speedRemain),
+            'speedRemain' => max(0, $plane->speedRemain) + ($plane->tempSpeed ? 1 : 0),
         ];
     }
 
@@ -1274,10 +1276,14 @@ class NowBoarding extends Table
 
     private function setVar(string $key, $value): void
     {
-        if (is_array($value)) {
-            $value = join(',', $value);
+        if ($value == null) {
+            $this->DbQuery("DELETE FROM `var` WHERE `key` = '$key'");
+        } else {
+            if (is_array($value)) {
+                $value = join(',', $value);
+            }
+            $this->DbQuery("INSERT INTO `var` (`key`, `value`) VALUES ('$key', '$value') ON DUPLICATE KEY UPDATE `value` = '$value'");
         }
-        $this->DbQuery("INSERT INTO `var` (`key`, `value`) VALUES ('$key', '$value') ON DUPLICATE KEY UPDATE `value` = '$value'");
     }
 
     private function enforceTimer(): bool
@@ -2113,6 +2119,10 @@ SQL);
             self::warn("upgradeTableDb: fromVersion=$fromVersion, setupWeather");
             $this->setupWeather($this->getPlayersNumber());
         }
+
+        // Add 1 minute to all clocks
+        $this->giveExtraTimeAll(60);
+        self::applyDbUpgradeToAllDB("UPDATE `DBPREFIX_var` SET `value` = `value` + 60 WHERE `key` = 'endTime'");
 
         self::warn("upgradeTableDb complete: fromVersion=$fromVersion");
     }

@@ -24,24 +24,6 @@ html,
   display: none;
 }
 
-/* Browser error */
-#browser-error {
-  background: $color-red-700 url(img/headstone.png) no-repeat 50% 30px;
-  color: white;
-  display: none;
-  font-size: 22px;
-  font-weight: bold;
-  padding: 316px 30px 30px 30px;
-  text-align: center;
-
-  .ua {
-    color: $color-red-300;
-    font-size: 75%;
-    font-weight: normal;
-    margin: 6px;
-  }
-}
-
 #nbcountdown {
   color: red;
   font-size: 24px;
@@ -137,7 +119,45 @@ html,
   }
 }
 
-/* Player boards */
+/* Player panels */
+
+#left-side {
+  margin-right: 305px;
+}
+
+#right-side {
+  margin-left: -300px;
+  width: 300px;
+}
+
+.logs_on_additional_column {
+  #nbcommon,
+  .player-board {
+    border-radius: 8px;
+  }
+
+  #left-side {
+    margin-right: 560px;
+  }
+
+  #right-side {
+    margin-left: -550px;
+    width: 550px;
+  }
+
+  #right-side-first-part {
+    width: 300px;
+  }
+
+  #right-side-second-part {
+    float: right;
+  }
+
+  #logs {
+    margin-top: -10px;
+  }
+}
+
 .player-board {
   background-color: $color-neutral-600;
   color: white;
@@ -156,6 +176,10 @@ html,
 }
 
 .mobile_version {
+  #nbcommon {
+    border-radius: 8px;
+  }
+
   #leftright_page_wrapper {
     display: grid;
   }
@@ -177,8 +201,8 @@ html,
   }
 
   .player-board {
-    flex: 1 0 auto;
     float: none;
+    width: 319px;
   }
 }
 
@@ -188,14 +212,24 @@ html,
   margin: auto;
 }
 
+.gauges {
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 15px;
+  gap: 5px;
+  margin: 5px 0;
+}
+
 .nbtag {
+  align-items: center;
   background-color: $color-neutral-700;
   border-radius: 4px;
   box-shadow: 1px 1px rgb(0 0 0 / 0.5);
   color: white;
-  display: inline-block;
+  display: inline-flex;
   padding: 1px 6px;
   vertical-align: middle;
+  word-break: break-word;
 
   &.complaint {
     background-color: $color-red-700;
@@ -209,15 +243,30 @@ html,
   &.vip {
     color: $color-fuchsia-300;
   }
+
+  .icon {
+    font-size: 150%;
+    margin-right: 5px;
+    flex: 0 0 auto;
+  }
+
+  .bb {
+    font-size: 18px;
+    font-weight: bold;
+  }
+
+  .ss {
+    font-size: 13px;
+  }
 }
 
 .log .nbtag {
   font-size: 16px;
   font-weight: bold;
-}
 
-.nbtag .icon {
-  vertical-align: -2px;
+  .icon {
+    font-size: 18px;
+  }
 }
 
 .nblabel {
@@ -226,7 +275,18 @@ html,
 }
 
 #nbcommon {
-  margin-top: 0;
+  align-content: space-evenly;
+  align-items: flex-end;
+  background-color: $color-neutral-600;
+  border-radius: 8px 0 0 8px;
+  color: white;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 15px;
+  gap: 5px;
+  justify-content: space-evenly;
+  margin-bottom: 5px;
+  padding: 5px;
 }
 
 .nbsection {
@@ -238,19 +298,19 @@ html,
   margin: 4px 0;
 }
 
-.gauges {
-  align-content: space-evenly;
-  align-items: flex-end;
+.plane-board {
   display: flex;
-  flex-wrap: wrap;
-  font-size: 15px;
-  gap: 5px;
+  position: relative;
   justify-content: space-evenly;
-  margin: 5px 0;
 
-  .icon {
-    font-size: 22px;
-    vertical-align: -5px;
+  .gauges {
+    align-items: flex-start;
+    flex: 1 0 78px;
+    flex-direction: column;
+
+    .nbtag {
+      margin: 0;
+    }
   }
 }
 
