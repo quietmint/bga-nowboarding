@@ -29,6 +29,9 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         DFW: "manifests-bottom",
         MIA: "manifests-bottom",
       };
+      if (gamedatas.map.name == "map45") {
+        document.getElementById("manifests-bottom").insertAdjacentHTML("beforeend", `<div id="manifest-spacer"></div>`);
+      }
       for (const node in gamedatas.map.nodes) {
         this.renderMapNode(node);
         if (node.length == 3) {
@@ -56,7 +59,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         for (const paxId in gamedatas.pax) {
           const pax = gamedatas.pax[paxId];
           this.renderPax(pax);
-          if (pax.vip?.vip == "DOUBLE") {
+          if (pax.vipInfo?.key == "DOUBLE") {
             const double = { ...pax, id: pax.id * -1, cash: 0 };
             gamedatas.pax[double.id] = double;
             this.renderPax(double);
@@ -145,10 +148,12 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     format_string_recursive(log, args) {
       if (log && args && !args.processed) {
         for (const k in args) {
+          // TODO why does this break the chat?
+          // if (typeof args[k] == "object" && args[k].log && args[k].args && !args[k].args.processed) {
+          //   args[k] = this.format_string_recursive(args[k].log, args[k].args);
+          // }
           if (k == "alliance") {
             args[k] = `<span class="nbtag alliance-${args[k]}"><i class="icon logo-${args[k]}"></i> ${args[k]}</span>`;
-          } else if (k == "anger") {
-            args[k] = `<span class="nbtag anger-${args[k]}"><i class="icon anger-${args[k]}"></i> ${args[k]}</span>`;
           } else if (k == "cash") {
             args[k] = `<span class="nbtag cash"><i class="icon cash"></i> ${args[k]}</span>`;
           } else if (k == "complaint") {
@@ -161,7 +166,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
             args[k] = `<span class="nbtag ${args.tempIcon}"><i class="icon ${args.tempIcon}"></i> ${args[k]}</span>`;
           } else if (k == "vip") {
             args[k] = `<span class="nbtag vip"><i class="icon vipstar"></i> ${args[k]}</span>`;
-          } else if (k == "location" || k == "route" || k == "routeFast" || k == "routeSlow") {
+          } else if (k == "location" || k == "routeFast" || k == "routeSlow") {
             // Generic "bold" text
             args[k] = `<b>${args[k]}</b>`;
           }
@@ -437,7 +442,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
             sound = true;
           }
           this.renderPax(pax);
-          if (pax.vip?.vip == "DOUBLE") {
+          if (pax.vipInfo?.key == "DOUBLE") {
             const double = { ...pax, id: pax.id * -1, cash: 0 };
             this.gamedatas.pax[double.id] = double;
             this.renderPax(double);
@@ -676,12 +681,15 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
         const nbrange = document.getElementById("nbrange");
         nbrange.addEventListener("input", (ev) => {
-          this.scaleEl.style.width = `${nbrange.value}%`;
-          this.resizeMap();
-          try {
-            localStorage.setItem("nowboarding.scale", nbrange.value);
-          } catch (e) {
-            // Local storage unavailable
+          const scaleEl = document.getElementById("nbscale");
+          if (scaleEl) {
+            scaleEl.style.width = `${nbrange.value}%`;
+            this.resizeMap();
+            try {
+              localStorage.setItem("nowboarding.scale", nbrange.value);
+            } catch (e) {
+              // Local storage unavailable
+            }
           }
         });
         try {
@@ -1120,21 +1128,29 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
       if (pax.status == "SECRET") {
         paxEl.classList.add("is-secret");
-        angerIconEl.classList.add("question");
-        angerCountEl.textContent = "-";
         destinationEl.textContent = "???";
       } else {
         paxEl.classList.remove("is-secret");
         cashEl.textContent = `$${pax.cash}`;
         destinationEl.textContent = pax.destination;
-        this.swapClass(angerEl, "anger-", `anger-${pax.anger}`);
-        this.swapClass(angerIconEl, ["question", "anger-"], `anger-${pax.anger}`);
-        angerCountEl.textContent = pax.anger;
       }
-      if (pax.vip) {
+      this.swapClass(angerEl, "anger-", `anger-${pax.anger}`);
+      this.swapClass(angerIconEl, "anger-", `anger-${pax.anger}`);
+      angerCountEl.textContent = pax.anger;
+      if (pax.vipInfo) {
         paxEl.classList.add("is-vip");
-        paxEl.title = _(pax.vip.name) + ": " + _(pax.vip.desc);
-        vipEl.innerHTML = '<i class="icon vipstar"></i>' + _(pax.vip.name);
+        let vipName = _(pax.vipInfo.name);
+        let vipDesc = _(pax.vipInfo.name) + ": " + _(pax.vipInfo.desc);
+        if (pax.vipInfo.args) {
+          vipName = this.format_string_recursive(vipName, pax.vipInfo.args);
+          vipDesc = this.format_string_recursive(vipDesc, pax.vipInfo.args);
+        }
+        paxEl.title = vipDesc;
+        vipEl.innerHTML = '<i class="icon vipstar"></i>' + vipName;
+      } else {
+        paxEl.classList.remove("is-vip");
+        paxEl.title = null;
+        vipEl.innerHTML = "";
       }
 
       // Move the pax (if necessary)

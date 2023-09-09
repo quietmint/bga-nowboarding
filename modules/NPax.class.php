@@ -48,13 +48,30 @@ class NPax extends APP_GameClass implements JsonSerializable
             'origin' => $this->origin,
             'playerId' => $this->playerId,
             'status' => $this->status,
-            'vip' => $this->vip ? N_REF_VIP[$this->vip] + ['vip' => $this->vip] : null,
+            'vipInfo' => $this->getVipInfo(),
         ];
     }
 
     public function getPlayerIdSql(): string
     {
         return $this->playerId ?? 'NULL';
+    }
+
+    public function getVipInfo(): ?array
+    {
+        $vip = null;
+        if ($this->vip != null) {
+            $parts = explode('_', $this->vip);
+            $vip = N_REF_VIP[$parts[0]];
+            $vip['key'] = $parts[0];
+            if (count($parts) > 1) {
+                unset($parts[0]);
+                $vip['args'] = $parts;
+            } else {
+                $vip['args'] = null;
+            }
+        }
+        return $vip;
     }
 
     public function resetAnger(): void

@@ -66,13 +66,9 @@
   order: 40;
 }
 
-.manifest-spacer {
+#manifest-spacer {
   order: 99;
   width: calc((var(--map-width) - 980px) * 0.25);
-
-  .map23 & {
-    display: none;
-  }
 }
 
 .manifest {

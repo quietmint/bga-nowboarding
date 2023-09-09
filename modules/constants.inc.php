@@ -26,6 +26,11 @@ define('N_REF_BGA_CLOCK_UNLIMITED', [9, 20]);
 // Game options
 define('N_OPTION_TIMER', 100);
 define('N_OPTION_VIP', 101);
+define('N_OPTION_VIP_COUNT', 111);
+define('N_OPTION_VIP_SET', 112);
+define('N_VIP_FOWERS', 1);
+define('N_VIP_BGA', 2);
+define('N_VIP_ALL', 3);
 define('N_OPTION_MAP', 110);
 define('N_MAP_JFK', 1);
 define('N_MAP_SEA', 2);
@@ -77,6 +82,29 @@ define('N_REF_HOUR_PAX', [
     5 => ['MORNING' => 12, 'NOON' => 30, 'NIGHT' => 24],
 ]);
 
+define('N_REF_HOUR_ROUND', [
+    2 => [
+        'MORNING' => N_REF_HOUR_PAX[2]['MORNING'] / 1, // 3 rounds
+        'NOON' => N_REF_HOUR_PAX[2]['NOON'] / 2, // 5 rounds
+        'NIGHT' => N_REF_HOUR_PAX[2]['NIGHT'] / 3, // 9 rounds
+    ],
+    3 => [
+        'MORNING' => N_REF_HOUR_PAX[3]['MORNING'] / 2, // 3 rounds
+        'NOON' => N_REF_HOUR_PAX[3]['NOON'] / 3, // 5 rounds
+        'NIGHT' => N_REF_HOUR_PAX[3]['NIGHT'] / 4, // 8 rounds
+    ],
+    4 => [
+        'MORNING' => N_REF_HOUR_PAX[4]['MORNING'] / 3, // 4 rounds
+        'NOON' => N_REF_HOUR_PAX[4]['NOON'] / 4, // 5 rounds
+        'NIGHT' => N_REF_HOUR_PAX[4]['NIGHT'] / 5, // 7 rounds
+    ],
+    5 => [
+        'MORNING' => N_REF_HOUR_PAX[5]['MORNING'] / 4, // 3 rounds
+        'NOON' => N_REF_HOUR_PAX[5]['NOON'] / 5, // 6 rounds
+        'NIGHT' => N_REF_HOUR_PAX[5]['NIGHT'] / 6, // 4 rounds
+    ],
+]);
+
 define('N_REF_MSG', [
     'addPax' => clienttranslate('${count} passengers arrive at ${location}'),
     'alliance' => clienttranslate('${player_name} joins alliance ${alliance}'),
@@ -93,17 +121,17 @@ define('N_REF_MSG', [
     'hour' => clienttranslate('${hourDesc} round ${round} of ${total} begins'),
     'hourFinale' => clienttranslate('${hourDesc} begins with ${count} undelivered passengers remaining'),
     'hourVip' => clienttranslate('VIP: ${count} VIPs must be accepted during ${hourDesc}'),
-    'move' => clienttranslate('${player_name} flys ${fuel} moves'),
-    'movePort' => clienttranslate('${player_name} flys ${fuel} moves to ${location}'),
+    'move' => clienttranslate('${player_name} flies ${fuel} moves'),
+    'movePort' => clienttranslate('${player_name} flies ${fuel} moves to ${location}'),
     'seat' => clienttranslate('${player_name} upgrades seats to ${seat}'),
     'speed' => clienttranslate('${player_name} upgrades speed to ${speed}'),
     'temp' => clienttranslate('${player_name} purchases ${temp}'),
     'tempUsed' => clienttranslate('${player_name} uses ${temp}'),
     'tempUnused' => clienttranslate('${player_name} didn\'t use ${temp} last round, so it is unavailable for purchase'),
     'undo' => clienttranslate('${player_name} restarts their turn'),
-    'vip' => clienttranslate('VIP: A new passenger at ${location} is ${vip} (${desc})'),
     'vipAccept' => clienttranslate('${player_name} accepts a VIP passenger this round'),
     'vipDecline' => clienttranslate('${player_name} declines a VIP passenger this round'),
+    'vipWelcome' => clienttranslate('VIP: ${location} welcomes ${vip} (${desc})'),
     'weather' => clienttranslate('Weather forecast: Storms slow travel between ${routeSlow} while tailwinds speed travel between ${routeFast}'),
 ]);
 
@@ -137,46 +165,201 @@ define('N_REF_SPEED_COST', [
     9 => 15
 ]);
 
+define(
+    'N_REF_FARE',
+    [
+        'ATL' => [
+            'DEN' => 2,
+            'DFW' => 2,
+            'JFK' => 2,
+            'LAX' => 4,
+            'MIA' => 1,
+            'ORD' => 2,
+            'SEA' => 4,
+            'SFO' => 4,
+        ],
+        'DEN' => [
+            'ATL' => 2,
+            'DFW' => 2,
+            'JFK' => 3,
+            'LAX' => 2,
+            'MIA' => 3,
+            'ORD' => 2,
+            'SEA' => 2,
+            'SFO' => 2,
+        ],
+        'DFW' => [
+            'ATL' => 2,
+            'DEN' => 2,
+            'JFK' => 3,
+            'LAX' => 2,
+            'MIA' => 2,
+            'ORD' => 3,
+            'SEA' => 3,
+            'SFO' => 3,
+        ],
+        'JFK' => [
+            'ATL' => 2,
+            'DEN' => 3,
+            'DFW' => 3,
+            'LAX' => 5,
+            'MIA' => 3,
+            'ORD' => 2,
+            'SEA' => 3,
+            'SFO' => 4,
+        ],
+        'LAX' => [
+            'ATL' => 4,
+            'DEN' => 2,
+            'DFW' => 2,
+            'JFK' => 5,
+            'MIA' => 3,
+            'ORD' => 3,
+            'SEA' => 3,
+            'SFO' => 1,
+        ],
+        'MIA' => [
+            'ATL' => 1,
+            'DEN' => 3,
+            'DFW' => 2,
+            'JFK' => 3,
+            'LAX' => 3,
+            'ORD' => 3,
+            'SEA' => 5,
+            'SFO' => 4,
+        ],
+        'ORD' => [
+            'ATL' => 2,
+            'DEN' => 2,
+            'DFW' => 3,
+            'JFK' => 2,
+            'LAX' => 3,
+            'MIA' => 3,
+            'SEA' => 2,
+            'SFO' => 3,
+        ],
+        'SEA' => [
+            'ATL' => 4,
+            'DEN' => 2,
+            'DFW' => 3,
+            'JFK' => 3,
+            'LAX' => 3,
+            'MIA' => 5,
+            'ORD' => 2,
+            'SFO' => 2,
+        ],
+        'SFO' => [
+            'ATL' => 4,
+            'DEN' => 2,
+            'DFW' => 3,
+            'JFK' => 4,
+            'LAX' => 1,
+            'MIA' => 4,
+            'ORD' => 3,
+            'SEA' => 2,
+        ],
+    ]
+);
+
 define('N_REF_VIP', [
+    // Fowers VIPs
     'BABY' => [
         'name' => clienttranslate('Crying Baby'),
-        'desc' => clienttranslate('Other pasengers at their airport gain 2 anger per turn'),
+        'desc' => clienttranslate('Other passengers at their airport gain 2 anger per turn'),
         'hours' => ['MORNING', 'NOON'],
+        'set' => N_VIP_FOWERS,
     ],
     'CELEBRITY' => [
         'name' => clienttranslate('Celebrity'),
         'desc' => clienttranslate('Must fly alone'),
         'hours' => ['NIGHT'],
+        'set' => N_VIP_FOWERS,
     ],
     'DIRECT' => [
         'name' => clienttranslate('Direct Flight'),
         'desc' => clienttranslate('Only deplanes at their destination'),
         'hours' => ['NIGHT'],
+        'set' => N_VIP_FOWERS,
     ],
     'DOUBLE' => [
         'name' => clienttranslate('Captured Fugitive'),
         'desc' => clienttranslate('Requires 2 seats'),
         'hours' => ['NOON'],
+        'set' => N_VIP_FOWERS,
     ],
     'FIRST' => [
         'name' => clienttranslate('First In Line'),
         'desc' => clienttranslate('Must board before other passengers at their airport'),
         'hours' => ['NOON'],
+        'set' => N_VIP_FOWERS,
     ],
     'GRUMPY' => [
         'name' => clienttranslate('Grumpy'),
         'desc' => clienttranslate('Starts at 1 anger'),
         'hours' => ['NIGHT'],
+        'set' => N_VIP_FOWERS,
     ],
     'IMPATIENT' => [
         'name' => clienttranslate('Impatient'),
         'desc' => clienttranslate('Anger never resets'),
         'hours' => ['MORNING'],
+        'set' => N_VIP_FOWERS,
     ],
     'NERVOUS' => [
         'name' => clienttranslate('Nervous'),
         'desc' => clienttranslate('Cannot fly through weather'),
         'hours' => ['MORNING'],
+        'set' => N_VIP_FOWERS,
+    ],
+
+    // BGA Community VIPs
+    'CREW' => [
+        'name' => clienttranslate('Deadhead Crew'),
+        'desc' => clienttranslate('Pays nothing but never gains anger'),
+        'hours' => ['NOON', 'NIGHT'],
+        'set' => N_VIP_BGA,
+    ],
+    'DISCOUNT' => [
+        'name' => clienttranslate('Discount'),
+        'desc' => clienttranslate('Pays a reduced fare'),
+        'hours' => ['MORNING', 'NOON'],
+        'set' => N_VIP_BGA,
+    ],
+    'LATE' => [
+        'name' => clienttranslate('Late Connection'),
+        'desc' => clienttranslate('Boarding consumes 1 speed'),
+        'hours' => ['MORNING', 'NOON'],
+        'set' => N_VIP_BGA,
+    ],
+    'LAST' => [
+        'name' => clienttranslate('Basic Economy'),
+        'desc' => clienttranslate('Must board after other passengers at their airport'),
+        'hours' => ['NOON'],
+        'set' => N_VIP_BGA,
+    ],
+    'LOYAL' => [
+        'name' => clienttranslate('${1} Loyalist'),
+        'desc' => clienttranslate('Only flies on planes in the ${1} alliance'),
+        'hours' => ['NOON', 'NIGHT'],
+        'set' => N_VIP_BGA,
+    ],
+    'MYSTERY' => [
+        'name' => clienttranslate('Mystery Shopper'),
+        'desc' => clienttranslate('Destination remains secret until boarding'),
+        'hours' => ['MORNING', 'NOON', 'NIGHT'],
+        'set' => N_VIP_BGA,
+    ],
+    'RETURN' => [
+        'name' => clienttranslate('Round-Trip'),
+        'desc' => clienttranslate('Pays nothing for the first leg, then reappears for the reverse leg and pays double'),
+        'hours' => ['MORNING', 'NOON'],
+        'set' => N_VIP_BGA,
+    ],
+    'STORM' => [
+        'name' => clienttranslate('Climate Scientist'),
+        'desc' => clienttranslate('Must fly through a storm'),
+        'hours' => ['MORNING', 'NOON'],
+        'set' => N_VIP_BGA,
     ],
 ]);
 

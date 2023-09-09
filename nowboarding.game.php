@@ -140,20 +140,60 @@ class NowBoarding extends Table
         $this->DbQuery("INSERT INTO `weather` (`hour`, `location`, `token`) SELECT 'FINALE', `location`, `token` FROM `weather` WHERE `hour` = 'NIGHT'");
     }
 
-    private function setupVips(int $playerCount): void
+    public function setupVips(int $playerCount): void
     {
+        // Select a random VIP for every round
+        // Limit each VIP to 2 instances
+        $vipSet = $this->getGlobal(N_OPTION_VIP_SET) ?? N_VIP_FOWERS;
+        $possibleByHour = [
+            'MORNING' => [],
+            'NOON' => [],
+            'NIGHT' => [],
+        ];
+        foreach (N_REF_VIP as $key => $vip) {
+            if ($vipSet == N_VIP_ALL || $vipSet == $vip['set']) {
+                $hour1 = $vip['hours'][array_rand($vip['hours'])];
+                $possibleByHour[$hour1][] = $key;
+                $hour2 = $vip['hours'][array_rand($vip['hours'])];
+                $possibleByHour[$hour2][] = $key;
+            }
+        }
+        foreach ($possibleByHour as $hour => &$keys) {
+            shuffle($keys);
+            $rounds = N_REF_HOUR_ROUND[$playerCount][$hour];
+            if (count($keys) > $rounds) {
+                array_splice($keys, $rounds);
+            }
+        }
+        unset($keys);
+
+        // Determine how many we need
         $vipCount = $playerCount + 2;
-        $vips = array_rand(N_REF_VIP, $vipCount);
+        if ($this->getGlobal(N_OPTION_VIP_COUNT) == 2) {
+            $vipMax = N_REF_HOUR_ROUND[$playerCount]['MORNING'] +
+                N_REF_HOUR_ROUND[$playerCount]['NOON'] +
+                N_REF_HOUR_ROUND[$playerCount]['NIGHT'];
+            $vipCount = min($vipCount * 2, $vipMax);
+        }
+
+        // Select the desired number of VIPs
         $vipsByHour = [
             'MORNING' => [],
             'NOON' => [],
             'NIGHT' => [],
         ];
-        foreach ($vips as $key) {
-            $vip = N_REF_VIP[$key];
-            $hour = $vip['hours'][array_rand($vip['hours'])];
+        for ($i = 0; $i < $vipCount; $i++) {
+            $hour = array_rand($possibleByHour);
+            $index = array_rand($possibleByHour[$hour]);
+            $key = $possibleByHour[$hour][$index];
+            array_splice($possibleByHour[$hour], $index, 1);
+            if (empty($possibleByHour[$hour])) {
+                unset($possibleByHour[$hour]);
+            }
             $vipsByHour[$hour][] = $key;
         }
+
+        // Save the results
         foreach ($vipsByHour as $hour => $keys) {
             $this->setVar("vip$hour", $keys);
             $this->setStat(count($keys), "vip$hour");
@@ -522,22 +562,90 @@ class NowBoarding extends Table
         $msg = '';
         $args = [];
         $pax = $this->getPaxByStatus('SECRET');
+        $vipNew = $this->getVarInt('vipNew');
         foreach ($pax as $x) {
+            if ($x->vip == 'MYSTERY') {
+                continue;
+            }
             $x->status = 'PORT';
-            $this->DbQuery("UPDATE `pax` SET `status` = 'PORT' WHERE `pax_id` = {$x->id}");
-            if ($x->vip) {
-                $msg = N_REF_MSG['vip'];
-                $args['desc'] = N_REF_VIP[$x->vip]['desc'];
-                $args['vip'] = N_REF_VIP[$x->vip]['name'];
-                $args['location'] = $x->location;
 
-                // VIP Double
-                // Create the fugitive
+            if ($vipNew) {
+                // Make them a VIP
+                $vipNew = 0;
+                $this->setVar('vipNew', 0);
+                $hourInfo = $this->getHourInfo();
+                $key = "vip" . $hourInfo['hour'];
+                $hourVips = $this->getVarArray($key);
+                $nextVip = array_pop($hourVips);
+                if (!$nextVip) {
+                    throw new BgaVisibleSystemException("stReveal: No VIP exists [???]");
+                }
+                $this->setVar($key, $hourVips);
+                $x->vip = $nextVip;
+
+                // Apply starting conditions
                 if ($x->vip == 'DOUBLE') {
+                    // VIP Double
+                    // Create the fugitive
                     $doubleId = $x->id * -1;
                     $this->DbQuery("INSERT INTO `pax` (`pax_id`, `cash`, `destination`, `location`, `optimal`, `origin`, `status`, `vip`) VALUES ($doubleId, 0, '{$x->destination}', '{$x->location}', {$x->optimal}, '{$x->origin}', '{$x->status}', '{$x->vip}')");
+                } else if ($x->vip == 'GRUMPY') {
+                    // VIP Grumpy
+                    // Starts at 1 anger
+                    $x->anger = 1;
+                    $this->DbQuery("UPDATE `pax` SET `anger` = {$x->anger} WHERE `pax_id` = {$x->id}");
+                } else if ($x->vip == 'CREW' || $x->vip == 'DISCOUNT' || $x->vip == 'RETURN') {
+                    // VIP Crew/Discount/Return
+                    // Reduce the fare
+                    $x->cash = $x->vip == 'DISCOUNT' ? floor($x->cash / 2) : 0;
+                    $this->DbQuery("UPDATE `pax` SET `cash` = {$x->cash} WHERE `pax_id` = {$x->id}");
+                } else if ($x->vip == 'LOYAL') {
+                    // VIP Loyal
+                    // Choose an alliance
+                    $possibleAlliances = [];
+                    if (array_key_exists($x->origin, N_REF_ALLIANCE_COLOR)) {
+                        $possibleAlliances[] = $x->origin;
+                    } else if (array_key_exists($x->destination, N_REF_ALLIANCE_COLOR)) {
+                        $possibleAlliances[] = $x->destination;
+                    }
+                    if (empty($possibleAlliances)) {
+                        $possibleAlliances = ['ATL', 'DFW', 'LAX', 'ORD'];
+                        $playerCount = $this->getPlayersNumber();
+                        $optionMap = $this->getGlobal(N_OPTION_MAP);
+                        if ($playerCount >= 4 || $optionMap == N_MAP_SEA) {
+                            // Include SEA with 4+ players
+                            $possibleAlliances[] = 'SEA';
+                        }
+                    }
+                    $alliance = $possibleAlliances[array_rand($possibleAlliances)];
+                    $x->vip = "LOYAL_$alliance";
+                } else if ($x->vip == 'MYSTERY') {
+                    // VIP Mystery
+                    // Do not flip
+                    $x->status = 'SECRET';
                 }
+                $this->DbQuery("UPDATE `pax` SET `vip` = '{$x->vip}' WHERE `pax_id` = {$x->id}");
+
+                // Notification message
+                $msg = N_REF_MSG['vipWelcome'];
+                $vipInfo = $x->getVipInfo();
+                if ($vipInfo['args']) {
+                    $args['desc'] = [
+                        'log' => $vipInfo['desc'],
+                        'args' => $vipInfo['args'],
+                    ];
+                    $args['vip'] = [
+                        'log' => $vipInfo['name'],
+                        'args' => $vipInfo['args'],
+                    ];
+                } else {
+                    $args['desc'] = $vipInfo['desc'];
+                    $args['vip'] = $vipInfo['name'];
+                }
+                $args['location'] = $x->location;
             }
+
+            $this->DbQuery("UPDATE `pax` SET `status` = '{$x->status}' WHERE `pax_id` = {$x->id}");
         }
         $args['pax'] = array_values($pax);
         $this->notifyAllPlayers('pax', $msg, $args);
@@ -905,39 +1013,18 @@ class NowBoarding extends Table
     public function vip(bool $accept): void
     {
         $this->checkAction('vip');
-        if ($this->hasVipNew() == $accept) {
-            throw new BgaVisibleSystemException("vip: No change [???]");
-        }
-
-        $playerId = $this->getCurrentPlayerId();
-        $playerName = $this->getCurrentPlayerName();
         $hourInfo = $this->getHourInfo();
         $key = "vip" . $hourInfo['hour'];
         $hourVips = $this->getVarArray($key);
-        if ($accept) {
-            $newVip = array_pop($hourVips);
-            if (!$newVip) {
-                throw new BgaVisibleSystemException("vip: No VIP to accept");
-            }
-            // VIP Grumpy
-            $anger = $newVip == 'GRUMPY' ? 1 : 0;
-            $this->DbQuery("UPDATE `pax` SET `anger` = $anger, `vip` = '$newVip' WHERE `status` = 'SECRET' ORDER BY RAND() LIMIT 1");
-            $this->setVar($key, $hourVips);
-            $msg = N_REF_MSG['vipAccept'];
-        } else {
-            $newVip = $this->getUniqueValueFromDB("SELECT `vip` FROM `pax` WHERE `status` = 'SECRET' AND `vip` IS NOT NULL");
-            if (!$newVip) {
-                throw new BgaVisibleSystemException("vip: No VIP to decline");
-            }
-            $hourVips[] = $newVip;
-            $this->DbQuery("UPDATE `pax` SET `anger` = 0, `vip` = NULL WHERE `status` = 'SECRET'");
-            $this->setVar($key, $hourVips);
-            $msg = N_REF_MSG['vipDecline'];
+        if ($accept && empty($hourVips)) {
+            throw new BgaVisibleSystemException("vip: No VIP to accept [???]");
         }
+        $this->setVar('vipNew', $accept ? 1 : 0);
 
         $hourInfo = $this->getHourInfo();
-        $hourInfo['player_id'] = $playerId;
-        $hourInfo['player_name'] = $playerName;
+        $hourInfo['player_id'] = $this->getCurrentPlayerId();
+        $hourInfo['player_name'] = $this->getCurrentPlayerName();
+        $msg = $accept ? N_REF_MSG['vipAccept'] : N_REF_MSG['vipDecline'];
         $this->notifyAllPlayers('hour', $msg, $hourInfo);
     }
 
@@ -1005,16 +1092,7 @@ class NowBoarding extends Table
         $plane->speedRemain -= $move->fuel;
         $plane->speedPenalty = $move->penalty;
         if ($plane->speedRemain == -1 && $plane->tempSpeed) {
-            $plane->tempSpeed = false;
-            $this->DbQuery("UPDATE `plane` SET `temp_speed` = 0 WHERE `player_id` = {$plane->id}");
-            $this->notifyAllPlayers('message', N_REF_MSG['tempUsed'], [
-                'i18n' => ['temp'],
-                'preserve' => ['tempIcon'],
-                'player_id' => $plane->id,
-                'player_name' => $plane->name,
-                'temp' => clienttranslate('Temporary Speed'),
-                'tempIcon' => 'speed',
-            ]);
+            $this->useTempSpeed($plane);
         } else if ($plane->speedRemain < 0) {
             throw new BgaVisibleSystemException("move: $plane not enough fuel to reach $location with speedRemain={$plane->speedRemain}, tempSpeed={$plane->tempSpeed} [???]");
         }
@@ -1026,14 +1104,31 @@ class NowBoarding extends Table
         $this->incStat($move->fuel, 'moves');
         $this->incStat($move->fuel, 'moves', $playerId);
         array_shift($move->path);
+        $hasStorm = false;
         foreach ($move->path as $location) {
             if (strlen($location) == 3) {
                 $this->incStat(1, $location, $playerId);
             }
             if (array_key_exists($location, $map->weather)) {
                 $type = $map->weather[$location];
+                if ($type == 'SLOW') {
+                    $hasStorm = true;
+                }
                 $this->incStat(1, "moves$type");
                 $this->incStat(1, "moves$type", $playerId);
+            }
+        }
+
+        // VIP Storm
+        // Remove the VIP condition after flying through a storm
+        if ($hasStorm) {
+            $stormIds = array_map('intval', $this->getObjectListFromDB("SELECT `pax_id` FROM `pax` WHERE `status` = 'SEAT' AND `player_id` = {$plane->id} AND `vip` = 'STORM'", true));
+            if (!empty($stormIds)) {
+                $this->DbQuery("UPDATE `pax` SET `vip` = NULL WHERE `pax_id` IN (" . join(',', $stormIds) . ")");
+                $pax = $this->getPaxByIds($stormIds);
+                $this->notifyAllPlayers('pax', '', [
+                    'pax' => array_values($pax),
+                ]);
             }
         }
 
@@ -1049,6 +1144,20 @@ class NowBoarding extends Table
 
         $this->awakenSnoozers($playerId);
         $this->gamestate->nextPrivateState($plane->id, 'flyPrivate');
+    }
+
+    public function useTempSpeed(NPlane &$plane): void
+    {
+        $plane->tempSpeed = false;
+        $this->DbQuery("UPDATE `plane` SET `temp_speed` = 0 WHERE `player_id` = {$plane->id}");
+        $this->notifyAllPlayers('message', N_REF_MSG['tempUsed'], [
+            'i18n' => ['temp'],
+            'preserve' => ['tempIcon'],
+            'player_id' => $plane->id,
+            'player_name' => $plane->name,
+            'temp' => clienttranslate('Temporary Speed'),
+            'tempIcon' => 'speed',
+        ]);
     }
 
     public function board(int $paxId): void
@@ -1093,11 +1202,12 @@ class NowBoarding extends Table
             $x = $this->getPaxById($paxId, true);
         }
 
+        $vipInfo = $x->getVipInfo();
         if ($this->getGlobal(N_OPTION_VIP)) {
             // VIP Celebrity
             // If this pax is a celebrity, the plane must be empty
-            if ($x->vip == 'CELEBRITY' && intval($this->getUniqueValueFromDB("SELECT COUNT(1) FROM `pax` WHERE `player_id` = {$plane->id} AND `status` = 'SEAT'")) > 0) {
-                $this->vipException('CELEBRITY');
+            if ($vipInfo && $vipInfo['key'] == 'CELEBRITY' && intval($this->getUniqueValueFromDB("SELECT COUNT(1) FROM `pax` WHERE `player_id` = {$plane->id} AND `status` = 'SEAT'")) > 0) {
+                $this->vipException($vipInfo);
             }
             // Or, if a celebrity is on board, no boarding
             if (intval($this->getUniqueValueFromDB("SELECT COUNT(1) FROM `pax` WHERE `player_id` = {$plane->id} AND `status` = 'SEAT' AND `vip` = 'CELEBRITY'")) > 0) {
@@ -1105,7 +1215,7 @@ class NowBoarding extends Table
             }
 
             // VIP First
-            // If anyone is first in list, this pax must be among them
+            // If anyone is first, this pax must be among them
             $firstList = $this->getObjectListFromDB("SELECT `pax_id` FROM `pax` WHERE `location` = '{$x->location}' AND `status` = 'PORT' AND `vip` = 'FIRST'", true);
             if (!empty($firstList) && !in_array($paxId, $firstList)) {
                 $this->vipException('FIRST');
@@ -1113,13 +1223,40 @@ class NowBoarding extends Table
 
             // VIP Double
             // Board the fugitive (must be BEFORE the real pax)
-            if ($x->vip == 'DOUBLE' && $x->id > 0) {
+            if ($vipInfo && $vipInfo['key'] == 'DOUBLE' && $x->id > 0) {
                 self::_board($plane, $x->id * -1);
                 $plane = $this->getPlaneById($plane->id);
             }
+
+            // VIP Last
+            // If this pax is last, the airport must be empty
+            if ($vipInfo && $vipInfo['key'] == 'LAST' && intval($this->getUniqueValueFromDB("SELECT COUNT(1) FROM `pax` WHERE `location` = '{$x->location}' AND `status` = 'PORT' AND COALESCE(`vip`, 'X') != 'LAST'")) > 0) {
+                $this->vipException($vipInfo);
+            }
+
+            // VIP Late
+            // Requires 1 speed
+            if ($vipInfo && $vipInfo['key'] == 'LATE') {
+                $plane->speedRemain -= 1;
+                if ($plane->speedRemain == -1 && $plane->tempSpeed) {
+                    $this->useTempSpeed($plane);
+                } else if ($plane->speedRemain < 0) {
+                    $this->vipException($vipInfo);
+                }
+                $this->DbQuery("UPDATE `plane` SET `speed_remain` = {$plane->speedRemain} WHERE `player_id` = {$plane->id}");
+            }
+
+            // VIP Loyal
+            // Requires specific alliance
+            if ($vipInfo && $vipInfo['key'] == 'LOYAL') {
+                $alliance = $vipInfo['args']['1'];
+                if (!in_array($alliance, $plane->alliances)) {
+                    $this->vipException($vipInfo);
+                }
+            }
         }
 
-        if ($x->status == 'PORT') {
+        if ($x->status == 'PORT' || ($x->status == 'SECRET' && $vipInfo && $vipInfo['key'] == 'MYSTERY')) {
             // Pickup from airport
             if (strlen($x->location) != 3) {
                 throw new BgaVisibleSystemException("board: $x location is not at an airport [???]");
@@ -1135,17 +1272,7 @@ class NowBoarding extends Table
             if (!$plane->tempSeat) {
                 $this->userException('noSeat');
             }
-            $plane->tempSeat = false;
-            $this->DbQuery("UPDATE `plane` SET `temp_seat` = 0 WHERE `player_id` = {$plane->id}");
-            $this->notifyAllPlayers('planes', N_REF_MSG['tempUsed'], [
-                'i18n' => ['temp'],
-                'preserve' => ['tempIcon'],
-                'planes' => [$plane],
-                'player_id' => $plane->id,
-                'player_name' => $plane->name,
-                'temp' => clienttranslate('Temporary Seat'),
-                'tempIcon' => 'seat',
-            ]);
+            $this->useTempSeat($plane);
         }
 
         // Note: Unlike physical game, we preserve anger until deplane
@@ -1166,6 +1293,21 @@ class NowBoarding extends Table
                 'player_name' => $plane->name,
             ] + $args);
         }
+    }
+
+    public function useTempSeat(NPlane &$plane): void
+    {
+        $plane->tempSeat = false;
+        $this->DbQuery("UPDATE `plane` SET `temp_seat` = 0 WHERE `player_id` = {$plane->id}");
+        $this->notifyAllPlayers('planes', N_REF_MSG['tempUsed'], [
+            'i18n' => ['temp'],
+            'preserve' => ['tempIcon'],
+            'planes' => [$plane],
+            'player_id' => $plane->id,
+            'player_name' => $plane->name,
+            'temp' => clienttranslate('Temporary Seat'),
+            'tempIcon' => 'seat',
+        ]);
     }
 
     public function deplane(int $paxId): void
@@ -1191,9 +1333,10 @@ class NowBoarding extends Table
             $this->userException('deplanePort');
         }
 
+        $vipInfo = $x->getVipInfo();
         // VIP Double
         // Deplane the fugitive (must be BEFORE the real pax)
-        if ($x->vip == 'DOUBLE' && $x->id > 0) {
+        if ($vipInfo && $vipInfo['key'] == 'DOUBLE' && $x->id > 0) {
             self::_deplane($plane, $x->id * -1);
         }
 
@@ -1211,6 +1354,12 @@ class NowBoarding extends Table
             'player_name' => $plane->name,
         ];
         if ($x->location == $x->destination) {
+            // VIP Storm
+            // Condition should be removed
+            if ($vipInfo && $vipInfo['key'] == 'STORM') {
+                $this->vipException($vipInfo);
+            }
+
             $msg = N_REF_MSG['deplaneDeliver'];
             $x->status = 'CASH';
             $args['cash'] = $x->cash;
@@ -1218,10 +1367,19 @@ class NowBoarding extends Table
             $this->incStat(1, 'pax');
             $this->incStat(1, 'pax', $plane->id);
             $this->incStat($x->cash, 'cash', $plane->id);
+
+            // VIP Return
+            // Create the round trip
+            if ($vipInfo && $vipInfo['key'] == 'RETURN' && $x->cash == 0) {
+                $cash = N_REF_FARE[$x->destination][$x->origin] * 2;
+                $this->DbQuery("INSERT INTO `pax` (`cash`, `destination`, `location`, `optimal`, `origin`, `status`, `vip`) VALUES ($cash, '{$x->origin}', '{$x->location}', {$x->optimal}, '{$x->destination}', 'PORT', '{$x->vip}')");
+                $newPax = $this->getPaxById($this->DbGetLastId());
+                $args['pax'][] = $newPax;
+            }
         } else {
             // VIP Direct
-            if ($x->vip == 'DIRECT') {
-                $this->vipException('DIRECT');
+            if ($vipInfo && $vipInfo['key'] == 'DIRECT') {
+                $this->vipException($vipInfo);
             }
             $x->playerId = null;
             $x->status = 'PORT';
@@ -1330,10 +1488,10 @@ class NowBoarding extends Table
 
             if ($this->getGlobal(N_OPTION_VIP)) {
                 $vips = $this->getVarArray("vip$hour");
-                $vipNew = $this->hasVipNew();
-                $vipRemain = count($vips);
+                $vipNew = $this->getVarInt("vipNew");
+                $vipRemain = count($vips) - $vipNew;
                 $hourInfo['vipNeed'] = !$vipNew && $vipRemain > 0 && $vipRemain >= ($total - $round + 1);
-                $hourInfo['vipNew'] = $vipNew;
+                $hourInfo['vipNew'] = $vipNew == 1;
                 $hourInfo['vipRemain'] = $vipRemain;
             }
         }
@@ -1598,23 +1756,36 @@ SQL);
         return $this->countPaxByStatus('COMPLAINT') + $this->getStat('complaintFinale') + $this->getStat('complaintVip');
     }
 
-    private function hasVipNew(): bool
-    {
-        return $this->getUniqueValueFromDB("SELECT 1 FROM `pax` WHERE `status` = 'SECRET' AND `vip` IS NOT NULL LIMIT 1") != null;
-    }
-
-    private function userException(string $msgExKey, ...$args): void
+    private function exceptionMsg(string $msgExKey, ...$args): string
     {
         $msg = self::_(N_REF_MSG_EX[$msgExKey]);
         if (!empty($args)) {
             $msg = sprintf($msg, ...$args);
         }
+        return $msg;
+    }
+
+    private function userException(string $msgExKey, ...$args): void
+    {
+        $msg = $this->exceptionMsg($msgExKey, $args);
         throw new BgaUserException($msg);
     }
 
-    private function vipException(string $type): void
+    private function vipException($vipInfo): void
     {
-        $this->userException('vip', self::_(N_REF_VIP[$type]['name']), self::_(N_REF_VIP[$type]['desc']));
+        if (!is_array($vipInfo)) { // string input
+            $vipInfo = [
+                'name' => N_REF_VIP[$vipInfo]['name'],
+                'desc' => N_REF_VIP[$vipInfo]['desc'],
+            ];
+        }
+        $msg = $this->exceptionMsg('vip', self::_($vipInfo['name']), self::_($vipInfo['desc']));
+        if ($vipInfo['args']) {
+            foreach ($vipInfo['args'] as $argKey => $argValue) {
+                $msg = str_replace('${' . $argKey . '}', $argValue, $msg);
+            }
+        }
+        throw new BgaUserException($msg);
     }
 
     private function getPaxWallet(int $playerId): array
@@ -1644,93 +1815,25 @@ SQL);
         $playerCount = count($planes);
         $optionMap = $this->getGlobal(N_OPTION_MAP);
         $airports = ['ATL', 'DEN', 'DFW', 'LAX', 'MIA', 'ORD', 'SFO'];
-        $pax = [
-            ['ATL', 'DEN', 2],
-            ['ATL', 'DFW', 2],
-            ['ATL', 'LAX', 4],
-            ['ATL', 'MIA', 1],
-            ['ATL', 'ORD', 2],
-            ['ATL', 'SFO', 4],
-            ['DEN', 'ATL', 2],
-            ['DEN', 'DFW', 2],
-            ['DEN', 'LAX', 2],
-            ['DEN', 'MIA', 3],
-            ['DEN', 'ORD', 2],
-            ['DEN', 'SFO', 2],
-            ['DFW', 'ATL', 2],
-            ['DFW', 'DEN', 2],
-            ['DFW', 'LAX', 2],
-            ['DFW', 'MIA', 2],
-            ['DFW', 'ORD', 3],
-            ['DFW', 'SFO', 3],
-            ['LAX', 'ATL', 4],
-            ['LAX', 'DEN', 2],
-            ['LAX', 'DFW', 2],
-            ['LAX', 'MIA', 3],
-            ['LAX', 'ORD', 3],
-            ['LAX', 'SFO', 1],
-            ['MIA', 'ATL', 1],
-            ['MIA', 'DEN', 3],
-            ['MIA', 'DFW', 2],
-            ['MIA', 'LAX', 3],
-            ['MIA', 'ORD', 3],
-            ['MIA', 'SFO', 4],
-            ['ORD', 'ATL', 2],
-            ['ORD', 'DEN', 2],
-            ['ORD', 'DFW', 3],
-            ['ORD', 'LAX', 3],
-            ['ORD', 'MIA', 3],
-            ['ORD', 'SFO', 3],
-            ['SFO', 'ATL', 4],
-            ['SFO', 'DEN', 2],
-            ['SFO', 'DFW', 3],
-            ['SFO', 'LAX', 1],
-            ['SFO', 'MIA', 4],
-            ['SFO', 'ORD', 3],
-        ];
         if ($playerCount >= 3 || $optionMap == N_MAP_JFK || $optionMap == N_MAP_SEA) {
             // Include JFK with 3+ players
             $airports[] = 'JFK';
-            array_push(
-                $pax,
-                ['ATL', 'JFK', 2],
-                ['DEN', 'JFK', 3],
-                ['DFW', 'JFK', 3],
-                ['JFK', 'ATL', 2],
-                ['JFK', 'DEN', 3],
-                ['JFK', 'DFW', 3],
-                ['JFK', 'LAX', 5],
-                ['JFK', 'MIA', 3],
-                ['JFK', 'ORD', 2],
-                ['JFK', 'SFO', 4],
-                ['LAX', 'JFK', 5],
-                ['MIA', 'JFK', 3],
-                ['ORD', 'JFK', 2],
-                ['SFO', 'JFK', 4],
-            );
         }
         if ($playerCount >= 4 || $optionMap == N_MAP_SEA) {
             // Include SEA with 4+ players
             $airports[] = 'SEA';
-            array_push(
-                $pax,
-                ['ATL', 'SEA', 4],
-                ['DEN', 'SEA', 2],
-                ['DFW', 'SEA', 3],
-                ['JFK', 'SEA', 3],
-                ['LAX', 'SEA', 3],
-                ['MIA', 'SEA', 5],
-                ['ORD', 'SEA', 2],
-                ['SEA', 'ATL', 4],
-                ['SEA', 'DEN', 2],
-                ['SEA', 'DFW', 3],
-                ['SEA', 'JFK', 3],
-                ['SEA', 'LAX', 3],
-                ['SEA', 'MIA', 5],
-                ['SEA', 'ORD', 2],
-                ['SEA', 'SFO', 2],
-                ['SFO', 'SEA', 2],
-            );
+        }
+
+        // Create possible passengers
+        $pax = [];
+        foreach (N_REF_FARE as $origin => $destinations) {
+            if (in_array($origin, $airports)) {
+                foreach ($destinations as $destination => $cash) {
+                    if (in_array($destination, $airports)) {
+                        $pax[] = [$origin, $destination, $cash];
+                    }
+                }
+            }
         }
         shuffle($pax);
 
@@ -1766,7 +1869,7 @@ SQL);
         // Create starting passenger in each airport
         foreach ($planes as $plane) {
             foreach ($pax as $k => $x) {
-                [$destination, $origin, $cash] = $x;
+                [$origin, $destination, $cash] = $x;
                 $opt = $optimal[$origin][$destination];
                 if ($origin == $plane->alliances[0]) {
                     $sql = "INSERT INTO `pax` (`cash`, `destination`, `location`, `optimal`, `origin`, `status`) VALUES ($cash, '$destination', '$origin', $opt, '$origin', 'PORT')";
@@ -1783,7 +1886,7 @@ SQL);
         foreach ($paxCounts as $status => $count) {
             $hourPax = array_splice($pax, $count * -1);
             foreach ($hourPax as $x) {
-                [$destination, $origin, $cash] = $x;
+                [$origin, $destination, $cash] = $x;
                 $opt = $optimal[$origin][$destination];
                 $sql = "INSERT INTO `pax` (`cash`, `destination`, `optimal`, `origin`, `status`) VALUES ($cash, '$destination', $opt, '$origin', '$status')";
                 $this->DbQuery($sql);
@@ -1815,10 +1918,9 @@ SQL);
     {
         foreach ($pax as $x) {
             if ($x->status == 'SECRET') {
-                // Don't display anger, destination, VIP
-                $x->anger = 0;
+                // Don't display cash or destination
+                $x->cash = 0;
                 $x->destination = null;
-                $x->vip = null;
             }
         }
         // VIP Double is never included (managed by client)
@@ -1842,7 +1944,7 @@ SQL);
 
     private function angerPax(): void
     {
-        $pax = $this->getPaxByStatus('PORT');
+        $pax = $this->getPaxByStatus(['SECRET', 'PORT']);
         if (!empty($pax)) {
             // VIP Baby
             $babyLocations = [];
@@ -1852,6 +1954,11 @@ SQL);
             $angerPax = [];
             $complaintPax = [];
             foreach ($pax as $x) {
+                if ($x->vip == 'CREW') {
+                    // VIP Crew
+                    // Never angry
+                    continue;
+                }
                 $increase = $x->vip != 'BABY' && in_array($x->location, $babyLocations) ? 2 : 1;
                 $x->anger += $increase;
                 if ($x->anger < 4) {
@@ -2029,26 +2136,10 @@ SQL);
 
         // Surrender temporary purchases
         if ($plane->tempSeat) {
-            $this->DbQuery("UPDATE `plane` SET `temp_seat` = 0 WHERE `player_id` = {$plane->id}");
-            $this->notifyAllPlayers('message', N_REF_MSG['tempUsed'], [
-                'i18n' => ['temp'],
-                'preserve' => ['tempIcon'],
-                'player_id' => $plane->id,
-                'player_name' => $plane->name,
-                'temp' => clienttranslate('Temporary Seat'),
-                'tempIcon' => 'seat',
-            ]);
+            $this->useTempSeat($plane);
         }
         if ($plane->tempSpeed) {
-            $this->DbQuery("UPDATE `plane` SET `temp_speed` = 0 WHERE `player_id` = {$plane->id}");
-            $this->notifyAllPlayers('message', N_REF_MSG['tempUsed'], [
-                'i18n' => ['temp'],
-                'preserve' => ['tempIcon'],
-                'player_id' => $plane->id,
-                'player_name' => $plane->name,
-                'temp' => clienttranslate('Temporary Speed'),
-                'tempIcon' => 'speed',
-            ]);
+            $this->useTempSpeed($plane);
         }
         if ($plane->tempSeat || $plane->tempSpeed) {
             $plane->tempSeat = false;

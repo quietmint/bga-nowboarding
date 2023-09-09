@@ -16,9 +16,7 @@
   <div id="nbmap" class="map">
     <div id="manifests-right" class="manifests"></div>
   </div>
-  <div id="manifests-bottom" class="manifests">
-    <div class="manifest-spacer"></div>
-  </div>
+  <div id="manifests-bottom" class="manifests"></div>
 </div>
 
 {OVERALL_GAME_FOOTER}
