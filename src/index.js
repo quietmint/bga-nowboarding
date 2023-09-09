@@ -146,12 +146,28 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
     /* @Override */
     format_string_recursive(log, args) {
-      if (log && args && !args.processed) {
+      if (log && args) {
+        // Translate log message
+        log = this.clienttranslate_string(log) || "";
+
+        // Translate args listed in i18n
+        if (args.i18n) {
+          for (const k of args.i18n) {
+            args[k] = this.clienttranslate_string(args[k]) || "";
+          }
+        }
+
+        // Format args with HTML
         for (const k in args) {
-          // TODO why does this break the chat?
-          // if (typeof args[k] == "object" && args[k].log && args[k].args && !args[k].args.processed) {
-          //   args[k] = this.format_string_recursive(args[k].log, args[k].args);
-          // }
+          if (k == "i18n") {
+            continue;
+          }
+
+          // Process nested objects recursively
+          if (args[k]?.log && args[k]?.args) {
+            args[k] = this.format_string_recursive(args[k].log, args[k].args);
+          }
+
           if (k == "alliance") {
             args[k] = `<span class="nbtag alliance-${args[k]}"><i class="icon logo-${args[k]}"></i> ${args[k]}</span>`;
           } else if (k == "cash") {
@@ -171,9 +187,11 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
             args[k] = `<b>${args[k]}</b>`;
           }
         }
-        args.processed = true;
+
+        // Finally apply string substitution
+        return dojo.string.substitute(log, args);
       }
-      return this.inherited(arguments);
+      return "";
     },
 
     /* @Override */
