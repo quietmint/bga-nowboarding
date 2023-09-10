@@ -86,6 +86,14 @@
   }
 }
 
+.spotlight.node {
+  border-radius: 50%;
+  height: 14%;
+  outline: 9999px solid rgb(0 0 0 / 50%);
+  width: 7%;
+  z-index: 30;
+}
+
 .move.node {
   cursor: pointer;
   font-size: calc(var(--map-width) * 0.02);

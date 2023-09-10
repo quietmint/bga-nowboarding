@@ -320,10 +320,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           flyTimer = null;
         }
         // Remove action bar countdown
-        const countdownEl = document.getElementById("nbcountdown");
-        if (countdownEl) {
-          countdownEl.remove();
-        }
+        document.getElementById("nbcountdown")?.remove();
         if (!this.gamedatas.noTimeLimit) {
           document.body.classList.remove("no_time_limit");
         }
@@ -808,10 +805,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       } else if (!plane.location && planeEl) {
         // Delete plane
         console.log(`❌ Delete plane ${plane.id}`);
-        const planeEl = this.getElement(`plane-${plane.id}`);
-        if (planeEl) {
-          planeEl.remove();
-        }
+        planeEl.remove();
         // Update panel
         this.swapClass(`overall_player_board_${plane.id}`, "panel-");
       }
@@ -834,12 +828,23 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
   <div class="nbtag speed" title="${_("Speed")}"><i class="icon speed"></i> <span id="gauge-speed-${plane.id}"></span></div>
   <div class="nbtag seat" title="${_("Seats")}"><i class="icon seat"></i> <span id="gauge-seat-${plane.id}"></span></div>
   <div class="nbtag cash" title="${_("Cash")}"><i class="icon cash"></i> <span id="gauge-cash-${plane.id}"></span></div>
+  <div class="nbtag gps" title="${_("Current Position")}" id="gauge-gps-${plane.id}"><i class="icon gps"></i></div>
 </div>
 <div id="board-${plane.id}" class="plane-board">
   <div id="alliances-${plane.id}" class="alliancelist"></div>
   <div id="paxlist-${plane.id}" class="paxlist is-plane"></div>
 </div>`
         );
+        // Also attach hover events for GPS spotlight
+        if (!document.body.classList.contains("mobile_version")) {
+          const gpsEl = document.getElementById(`gauge-gps-${plane.id}`);
+          gpsEl.addEventListener("mouseenter", (ev) => {
+            this.onEnterGps(plane.id);
+          });
+          gpsEl.addEventListener("mouseleave", (ev) => {
+            this.onLeaveGps(plane.id);
+          });
+        }
       }
       const gaugesEl = document.getElementById(`gauges-${plane.id}`);
 
@@ -880,6 +885,18 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       } else if (!plane.tempSeat && tempSeatEl) {
         tempSeatEl.remove();
       }
+    },
+
+    onEnterGps(planeId) {
+      const location = this.gamedatas.planes[planeId]?.location;
+      if (location) {
+        document.getElementById(`spotlight-plane`)?.remove();
+        this.mapEl.insertAdjacentHTML("beforeend", `<div id="spotlight-plane" class="spotlight node node-${location}"></div>`);
+      }
+    },
+
+    onLeaveGps(planeId) {
+      document.getElementById(`spotlight-plane`)?.remove();
     },
 
     renderPlaneManifest(plane) {
@@ -1272,10 +1289,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
     deleteTempSeat(plane) {
       console.log(`❌ Delete temporary seat for plane ${plane.id}`);
-      const slotEl = document.querySelector(`#paxlist-${plane.id} .paxslot.is-empty`);
-      if (slotEl) {
-        slotEl.remove();
-      }
+      document.querySelector(`#paxlist-${plane.id} .paxslot.is-empty`)?.remove();
     },
 
     renderBuys() {

@@ -127,7 +127,9 @@ html,
 
 #right-side {
   margin-left: -300px;
+  position: relative;
   width: 300px;
+  z-index: 50;
 }
 
 .logs_on_additional_column {
@@ -198,12 +200,16 @@ html,
   #player_boards {
     display: flex;
     flex-wrap: wrap;
-    justify-content: space-evenly;
+    justify-content: center;
   }
 
   .player-board {
     float: none;
     width: 319px;
+  }
+
+  .nbtag.gps {
+    display: none;
   }
 }
 
@@ -259,6 +265,10 @@ html,
     font-size: 150%;
     margin-right: 5px;
     flex: 0 0 auto;
+  }
+
+  &.gps .icon {
+    margin: 0;
   }
 
   .bb {
