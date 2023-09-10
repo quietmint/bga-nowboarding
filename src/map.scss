@@ -170,4 +170,14 @@
   &.hidespecial .specialtag {
     display: none;
   }
+
+  .log-flex-wrapper & {
+    align-self: center;
+    flex: 0 0 auto;
+    height: 3em;
+    margin-right: 10px;
+    position: relative;
+    transform: none;
+    width: 3em;
+  }
 }

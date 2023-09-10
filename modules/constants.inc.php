@@ -132,7 +132,8 @@ define('N_REF_MSG', [
     'vipAccept' => clienttranslate('${player_name} accepts a VIP passenger this round'),
     'vipDecline' => clienttranslate('${player_name} declines a VIP passenger this round'),
     'vipWelcome' => clienttranslate('VIP: ${location} welcomes ${vip} (${desc})'),
-    'weather' => clienttranslate('Weather forecast: Storms slow travel between ${routeSlow} while tailwinds speed travel between ${routeFast}'),
+    'weatherFAST' => clienttranslate('${hourDesc} weather forecast: Tailwinds speed travel between ${location}'),
+    'weatherSLOW' => clienttranslate('${hourDesc} weather forecast: Storms slow travel between ${location}'),
 ]);
 
 define('N_REF_MSG_EX', [
@@ -307,7 +308,7 @@ define('N_REF_VIP', [
     ],
     'NERVOUS' => [
         'name' => clienttranslate('Nervous'),
-        'desc' => clienttranslate('Cannot fly through weather'),
+        'desc' => clienttranslate('Cannot fly through storms or tailwinds'),
         'hours' => ['MORNING'],
         'set' => N_VIP_FOWERS,
     ],
@@ -357,7 +358,7 @@ define('N_REF_VIP', [
     ],
     'STORM' => [
         'name' => clienttranslate('Climate Scientist'),
-        'desc' => clienttranslate('Must fly through a storm'),
+        'desc' => clienttranslate('Must fly through a storm (a tailwind does not count)'),
         'hours' => ['MORNING', 'NOON'],
         'set' => N_VIP_BGA,
     ],

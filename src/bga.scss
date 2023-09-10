@@ -198,6 +198,7 @@ html,
   #player_boards {
     display: flex;
     flex-wrap: wrap;
+    justify-content: space-evenly;
   }
 
   .player-board {
@@ -212,19 +213,29 @@ html,
   margin: auto;
 }
 
-.gauges {
+.gauges,
+.alliancelist {
   display: flex;
   flex-wrap: wrap;
-  font-size: 15px;
+  font-size: 16px;
   gap: 5px;
   margin: 5px 0;
+}
+
+.alliancelist {
+  flex-direction: column;
+
+  .alliance {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
 }
 
 .nbtag {
   align-items: center;
   background-color: $color-neutral-700;
   border-radius: 4px;
-  box-shadow: 1px 1px rgb(0 0 0 / 0.5);
+  box-shadow: 2px 2px rgb(0 0 0 / 0.5);
   color: white;
   display: inline-flex;
   padding: 1px 6px;
@@ -251,12 +262,12 @@ html,
   }
 
   .bb {
-    font-size: 18px;
+    font-size: 125%;
     font-weight: bold;
   }
 
   .ss {
-    font-size: 13px;
+    font-size: 90%;
   }
 }
 
@@ -267,6 +278,10 @@ html,
   .icon {
     font-size: 18px;
   }
+}
+
+.log-flex-wrapper {
+  display: flex;
 }
 
 .nblabel {
@@ -300,18 +315,9 @@ html,
 
 .plane-board {
   display: flex;
+  justify-content: space-between;
+  margin-left: -3px;
   position: relative;
-  justify-content: space-evenly;
-
-  .gauges {
-    align-items: flex-start;
-    flex: 1 0 78px;
-    flex-direction: column;
-
-    .nbtag {
-      margin: 0;
-    }
-  }
 }
 
 .flyTimer {
@@ -328,15 +334,26 @@ html,
 }
 
 /* Chat */
+.desktop_version #chatbardock {
+  right: 293px;
+}
+
+.desktop_version.logs_on_additional_column #chatbardock {
+  right: 238px;
+}
+
+.chatwindowexpanded .dropshadow {
+  display: none;
+}
+
 .mobile_version.chatbar_ontop #chatbar_inner:before {
   background: $color-neutral-50;
 }
 
 .msgtime {
   position: static;
-  right: auto;
-  bottom: auto;
   font-size: 75%;
+  float: right;
 }
 
 .chatwindowlogs {
@@ -356,12 +373,29 @@ html,
   background: none;
 }
 
-.chatwindowlogs_zone .roundedbox.chatlog .roundedboxinner {
-  background: rgb(255 255 255 / 0.8);
-}
-
+.chatwindowlogs_zone .roundedbox.chatlog .roundedboxinner,
 .chatwindowlogs_zone .roundedbox.chatlog.ownchatlog .roundedboxinner {
-  background: color.change($color-neutral-300, $alpha: 0.8);
+  background: rgb(255 255 255 / 0.85);
+}
+.chatwindowlogs_zone .roundedbox.chatlog.chatlog-ATL .roundedboxinner {
+  background: color.change($color-green-200, $alpha: 0.85) !important;
+  color: black !important;
+}
+.chatwindowlogs_zone .roundedbox.chatlog.chatlog-DFW .roundedboxinner {
+  background: color.change($color-purple-200, $alpha: 0.85) !important;
+  color: black !important;
+}
+.chatwindowlogs_zone .roundedbox.chatlog.chatlog-LAX .roundedboxinner {
+  background: color.change($color-orange-200, $alpha: 0.85) !important;
+  color: black !important;
+}
+.chatwindowlogs_zone .roundedbox.chatlog.chatlog-ORD .roundedboxinner {
+  background: color.change($color-red-200, $alpha: 0.85) !important;
+  color: black !important;
+}
+.chatwindowlogs_zone .roundedbox.chatlog.chatlog-SEA .roundedboxinner {
+  background: color.change($color-blue-200, $alpha: 0.85) !important;
+  color: black !important;
 }
 
 #logs .timestamp,

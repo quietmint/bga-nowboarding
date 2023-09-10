@@ -1521,7 +1521,6 @@ class NowBoarding extends Table
             $hourInfo['count'] = $this->countPaxByStatus(['PORT', 'SEAT']);
             $this->notifyAllPlayers('hour', N_REF_MSG['hourFinale'], $hourInfo);
         } else {
-            $this->notifyAllPlayers('hour', N_REF_MSG['hour'], $hourInfo);
             if ($advance) {
                 // Weather speed penalty
                 $this->DbQuery("UPDATE `plane` SET `speed_penalty` = 0 WHERE `location` NOT IN (SELECT `location` FROM `weather` WHERE `hour` = '{$hourInfo['hour']}' AND `token` = 'SLOW')");
@@ -1533,20 +1532,35 @@ class NowBoarding extends Table
                 foreach ($weather as $location => $token) {
                     $desc[$token][] = substr($location, 0, 3) . "-" . substr($location, 3, 3);
                 }
-                $this->notifyAllPlayers('weather', N_REF_MSG['weather'], [
-                    'routeFast' => join(', ', $desc['FAST']),
-                    'routeSlow' => join(', ', $desc['SLOW']),
-                    'weather' => $weather,
+                $this->notifyAllPlayers('message', N_REF_MSG['weatherSLOW'], [
+                    'preserve' => ['wrapper', 'weatherIcon'],
+                    'i18n' => ['hourDesc'],
+                    'hourDesc' => $hourInfo['hourDesc'],
+                    'location' => join(', ', $desc['SLOW']),
+                    'weatherIcon' => 'SLOW',
+                    'wrapper' => 'weatherFlex',
                 ]);
+                $this->notifyAllPlayers('weather', N_REF_MSG['weatherFAST'], [
+                    'preserve' => ['wrapper', 'weatherIcon'],
+                    'i18n' => ['hourDesc'],
+                    'hourDesc' => $hourInfo['hourDesc'],
+                    'location' => join(', ', $desc['FAST']),
+                    'weather' => $weather,
+                    'weatherIcon' => 'FAST',
+                    'wrapper' => 'weatherFlex',
+                ]);
+            }
 
-                // Notify VIP count
-                if ($vip) {
-                    $this->notifyAllPlayers('message', N_REF_MSG['hourVip'], [
-                        'i18n' => ['hourDesc'],
-                        'count' => $hourInfo['vipRemain'],
-                        'hourDesc' => $hourInfo['hourDesc'],
-                    ]);
-                }
+            // Notify hour
+            $this->notifyAllPlayers('hour', N_REF_MSG['hour'], $hourInfo);
+
+            // Notify VIP count
+            if ($advance && $vip) {
+                $this->notifyAllPlayers('message', N_REF_MSG['hourVip'], [
+                    'i18n' => ['hourDesc'],
+                    'count' => $hourInfo['vipRemain'],
+                    'hourDesc' => $hourInfo['hourDesc'],
+                ]);
             }
         }
         return $hourInfo;

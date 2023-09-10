@@ -39,10 +39,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         }
       }
       this.resizeMap();
-      for (const location in gamedatas.map.weather) {
-        const token = gamedatas.map.weather[location];
-        this.createWeather(location, token);
-      }
+      this.renderWeather();
 
       // Setup planes
       if (gamedatas.planes) {
@@ -92,6 +89,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       dojo.subscribe("weather", this, "onNotify");
       this.notifqueue.setSynchronous("complaint", 2000);
       this.notifqueue.setSynchronous("flyTimer", 5500);
+      this.notifqueue.setSynchronous("weather", 2000);
 
       // Setup preferences
       this.setupPrefs();
@@ -174,6 +172,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
             args[k] = `<span class="nbtag cash"><i class="icon cash"></i> ${args[k]}</span>`;
           } else if (k == "complaint") {
             args[k] = `<span class="nbtag complaint"><i class="icon complaint"></i> ${args[k]}</span>`;
+          } else if (k == "location") {
+            args[k] = `<b>${args[k]}</b>`;
           } else if (k == "seat") {
             args[k] = `<span class="nbtag seat"><i class="icon seat"></i> ${args[k]}</span>`;
           } else if (k == "speed") {
@@ -182,9 +182,11 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
             args[k] = `<span class="nbtag ${args.tempIcon}"><i class="icon ${args.tempIcon}"></i> ${args[k]}</span>`;
           } else if (k == "vip") {
             args[k] = `<span class="nbtag vip"><i class="icon vipstar"></i> ${args[k]}</span>`;
-          } else if (k == "location" || k == "routeFast" || k == "routeSlow") {
-            // Generic "bold" text
-            args[k] = `<b>${args[k]}</b>`;
+          } else if (k == "wrapper") {
+            if (args[k] == "weatherFlex") {
+              const weatherIcon = `<div class="weather node"><i class="icon weather-${args.weatherIcon}"></i>` + (args.weatherIcon == "SLOW" ? '<div class="fuel">2</div>' : "") + "</div>";
+              log = `<div class="log-flex-wrapper">${weatherIcon}<div>${log}</div></div>`;
+            }
           }
         }
 
@@ -238,6 +240,21 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     collapseChatWindow() {
       this.inherited(arguments);
       dojo.query('meta[name="viewport"]')[0].content = this.computeViewport();
+    },
+
+    /* @Override */
+    onPlaceLogOnChannel(notif) {
+      const chatId = this.next_log_id;
+      const result = this.inherited(arguments);
+      if (result && chatId != this.next_log_id && this.gamedatas.planes && (notif.type == "chatmessage" || notif.type == "tablechat") && notif.args?.player_id) {
+        const chatEl = document.getElementById(`dockedlog_${chatId}`);
+        const chatPlane = this.gamedatas.planes[notif.args.player_id];
+        if (chatEl && chatPlane?.alliances?.length) {
+          // Color chat messages by plane alliance
+          chatEl.classList.add(`chatlog-${chatPlane.alliances[0]}`);
+        }
+      }
+      return result;
     },
 
     /* @Override */
@@ -485,11 +502,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       } else if (notif.type == "weather") {
         suppressSounds = ["yourturn"];
         playSound("nowboarding_plane");
-        this.deleteWeather();
-        for (const location in notif.args.weather) {
-          const token = notif.args.weather[location];
-          this.createWeather(location, token);
-        }
+        this.gamedatas.map.weather = notif.args.weather;
+        this.renderWeather();
       }
     },
 
@@ -722,7 +736,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       }
 
       const complaintTextEl = document.getElementById("nbcommon-complaint");
-      complaintTextEl.innerHTML = `<span class="${this.gamedatas.complaint > 0 ? "bb" : ""}">${this.gamedatas.complaint}</span>/3 ${_("Complaints")}`;
+      complaintTextEl.innerHTML = `<span class="${this.gamedatas.complaint > 0 ? "bb" : ""}">${this.gamedatas.complaint}</span>/3`;
       const hourEl = commonEl.querySelector(".hour");
       const hourIconEl = hourEl.querySelector(".icon");
       const hourTextEl = hourEl.querySelector("span");
@@ -735,6 +749,30 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       if (this.gamedatas.vip) {
         const vipTextEl = document.getElementById("nbcommon-vip");
         vipTextEl.textContent = this.gamedatas.hour.vipRemain || "0";
+      }
+    },
+
+    async renderWeather() {
+      const deletes = [];
+      document.querySelectorAll("#nbmap .weather").forEach((el) => {
+        deletes.push({
+          el: el,
+          promise: this.transitionElement(el, (el) => (el.style.opacity = "0")),
+        });
+      });
+      if (deletes.length) {
+        // Wait for delete animation
+        console.log(`❌ Delete weather`, deletes.length);
+        for (const d of deletes) {
+          await d.promise;
+          d.el.remove();
+        }
+      }
+
+      // Add new weather
+      for (const location in this.gamedatas.map.weather) {
+        const token = this.gamedatas.map.weather[location];
+        this.createWeather(location, token);
       }
     },
 
@@ -751,14 +789,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       this.mapEl.insertAdjacentHTML("beforeend", `<div id="weather-${location}" class="weather node node-${location}" title="${txt}" style="opacity: 0">${specialHtml}<i class="icon weather-${token}"></i>${fuel}</div>`);
       const el = document.getElementById(`weather-${location}`);
       this.transitionElement(el, (el) => (el.style.opacity = null));
-    },
-
-    deleteWeather() {
-      console.log(`❌ Delete weather`);
-      document.querySelectorAll("#nbmap .weather").forEach(async (el) => {
-        await this.transitionElement(el, (el) => (el.style.opacity = "0"));
-        el.remove();
-      });
     },
 
     renderPlane(plane) {
@@ -795,14 +825,26 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     },
 
     renderPlaneGauges(plane) {
-      let alliancesEl = document.getElementById(`alliances-${plane.id}`);
-      if (alliancesEl == null) {
+      let boardEl = document.getElementById(`board-${plane.id}`);
+      if (boardEl == null) {
         const parentEl = document.getElementById(`player_board_${plane.id}`);
-        parentEl.insertAdjacentHTML("beforeend", `<div id="alliances-${plane.id}" class="gauges"></div>`);
-        alliancesEl = document.getElementById(`alliances-${plane.id}`);
+        parentEl.insertAdjacentHTML(
+          "beforeend",
+          `<div id="gauges-${plane.id}" class="gauges">
+  <div class="nbtag speed" title="${_("Speed")}"><i class="icon speed"></i> <span id="gauge-speed-${plane.id}"></span></div>
+  <div class="nbtag seat" title="${_("Seats")}"><i class="icon seat"></i> <span id="gauge-seat-${plane.id}"></span></div>
+  <div class="nbtag cash" title="${_("Cash")}"><i class="icon cash"></i> <span id="gauge-cash-${plane.id}"></span></div>
+</div>
+<div id="board-${plane.id}" class="plane-board">
+  <div id="alliances-${plane.id}" class="alliancelist"></div>
+  <div id="paxlist-${plane.id}" class="paxlist is-plane"></div>
+</div>`
+        );
       }
+      const gaugesEl = document.getElementById(`gauges-${plane.id}`);
 
-      // Update alliances tag
+      // Update alliance tag
+      const alliancesEl = document.getElementById(`alliances-${plane.id}`);
       if (alliancesEl.childNodes.length != plane.alliances.length) {
         alliancesEl.textContent = "";
         for (const alliance of plane.alliances) {
@@ -810,43 +852,18 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         }
       }
 
-      let boardEl = document.getElementById(`board-${plane.id}`);
-      if (boardEl == null) {
-        const parentEl = document.getElementById(`player_board_${plane.id}`);
-        parentEl.insertAdjacentHTML(
-          "beforeend",
-          `<div id="board-${plane.id}" class="plane-board">
-  <div id="gauges-${plane.id}" class="gauges">
-    <div class="nbtag cash" title="${_("Cash")}"><i class="icon cash"></i> <span id="gauge-cash-${plane.id}"></span></div>
-    <div class="nbtag seat" title="${_("Seats")}"><i class="icon seat"></i> <span id="gauge-seat-${plane.id}"></span></div>
-    <div class="nbtag speed" title="${_("Speed")}"><i class="icon speed"></i> <span id="gauge-speed-${plane.id}"></span></div>
-  </div>
-  <div id="paxlist-${plane.id}" class="paxlist is-plane"></div>
-</div>`
-        );
-      }
-      const gaugesEl = document.getElementById(`gauges-${plane.id}`);
-
-      // Update cash tag
-      const cashEl = document.getElementById(`gauge-cash-${plane.id}`);
-      cashEl.textContent = plane.cashRemain;
-
-      // Update seat tag
-      const seatEl = document.getElementById(`gauge-seat-${plane.id}`);
-      seatEl.innerHTML = `${plane.seat}`;
-
       // Update speed tag
       const speedEl = document.getElementById(`gauge-speed-${plane.id}`);
       const speedRemain = Math.max(0, plane.speedRemain) + (plane.tempSpeed ? 1 : 0);
       speedEl.innerHTML = `<span class="${speedRemain > 0 ? "bb" : ""}">${speedRemain}</span>/${plane.speed}`;
 
-      // Add/remove temp seat tag
-      const tempSeatEl = document.getElementById(`gauge-temp-seat-${plane.id}`);
-      if (plane.tempSeat && !tempSeatEl) {
-        gaugesEl.insertAdjacentHTML("beforeend", `<div class="nbtag seat" id="gauge-temp-seat-${plane.id}" title="${_("Temporary Seat")}"><i class="icon seat"></i> <span class="ss">${_("Temp Seat")}</span></div>`);
-      } else if (!plane.tempSeat && tempSeatEl) {
-        tempSeatEl.remove();
-      }
+      // Update seat tag
+      const seatEl = document.getElementById(`gauge-seat-${plane.id}`);
+      seatEl.innerHTML = `${plane.seat}`;
+
+      // Update cash tag
+      const cashEl = document.getElementById(`gauge-cash-${plane.id}`);
+      cashEl.textContent = plane.cashRemain;
 
       // Add/remove temp speed tag
       const tempSpeedEl = document.getElementById(`gauge-temp-speed-${plane.id}`);
@@ -854,6 +871,14 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         gaugesEl.insertAdjacentHTML("beforeend", `<div class="nbtag speed" id="gauge-temp-speed-${plane.id}" title="${_("Temporary Speed")}"><i class="icon speed"></i> <span class="ss">${_("Temp Speed")}</span></div>`);
       } else if (!plane.tempSpeed && tempSpeedEl) {
         tempSpeedEl.remove();
+      }
+
+      // Add/remove temp seat tag
+      const tempSeatEl = document.getElementById(`gauge-temp-seat-${plane.id}`);
+      if (plane.tempSeat && !tempSeatEl) {
+        gaugesEl.insertAdjacentHTML("beforeend", `<div class="nbtag seat" id="gauge-temp-seat-${plane.id}" title="${_("Temporary Seat")}"><i class="icon seat"></i> <span class="ss">${_("Temp Seat")}</span></div>`);
+      } else if (!plane.tempSeat && tempSeatEl) {
+        tempSeatEl.remove();
       }
     },
 
