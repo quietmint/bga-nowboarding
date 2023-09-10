@@ -27,10 +27,11 @@ define('N_REF_BGA_CLOCK_UNLIMITED', [9, 20]);
 define('N_OPTION_TIMER', 100);
 define('N_OPTION_VIP', 101);
 define('N_OPTION_VIP_COUNT', 111);
-define('N_OPTION_VIP_SET', 112);
 define('N_VIP_FOWERS', 1);
 define('N_VIP_BGA', 2);
 define('N_VIP_ALL', 3);
+define('N_VIP_INCREASE', 2);
+define('N_VIP_DOUBLE', 4);
 define('N_OPTION_MAP', 110);
 define('N_MAP_JFK', 1);
 define('N_MAP_SEA', 2);
@@ -267,98 +268,114 @@ define('N_REF_VIP', [
     'BABY' => [
         'name' => clienttranslate('Crying Baby'),
         'desc' => clienttranslate('Other passengers at their airport gain 2 anger per turn'),
+        'count' => 2,
         'hours' => ['MORNING', 'NOON'],
         'set' => N_VIP_FOWERS,
     ],
     'CELEBRITY' => [
         'name' => clienttranslate('Celebrity'),
         'desc' => clienttranslate('Must fly alone'),
+        'count' => 1,
         'hours' => ['NIGHT'],
         'set' => N_VIP_FOWERS,
     ],
     'DIRECT' => [
         'name' => clienttranslate('Direct Flight'),
         'desc' => clienttranslate('Only deplanes at their destination'),
+        'count' => 1,
         'hours' => ['NIGHT'],
         'set' => N_VIP_FOWERS,
     ],
     'DOUBLE' => [
         'name' => clienttranslate('Captured Fugitive'),
         'desc' => clienttranslate('Requires 2 seats'),
+        'count' => 1,
         'hours' => ['NOON'],
         'set' => N_VIP_FOWERS,
     ],
     'FIRST' => [
         'name' => clienttranslate('First In Line'),
         'desc' => clienttranslate('Must board before other passengers at their airport'),
+        'count' => 1,
         'hours' => ['NOON'],
         'set' => N_VIP_FOWERS,
     ],
     'GRUMPY' => [
         'name' => clienttranslate('Grumpy'),
         'desc' => clienttranslate('Starts at 1 anger'),
+        'count' => 1,
         'hours' => ['NIGHT'],
         'set' => N_VIP_FOWERS,
     ],
     'IMPATIENT' => [
         'name' => clienttranslate('Impatient'),
         'desc' => clienttranslate('Anger never resets'),
+        'count' => 1,
         'hours' => ['MORNING'],
         'set' => N_VIP_FOWERS,
     ],
     'NERVOUS' => [
         'name' => clienttranslate('Nervous'),
         'desc' => clienttranslate('Cannot fly through storms or tailwinds'),
+        'count' => 1,
         'hours' => ['MORNING'],
         'set' => N_VIP_FOWERS,
     ],
 
     // BGA Community VIPs
     'CREW' => [
-        'name' => clienttranslate('Deadhead Crew'),
+        'name' => clienttranslate('Crewmember'),
         'desc' => clienttranslate('Pays nothing but never gains anger'),
+        'count' => 1,
         'hours' => ['NOON', 'NIGHT'],
         'set' => N_VIP_BGA,
     ],
     'DISCOUNT' => [
-        'name' => clienttranslate('Discount'),
+        'name' => clienttranslate('Discount Ticket'),
         'desc' => clienttranslate('Pays a reduced fare'),
+        'count' => 1,
         'hours' => ['MORNING', 'NOON'],
         'set' => N_VIP_BGA,
     ],
     'LATE' => [
         'name' => clienttranslate('Late Connection'),
         'desc' => clienttranslate('Boarding consumes 1 speed'),
+        'count' => 1,
         'hours' => ['MORNING', 'NOON'],
         'set' => N_VIP_BGA,
     ],
     'LAST' => [
-        'name' => clienttranslate('Basic Economy'),
+        'name' => clienttranslate('Last In Line'),
         'desc' => clienttranslate('Must board after other passengers at their airport'),
+        'count' => 1,
         'hours' => ['NOON'],
         'set' => N_VIP_BGA,
     ],
     'LOYAL' => [
         'name' => clienttranslate('${1} Loyalist'),
         'desc' => clienttranslate('Only flies on planes in the ${1} alliance'),
+        'count' => 2,
         'hours' => ['NOON', 'NIGHT'],
         'set' => N_VIP_BGA,
     ],
     'MYSTERY' => [
         'name' => clienttranslate('Mystery Shopper'),
         'desc' => clienttranslate('Destination remains secret until boarding'),
+        'count' => 2,
         'hours' => ['MORNING', 'NOON', 'NIGHT'],
         'set' => N_VIP_BGA,
     ],
     'RETURN' => [
-        'name' => clienttranslate('Round-Trip'),
+        'name' => clienttranslate('Round-Trip Ticket'),
         'desc' => clienttranslate('Pays nothing for the first leg, then reappears for the reverse leg and pays double'),
+        'count' => 1,
         'hours' => ['MORNING', 'NOON'],
         'set' => N_VIP_BGA,
     ],
     'STORM' => [
-        'name' => clienttranslate('Climate Scientist'),
+        'name' => clienttranslate('Storm Chaser'),
         'desc' => clienttranslate('Must fly through a storm (a tailwind does not count)'),
+        'count' => 1,
         'hours' => ['MORNING', 'NOON'],
         'set' => N_VIP_BGA,
     ],

@@ -684,7 +684,13 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     renderCommon() {
       let commonEl = document.getElementById("nbcommon");
       if (!commonEl) {
-        let commonHtml = `<div id="nbcommon">
+        const vipHtml = this.gamedatas.vip
+          ? `<div class="nbsection">
+        <div class="nblabel">${_("VIPs Remain")}</div>
+        <div class="nbtag"><i class="icon vipstar"></i> <span id="nbcommon-vip"></span></div>
+      </div>`
+          : "";
+        const commonHtml = `<div id="nbcommon">
   <div class="nbsection">
     <div class="nblabel">${_("Complaints")}</div>
     <div class="nbtag"><i class="icon complaint"></i> <span id="nbcommon-complaint"></span></div>
@@ -692,14 +698,9 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
   <div class="nbsection">
     <div class="nblabel">${_("Round")}</div>
     <div class="nbtag hour"><i class="icon"></i> <span></span></div>
-  </div>`;
-        if (this.gamedatas.vip) {
-          commonHtml += `<div class="nbsection">
-  <div class="nblabel">${_("VIPs Remain")}</div>
-  <div class="nbtag"><i class="icon vipstar"></i> <span id="nbcommon-vip"></span></div>
-</div>`;
-        }
-        commonHtml += `<div class="nbsection">
+  </div>
+  ${vipHtml}
+  <div class="nbsection">
     <div class="nblabel">${_("Map Size")}</div>
     <div class="nbtag"><input type="range" id="nbrange" min="40" max="100" step="2" value="100"></div>
   </div>
@@ -835,7 +836,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
   <div id="paxlist-${plane.id}" class="paxlist is-plane"></div>
 </div>`
         );
-        // Also attach hover events for GPS spotlight
+        // Attach hover events for GPS spotlight
         if (!document.body.classList.contains("mobile_version")) {
           const gpsEl = document.getElementById(`gauge-gps-${plane.id}`);
           gpsEl.addEventListener("mouseenter", (ev) => {

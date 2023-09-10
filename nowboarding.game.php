@@ -44,6 +44,7 @@ class NowBoarding extends Table
             $this->DbQuery("INSERT INTO `plane` (`player_id`) VALUES ($player_id)");
         }
         $this->reloadPlayersBasicInfos();
+        $optionVip = $this->getGlobal(N_OPTION_VIP);
 
         // Erase beginner flags (affects giveExtraTime)
         $this->DbQuery("UPDATE `player` SET `player_beginner` = NULL");
@@ -52,7 +53,7 @@ class NowBoarding extends Table
         // Table statistics
         $this->initStat('table', 'complaintPort', 0);
         $this->initStat('table', 'complaintFinale', 0);
-        if ($this->getGlobal(N_OPTION_VIP)) {
+        if ($optionVip) {
             $this->initStat('table', 'complaintVip', 0);
             $this->initStat('table', 'vipMORNING', 0);
             $this->initStat('table', 'vipNOON', 0);
@@ -105,8 +106,8 @@ class NowBoarding extends Table
         $this->setupWeather($playerCount);
 
         // Setup VIPs
-        if ($this->getGlobal(N_OPTION_VIP)) {
-            $this->setupVips($playerCount);
+        if ($optionVip) {
+            $this->setupVips($optionVip, $playerCount);
         }
 
         $this->createUndo();
@@ -140,22 +141,43 @@ class NowBoarding extends Table
         $this->DbQuery("INSERT INTO `weather` (`hour`, `location`, `token`) SELECT 'FINALE', `location`, `token` FROM `weather` WHERE `hour` = 'NIGHT'");
     }
 
-    public function setupVips(int $playerCount): void
+    public function setupVips(int $optionVip, int $playerCount): void
     {
-        // Select a random VIP for every round
-        // Limit each VIP to 2 instances
-        $vipSet = $this->getGlobal(N_OPTION_VIP_SET) ?? N_VIP_FOWERS;
+        // Determine how many VIPs we need
+        $optionCount = $this->getGlobal(N_OPTION_VIP_COUNT);
+        $vipMax = N_REF_HOUR_ROUND[$playerCount]['MORNING'] +
+            N_REF_HOUR_ROUND[$playerCount]['NOON'] +
+            N_REF_HOUR_ROUND[$playerCount]['NIGHT'];
+        $vipCount = $playerCount + 2;
+        if ($optionCount == N_VIP_INCREASE) {
+            $vipCount = $playerCount + 4;
+        } else if ($optionCount == N_VIP_DOUBLE) {
+            $vipCount = min($vipCount * 2, $vipMax);
+        }
+
+        // Populate possible VIPs, respecting hours and max counts
+        // Double the number only if needed
+        $possibleRepeat = 1;
+        if ($optionVip == N_VIP_FOWERS && $vipCount > 9 || $optionVip == N_VIP_BGA && $vipCount > 10) {
+            $possibleRepeat = 2;
+        }
         $possibleByHour = [
             'MORNING' => [],
             'NOON' => [],
             'NIGHT' => [],
         ];
-        foreach (N_REF_VIP as $key => $vip) {
-            if ($vipSet == N_VIP_ALL || $vipSet == $vip['set']) {
-                $hour1 = $vip['hours'][array_rand($vip['hours'])];
-                $possibleByHour[$hour1][] = $key;
-                $hour2 = $vip['hours'][array_rand($vip['hours'])];
-                $possibleByHour[$hour2][] = $key;
+        for ($i = 0; $i < $possibleRepeat; $i++) {
+            foreach (N_REF_VIP as $key => $vip) {
+                if ($optionVip == N_VIP_ALL || $optionVip == $vip['set']) {
+                    $vipHours = $vip['hours'];
+                    shuffle($vipHours);
+                    if (count($vipHours) > $vip['count']) {
+                        array_splice($vipHours, $vip['count']);
+                    }
+                    foreach ($vipHours as $hour) {
+                        $possibleByHour[$hour][] = $key;
+                    }
+                }
             }
         }
         foreach ($possibleByHour as $hour => &$keys) {
@@ -167,15 +189,6 @@ class NowBoarding extends Table
         }
         unset($keys);
 
-        // Determine how many we need
-        $vipCount = $playerCount + 2;
-        if ($this->getGlobal(N_OPTION_VIP_COUNT) == 2) {
-            $vipMax = N_REF_HOUR_ROUND[$playerCount]['MORNING'] +
-                N_REF_HOUR_ROUND[$playerCount]['NOON'] +
-                N_REF_HOUR_ROUND[$playerCount]['NIGHT'];
-            $vipCount = min($vipCount * 2, $vipMax);
-        }
-
         // Select the desired number of VIPs
         $vipsByHour = [
             'MORNING' => [],
@@ -184,9 +197,7 @@ class NowBoarding extends Table
         ];
         for ($i = 0; $i < $vipCount; $i++) {
             $hour = array_rand($possibleByHour);
-            $index = array_rand($possibleByHour[$hour]);
-            $key = $possibleByHour[$hour][$index];
-            array_splice($possibleByHour[$hour], $index, 1);
+            $key = array_pop($possibleByHour[$hour]);
             if (empty($possibleByHour[$hour])) {
                 unset($possibleByHour[$hour]);
             }
@@ -1657,32 +1668,7 @@ class NowBoarding extends Table
 
     private function getPlanesByIds($ids = []): array
     {
-        $sql = <<<SQL
-SELECT
-  p.*,
-  p.seat - (
-    SELECT
-      COUNT(1)
-    FROM
-      `pax` x
-    WHERE
-      x.status = 'SEAT'
-      AND x.player_id = p.player_id
-  ) AS seat_remain,
-  (
-    SELECT
-      SUM(cash)
-    FROM
-      `pax` x
-    WHERE
-      x.status = 'CASH'
-      AND x.player_id = p.player_id
-  ) AS cash,
-  b.player_name
-FROM
-  `plane` p
-  JOIN `player` b ON (b.player_id = p.player_id)
-SQL;
+        $sql = "SELECT p.*, p.seat - ( SELECT COUNT(1) FROM `pax` x WHERE x.status = 'SEAT' AND x.player_id = p.player_id ) AS seat_remain, ( SELECT SUM(cash) FROM `pax` x WHERE x.status = 'CASH' AND x.player_id = p.player_id ) AS cash, b.player_name FROM `plane` p JOIN `player` b ON (b.player_id = p.player_id)";
         if (!empty($ids)) {
             $sql .= " WHERE p.player_id IN (" . join(',', $ids) . ")";
         }
@@ -1693,27 +1679,12 @@ SQL;
 
     private function getOwnerName(string $sqlWhere): ?string
     {
-        return $this->getUniqueValueFromDB(<<<SQL
-SELECT
-  b.`player_name`
-FROM
-  `plane` p
-  JOIN `player` b ON (b.player_id = p.player_id)
-WHERE $sqlWhere
-LIMIT 1
-SQL);
+        return $this->getUniqueValueFromDB("SELECT b.`player_name` FROM `plane` p JOIN `player` b ON (b.player_id = p.player_id) WHERE $sqlWhere LIMIT 1");
     }
 
     private function getOwnerId(string $sqlWhere): ?string
     {
-        return $this->getUniqueValueFromDB(<<<SQL
-SELECT
-  `player_id`
-FROM
-  `plane`
-WHERE $sqlWhere
-LIMIT 1
-SQL);
+        return $this->getUniqueValueFromDB("SELECT `player_id` FROM `plane` WHERE $sqlWhere LIMIT 1");
     }
 
     private function getPaxById(int $paxId, bool $lock = false): NPax
@@ -1961,10 +1932,7 @@ SQL);
         $pax = $this->getPaxByStatus(['SECRET', 'PORT']);
         if (!empty($pax)) {
             // VIP Baby
-            $babyLocations = [];
-            if ($this->getGlobal(N_OPTION_VIP)) {
-                $babyLocations = $this->getObjectListFromDB("SELECT DISTINCT `location` FROM `pax` WHERE `status` = 'PORT' AND `vip` = 'BABY'", true);
-            }
+            $babyLocations = $this->getObjectListFromDB("SELECT DISTINCT `location` FROM `pax` WHERE `status` = 'PORT' AND `vip` = 'BABY'", true);
             $angerPax = [];
             $complaintPax = [];
             foreach ($pax as $x) {
@@ -2211,6 +2179,8 @@ SQL);
             [2309031701, "DELETE FROM `DBPREFIX_pax_undo` WHERE `pax_id` < 0"],
             [2309031701, "INSERT INTO `DBPREFIX_pax` (`pax_id`, `anger`, `cash`, `destination`, `location`, `moves`, `optimal`, `origin`, `player_id`, `status`, `vip`) SELECT `pax_id` * -1 AS `pax_id`, `anger`, 0 AS `cash`, `destination`, `location`, `moves`, `optimal`, `origin`, `player_id`, `status`, `vip` FROM `DBPREFIX_pax` WHERE `vip` = 'DOUBLE'"],
             [2309031701, "INSERT INTO `DBPREFIX_pax_undo` (`pax_id`, `anger`, `cash`, `destination`, `location`, `moves`, `optimal`, `origin`, `player_id`, `status`, `vip`) SELECT `pax_id` * -1 AS `pax_id`, `anger`, 0 AS `cash`, `destination`, `location`, `moves`, `optimal`, `origin`, `player_id`, `status`, `vip` FROM `DBPREFIX_pax_undo` WHERE `vip` = 'DOUBLE'"],
+            [2309100719, "DELETE FROM `DBPREFIX_global` WHERE `global_id` = 101"],
+            [2309100719, "UPDATE `DBPREFIX_global` SET `global_id` = 101 WHERE `global_id` = 112"],
         ];
 
         foreach ($changes as [$version, $sql]) {
