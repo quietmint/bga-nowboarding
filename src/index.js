@@ -891,13 +891,22 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     onEnterGps(planeId) {
       const location = this.gamedatas.planes[planeId]?.location;
       if (location) {
-        document.getElementById(`spotlight-plane`)?.remove();
-        this.mapEl.insertAdjacentHTML("beforeend", `<div id="spotlight-plane" class="spotlight node node-${location}"></div>`);
+        let spotlightEl = document.getElementById(`spotlight-plane-${planeId}`);
+        if (!spotlightEl) {
+          this.mapEl.insertAdjacentHTML("beforeend", `<div id="spotlight-plane-${planeId}"></div>`);
+          spotlightEl = document.getElementById(`spotlight-plane-${planeId}`);
+        }
+        spotlightEl.classList.value = `spotlight node node-${location}`;
+        this.transitionElement(spotlightEl, (el) => (el.style.opacity = "1"));
       }
     },
 
-    onLeaveGps(planeId) {
-      document.getElementById(`spotlight-plane`)?.remove();
+    async onLeaveGps(planeId) {
+      const spotlightEl = document.getElementById(`spotlight-plane-${planeId}`);
+      if (spotlightEl) {
+        await this.transitionElement(spotlightEl, (el) => (el.style.opacity = "0"));
+        spotlightEl.remove();
+      }
     },
 
     renderPlaneManifest(plane) {
