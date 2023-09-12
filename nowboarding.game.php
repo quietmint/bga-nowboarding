@@ -1196,12 +1196,8 @@ class NowBoarding extends Table
                 throw new BgaVisibleSystemException("board: $x player ID is already {$plane->id} [???]");
             }
             // Transfer from another plane
-            // Must not be at the destination
-            $other = $this->getPlaneById($x->playerId);
-            if ($other->location == $x->destination) {
-                $this->userException('boardDeliver', $other->name);
-            }
             // Must be together at an airport
+            $other = $this->getPlaneById($x->playerId);
             if ($other->location != $plane->location || strlen($plane->location) != 3) {
                 $this->userException('boardTransfer', $other->name);
             }
@@ -1344,34 +1340,46 @@ class NowBoarding extends Table
             $this->userException('deplanePort');
         }
 
-        $vipInfo = $x->getVipInfo();
-        // VIP Double
-        // Deplane the fugitive (must be BEFORE the real pax)
-        if ($vipInfo && $vipInfo['key'] == 'DOUBLE' && $x->id > 0) {
-            self::_deplane($plane, $x->id * -1);
-        }
-
+        $x->location = $plane->location;
+        // Erase anger if deplaned at a new location
         if ($x->location != $plane->location) {
-            // Erase anger if deplaned at a new location
             $x->resetAnger();
         }
-        $x->location = $plane->location;
 
-        $msg = N_REF_MSG['deplane'];
+        // Is this the final destination?
+        $deliver = $x->location == $x->destination;
+        $vipInfo = $x->getVipInfo();
+        if ($vipInfo) {
+            // VIP Double
+            // Deplane the fugitive (must be BEFORE the real pax)
+            if ($vipInfo['key'] == 'DOUBLE' && $x->id > 0) {
+                self::_deplane($plane, $x->id * -1);
+            }
+
+            // VIP Direct
+            if ($vipInfo['key'] == 'DIRECT' && !$deliver) {
+                $this->vipException($vipInfo);
+            }
+
+            // VIP Storm
+            // Never deliver (condition is removed when met)
+            if ($vipInfo['key'] == 'STORM') {
+                $deliver = false;
+            }
+        }
+
+        // Cannot transfer if delivery is possible
+        if ($transfer && $deliver) {
+            $this->userException('boardDeliver', $plane->name);
+        }
+
         $args = [
             'location' => $x->location,
             'pax' => [$x],
             'player_id' => $plane->id,
             'player_name' => $plane->name,
         ];
-        if ($x->location == $x->destination) {
-            // VIP Storm
-            // Condition should be removed
-            if ($vipInfo && $vipInfo['key'] == 'STORM') {
-                $this->vipException($vipInfo);
-            }
-
-            $msg = N_REF_MSG['deplaneDeliver'];
+        if ($deliver) {
             $x->status = 'CASH';
             $args['cash'] = $x->cash;
             $args['moves'] = $x->moves;
@@ -1388,10 +1396,6 @@ class NowBoarding extends Table
                 $args['pax'][] = $newPax;
             }
         } else {
-            // VIP Direct
-            if ($vipInfo && $vipInfo['key'] == 'DIRECT') {
-                $this->vipException($vipInfo);
-            }
             $x->playerId = null;
             $x->status = 'PORT';
         }
@@ -1403,6 +1407,7 @@ class NowBoarding extends Table
             $this->notifyAllPlayers('planes', '', [
                 'planes' => array_values($planes)
             ]);
+            $msg = $deliver ? N_REF_MSG['deplaneDeliver'] : N_REF_MSG['deplane'];
             $this->notifyAllPlayers('pax', $msg, $args);
         }
     }
@@ -1752,7 +1757,7 @@ class NowBoarding extends Table
 
     private function userException(string $msgExKey, ...$args): void
     {
-        $msg = $this->exceptionMsg($msgExKey, $args);
+        $msg = $this->exceptionMsg($msgExKey, ...$args);
         throw new BgaUserException($msg);
     }
 

@@ -1460,7 +1460,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
               dialog = this.format_string_recursive(_("You are leaving ${location} without boarding passengers") + "<br><br>" + _("Before moving, click passengers waiting at the airport to board them. This reminder only displays during the first round."), {
                 location: plane.location,
               });
-            } else if (pax.filter((x) => x.playerId == plane.id && x.status == "SEAT" && x.destination == plane.location).length > 0) {
+            } else if (pax.filter((x) => x.playerId == plane.id && x.status == "SEAT" && x.destination == plane.location && x.vipInfo?.key != "STORM").length > 0) {
               // Forgot to deliver
               dialog = this.format_string_recursive(_("You are leaving ${location} without delivering passengers"), {
                 location: plane.location,
