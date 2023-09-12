@@ -822,6 +822,13 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     renderPlaneGauges(plane) {
       let boardEl = document.getElementById(`board-${plane.id}`);
       if (boardEl == null) {
+        const scoreEl = document.getElementById(`player_score_${plane.id}`);
+        scoreEl.insertAdjacentHTML("beforebegin", `<i id="gps-${plane.id}" class="icon gps" title="${_("Current Position")}"></i>`);
+        const gpsEl = document.getElementById(`gps-${plane.id}`);
+        gpsEl.addEventListener("click", (ev) => {
+          this.onEnterGps(plane.id);
+        });
+
         const parentEl = document.getElementById(`player_board_${plane.id}`);
         parentEl.insertAdjacentHTML(
           "beforeend",
@@ -829,23 +836,12 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
   <div class="nbtag speed" title="${_("Speed")}"><i class="icon speed"></i> <span id="gauge-speed-${plane.id}"></span></div>
   <div class="nbtag seat" title="${_("Seats")}"><i class="icon seat"></i> <span id="gauge-seat-${plane.id}"></span></div>
   <div class="nbtag cash" title="${_("Cash")}"><i class="icon cash"></i> <span id="gauge-cash-${plane.id}"></span></div>
-  <div class="nbtag gps" title="${_("Current Position")}" id="gauge-gps-${plane.id}"><i class="icon gps"></i></div>
 </div>
 <div id="board-${plane.id}" class="plane-board">
   <div id="alliances-${plane.id}" class="alliancelist"></div>
   <div id="paxlist-${plane.id}" class="paxlist is-plane"></div>
 </div>`
         );
-        // Attach hover events for GPS spotlight
-        if (!document.body.classList.contains("mobile_version")) {
-          const gpsEl = document.getElementById(`gauge-gps-${plane.id}`);
-          gpsEl.addEventListener("mouseenter", (ev) => {
-            this.onEnterGps(plane.id);
-          });
-          gpsEl.addEventListener("mouseleave", (ev) => {
-            this.onLeaveGps(plane.id);
-          });
-        }
       }
       const gaugesEl = document.getElementById(`gauges-${plane.id}`);
 
@@ -891,18 +887,17 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     onEnterGps(planeId) {
       const location = this.gamedatas.planes[planeId]?.location;
       if (location) {
-        let spotlightEl = document.getElementById(`spotlight-plane-${planeId}`);
-        if (!spotlightEl) {
-          this.mapEl.insertAdjacentHTML("beforeend", `<div id="spotlight-plane-${planeId}"></div>`);
-          spotlightEl = document.getElementById(`spotlight-plane-${planeId}`);
-        }
-        spotlightEl.classList.value = `spotlight node node-${location}`;
+        this.mapEl.insertAdjacentHTML("beforeend", `<div id="spotlight-plane" class="spotlight node node-${location}"></div>`);
+        const spotlightEl = document.getElementById(`spotlight-plane`);
+        spotlightEl.addEventListener("click", (ev) => {
+          this.onLeaveGps();
+        });
         this.transitionElement(spotlightEl, (el) => (el.style.opacity = "1"));
       }
     },
 
-    async onLeaveGps(planeId) {
-      const spotlightEl = document.getElementById(`spotlight-plane-${planeId}`);
+    async onLeaveGps() {
+      const spotlightEl = document.getElementById(`spotlight-plane`);
       if (spotlightEl) {
         await this.transitionElement(spotlightEl, (el) => (el.style.opacity = "0"));
         spotlightEl.remove();

@@ -88,12 +88,12 @@
 
 .spotlight.node {
   border-radius: 50%;
+  border: 9999px solid rgb(0 0 0 / 40%);
   height: 14%;
   opacity: 0;
-  outline: 9999px solid rgb(0 0 0 / 33%);
+  transition: opacity 200ms linear;
   width: 7%;
   z-index: 30;
-  transition: opacity 200ms linear;
 
   body.no-animation & {
     transition: none !important;
