@@ -230,7 +230,7 @@ class NowBoarding extends Table
             'planes' => $this->getPlanesByIds(),
             'players' => $players,
             'version' => $this->getGlobal(N_BGA_VERSION),
-            'vip' => boolval($this->getGlobal(N_OPTION_VIP)),
+            'vip' => $this->getGlobal(N_OPTION_VIP) ? $this->getVipInfo()['overall'] : null,
         ];
     }
 
@@ -592,6 +592,9 @@ class NowBoarding extends Table
                     throw new BgaVisibleSystemException("stReveal: No VIP exists [???]");
                 }
                 $this->setVar($key, $hourVips);
+                $this->notifyAllPlayers('vip', '', [
+                    'overall' => $this->getVipInfo()['overall']
+                ]);
                 $x->vip = $nextVip;
 
                 // Apply starting conditions
@@ -1478,13 +1481,14 @@ class NowBoarding extends Table
 
     private function getHourInfo(bool $beforeAddPax = false): array
     {
-        $playerCount = $this->getPlayersNumber();
         $hour = $this->getVar('hour');
         $hourInfo = [
             'hour' => $hour,
             'hourDesc' => N_REF_HOUR[$hour]['desc'],
         ];
+
         if ($hour == 'MORNING' || $hour == 'NOON' || $hour == 'NIGHT') {
+            $playerCount = $this->getPlayersNumber();
             $draw = $playerCount;
             if ($hour == 'MORNING') {
                 $draw--;
@@ -1503,15 +1507,37 @@ class NowBoarding extends Table
             $hourInfo['total'] = $total;
 
             if ($this->getGlobal(N_OPTION_VIP)) {
-                $vips = $this->getVarArray("vip$hour");
-                $vipNew = $this->getVarInt("vipNew");
-                $vipRemain = count($vips) - $vipNew;
-                $hourInfo['vipNeed'] = !$vipNew && $vipRemain > 0 && $vipRemain >= ($total - $round + 1);
-                $hourInfo['vipNew'] = $vipNew == 1;
+                $vipInfo = $this->getVipInfo();
+                $vipRemain = count($vipInfo[$hour]);
                 $hourInfo['vipRemain'] = $vipRemain;
+                $hourInfo['vipNeed'] = $vipRemain > 0 && $vipRemain >= ($total - $round + 1);
+                $hourInfo['vipNew'] = $vipInfo['new'] == 1;
             }
         }
         return $hourInfo;
+    }
+
+    private function getVipInfo(): array
+    {
+        $vipInfo = [
+            'MORNING' => [],
+            'NOON' => [],
+            'NIGHT' => [],
+            'new' => 0,
+        ];
+        $dbrows = $this->getCollectionFromDB("SELECT `key`, `value` FROM `var` WHERE `key` IN ('vipMORNING', 'vipNOON', 'vipNIGHT', 'vipNew')", true);
+        foreach ($dbrows as $key => $value) {
+            if ($key == 'vipNew') {
+                $vipInfo['new'] = intval($value);
+            } else {
+                $vipInfo[substr($key, 3)] = empty($value) ? [] : explode(',', $value);
+            }
+        }
+        $morning = count($vipInfo['MORNING']);
+        $noon = count($vipInfo['NOON']);
+        $night = count($vipInfo['NIGHT']);
+        $vipInfo['overall'] = "$morning/$noon/$night";
+        return $vipInfo;
     }
 
     private function advanceHour(array $hourInfo): array
@@ -1994,6 +2020,13 @@ class NowBoarding extends Table
         $vips = $this->getVarArray("vip$hour");
         $count = count($vips);
         if ($count > 0) {
+            // Erase missed VIPs
+            $this->setVar("vip$hour", null);
+            $this->notifyAllPlayers('vip', '', [
+                'overall' => $this->getVipInfo()['overall']
+            ]);
+
+            // Notify complaints
             $this->incStat($count, 'complaintVip');
             $total = $this->countComplaint();
             $this->notifyAllPlayers('complaint', N_REF_MSG['complaintVip'], [

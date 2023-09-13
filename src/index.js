@@ -2,6 +2,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
   const playSoundSuper = window.playSound;
   let suppressSounds = [];
   let flyTimer = null;
+  let spotlightPlane = null;
 
   return declare("bgagame.nowboarding", ebg.core.gamegui, {
     constructor() {
@@ -86,6 +87,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       dojo.subscribe("pax", this, "onNotify");
       dojo.subscribe("planes", this, "onNotify");
       dojo.subscribe("sound", this, "onNotify");
+      dojo.subscribe("vip", this, "onNotify");
       dojo.subscribe("weather", this, "onNotify");
       this.notifqueue.setSynchronous("complaint", 2000);
       this.notifqueue.setSynchronous("flyTimer", 5500);
@@ -297,7 +299,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
     onEnteringState(stateName, args) {
       if (stateName == "fly") {
-        this.stabilizerOn();
         if (args.args.endTime) {
           // Add action bar countdown
           document.body.classList.add("no_time_limit");
@@ -309,9 +310,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           }
           const millis = Math.max(0, args.args.endTime * 1000 - Date.now()) + Math.random() * 1000;
           console.log("⌚ Timer start", millis);
-          flyTimer = window.setTimeout(() => {
-            this.takeAction("flyTimer", { lock: false });
-          }, millis);
+          flyTimer = window.setTimeout(() => this.takeAction("flyTimer", { lock: false }), millis);
         }
       } else if (stateName == "maintenance") {
         // Stop timer
@@ -331,6 +330,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
     onUpdateActionButtons(stateName, args) {
       console.log(`▶️ State ${stateName}`, args);
+      document.getElementById("nbwrap")?.remove();
       if (!this.isSpectator) {
         // Inactive players can undo or go back
         if (stateName == "build" || stateName == "buildAlliance2" || stateName == "buildUpgrade" || stateName == "prepare") {
@@ -353,7 +353,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           } else if (stateName == "prepareBuy") {
             this.addActionButton("button_prepareDone", _("Ready"), () => {
               let dialog = null;
-              if (this.gamedatas.vip && this.gamedatas.hour.vipNeed) {
+              if (this.gamedatas.vip && this.gamedatas.hour.vipNeed && !this.gamedatas.hour.vipNew) {
                 const roundRemain = this.gamedatas.hour.total - this.gamedatas.hour.round + 1;
                 dialog = this.format_string_recursive(_("You did not accept a VIP, but ${vipRemain} VIPs remain and ${hourDesc} ends in ${roundRemain} rounds"), {
                   hourDesc: this.gamedatas.hour.hourDesc,
@@ -361,22 +361,18 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
                   vipRemain: this.gamedatas.hour.vipRemain,
                 });
               }
-              if (dialog) {
-                this.confirmationDialog(dialog, () => {
-                  this.takeAction("prepareDone");
-                });
-              } else {
-                this.takeAction("prepareDone");
-              }
+              const dialogPromise = dialog ? this.confirmationDialogPromise(dialog) : Promise.resolve();
+              dialogPromise.then(
+                () => this.takeAction("prepareDone"),
+                () => {}
+              );
             });
-            if (this.gamedatas.vip) {
-              if (this.gamedatas.hour.vipNew) {
-                const txt = this.format_string_recursive(_("Decline VIP (${vipRemain} remaining)"), { vipRemain: this.gamedatas.hour.vipRemain });
-                this.addActionButton("button_vip", txt, () => this.takeVipAction());
-              } else if (this.gamedatas.hour.vipRemain) {
-                const txt = this.format_string_recursive(_("Accept VIP (${vipRemain} remaining)"), { vipRemain: this.gamedatas.hour.vipRemain });
-                this.addActionButton("button_vip", txt, () => this.takeVipAction(), null, false, this.gamedatas.hour.vipNeed ? "red" : "blue");
-              }
+            if (this.gamedatas.hour.vipRemain) {
+              const acceptTxt = this.format_string_recursive(_("Accept VIP (${vipRemain} remaining)"), { vipRemain: this.gamedatas.hour.vipRemain });
+              this.addActionButton("button_vipAccept", acceptTxt, () => this.takeAction("vip", { accept: true }), null, false, this.gamedatas.hour.vipNeed ? "red" : "blue");
+              this.addActionButton("button_vipDecline", _("Decline VIP"), () => this.takeAction("vip", { accept: false }));
+              const disabled = this.gamedatas.hour.vipNew ? "button_vipAccept" : "button_vipDecline";
+              document.getElementById(disabled).classList.add("disabled");
             }
             if (args.ledger?.length > 0) {
               this.addActionButton("button_undo", _("Start Over"), () => this.takeAction("undo"), null, false, "gray");
@@ -394,13 +390,13 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
             this.renderWalletPay(args.wallet, args.suggestion);
           } else if (stateName == "flyPrivate") {
             if (!this.bRealtime) {
-              this.addActionButton("button_flyDoneSnooze", _("Snooze Until Next Move"), () => this.takeAction("flyDone", { snooze: true }), null, false, "gray");
+              this.addActionButton("button_flyDoneSnooze", _("Snooze Until Next Move"), () => this.takeAction("flyDone", { snooze: true }).then(() => this.stabilizerOff()), null, false, "gray");
             }
             if (args.speedRemain > 0) {
               const txt = this.format_string_recursive(_("End Round Early (${speedRemain} speed remaining)"), { speedRemain: args.speedRemain });
-              this.addActionButton("button_flyDone", txt, () => this.takeAction("flyDone"), null, false, "red");
+              this.addActionButton("button_flyDone", txt, () => this.takeAction("flyDone").then(() => this.stabilizerOff()), null, false, "red");
             } else {
-              this.addActionButton("button_flyDone", _("End Round"), () => this.takeAction("flyDone"), null, false, "blue");
+              this.addActionButton("button_flyDone", _("End Round"), () => this.takeAction("flyDone").then(() => this.stabilizerOff()), null, false, "blue");
             }
             // Update the possible moves
             this.deleteMoves();
@@ -420,19 +416,17 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         this.renderPlane(notif.args.plane);
         this.renderPlaneGauges(notif.args.plane);
       } else if (notif.type == "buys") {
-        if (notif.args.state != this.gamedatas.gamestate.private_state?.name) {
-          console.warn("Ignore buys notification because we are in the wrong state");
-          return;
-        }
-        for (const newBuy of notif.args.buys) {
-          for (const buy of this.buys) {
-            if (buy.type == newBuy.type && buy.alliance == newBuy.alliance) {
-              buy.ownerId = newBuy.ownerId;
-              break;
+        if (this.buys && document.getElementById("nbbuys") != null) {
+          for (const newBuy of notif.args.buys) {
+            for (const buy of this.buys) {
+              if (buy.type == newBuy.type && buy.alliance == newBuy.alliance) {
+                buy.ownerId = newBuy.ownerId;
+                break;
+              }
             }
           }
+          this.renderBuys();
         }
-        this.renderBuys();
       } else if (notif.type == "complaint") {
         suppressSounds = ["yourturn"];
         playSound("nowboarding_complaint");
@@ -450,12 +444,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           playSound("nowboarding_walkway");
         }
         if ((this.gamedatas.hour.vipNew || this.gamedatas.hour.vipRemain) && this.gamedatas.gamestate.private_state?.name == "prepareBuy") {
-          const vipEl = document.getElementById("button_vip");
-          if (vipEl) {
-            vipEl.textContent = this.format_string_recursive(this.gamedatas.hour.vipNew ? _("Decline VIP (${vipRemain} remaining)") : _("Accept VIP (${vipRemain} remaining)"), { vipRemain: this.gamedatas.hour.vipRemain });
-            vipEl.classList.toggle("bgabutton_blue", !this.gamedatas.hour.vipNeed);
-            vipEl.classList.toggle("bgabutton_red", this.gamedatas.hour.vipNeed);
-          }
+          document.getElementById("button_vipAccept")?.classList.toggle("disabled", this.gamedatas.hour.vipNew);
+          document.getElementById("button_vipDecline")?.classList.toggle("disabled", !this.gamedatas.hour.vipNew);
         }
         this.renderCommon();
       } else if (notif.type == "move") {
@@ -496,6 +486,12 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       } else if (notif.type == "sound") {
         suppressSounds = notif.args.suppress;
         playSound(`nowboarding_${notif.args.sound}`);
+      } else if (notif.type == "vip") {
+        this.gamedatas.vip = notif.args.overall;
+        const vipEl = document.getElementById("nbcommon-vip");
+        if (vipEl) {
+          vipEl.textContent = this.gamedatas.vip;
+        }
       } else if (notif.type == "weather") {
         suppressSounds = ["yourturn"];
         playSound("nowboarding_plane");
@@ -514,6 +510,16 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
     // Utilities
     // ----------------------------------------------------------------------
+
+    confirmationDialogPromise(message) {
+      return new Promise((resolve, reject) => {
+        this.confirmationDialog(
+          message,
+          () => resolve(),
+          () => reject()
+        );
+      });
+    },
 
     takeAction(action, data) {
       return new Promise((resolve, reject) => {
@@ -564,8 +570,32 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       }
     },
 
-    takeVipAction() {
-      this.takeAction("vip", { accept: !this.gamedatas.hour.vipNew });
+    takeMoveAction(plane, move) {
+      let dialog = null;
+      if (plane.location.length == 3) {
+        const pax = Object.values(this.gamedatas.pax);
+        if (
+          this.gamedatas.hour.hour == "MORNING" &&
+          this.gamedatas.hour.round == 1 && // during the first round
+          pax.filter((x) => x.playerId == plane.id && x.status == "SEAT").length == 0 && // plane is empty
+          pax.filter((x) => x.location == plane.location && x.status == "PORT").length > 0 // airport is not
+        ) {
+          // Forgot to board
+          dialog = this.format_string_recursive(_("You are leaving ${location} without boarding passengers") + "<br><br>" + _("Before moving, click passengers waiting at the airport to board them. This reminder only displays during the first round."), {
+            location: plane.location,
+          });
+        } else if (pax.filter((x) => x.playerId == plane.id && x.status == "SEAT" && x.destination == plane.location && x.vipInfo?.key != "STORM").length > 0) {
+          // Forgot to deliver
+          dialog = this.format_string_recursive(_("You are leaving ${location} without delivering passengers"), {
+            location: plane.location,
+          });
+        }
+      }
+      const dialogPromise = dialog ? this.confirmationDialogPromise(dialog) : Promise.resolve();
+      dialogPromise.then(
+        () => this.takeAction("move", move),
+        () => {}
+      );
     },
 
     getElement(elementOrId) {
@@ -640,19 +670,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       return this.transitionElement(el, (el) => (el.style.transform = `translate(${end.x - start.x}px, ${end.y - start.y}px)`));
     },
 
-    stabilizerOn() {
-      console.log("🔒 Stabilizer on");
-      // Lock map manifest height
-      // const topLists = document.querySelectorAll("#manifests-top .paxlist");
-      // const heights = Array.from(topLists, (listEl) => listEl.clientHeight - 10);
-      // const maxHeight = Math.max(...heights);
-      // topLists.forEach((listEl) => (listEl.style.height = `${maxHeight}px`));
-    },
-
     stabilizerOff() {
       console.log("🔓 Stabilizer off");
-      // Unlock map manifest height
-      // document.querySelectorAll("#manifests-top .paxlist").forEach((listEl) => (listEl.style.height = null));
       // Remove gaps in map manifest
       document.querySelectorAll(".paxlist.is-map .paxslot.is-empty").forEach((slotEl) => slotEl.remove());
       this.sortManifests();
@@ -687,7 +706,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         const vipHtml = this.gamedatas.vip
           ? `<div class="nbsection">
         <div class="nblabel">${_("VIPs Remain")}</div>
-        <div class="nbtag"><i class="icon vipstar"></i> <span id="nbcommon-vip"></span></div>
+        <div class="nbtag"><i class="icon vipstar"></i> <span id="nbcommon-vip">${this.gamedatas.vip}</span></div>
       </div>`
           : "";
         const commonHtml = `<div id="nbcommon">
@@ -744,10 +763,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         hourTxt += ` (${this.gamedatas.hour.round}/${this.gamedatas.hour.total})`;
       }
       hourTextEl.textContent = hourTxt;
-      if (this.gamedatas.vip) {
-        const vipTextEl = document.getElementById("nbcommon-vip");
-        vipTextEl.textContent = this.gamedatas.hour.vipRemain || "0";
-      }
     },
 
     async renderWeather() {
@@ -817,6 +832,9 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       const rotation = this.getRotationPlane(plane);
       document.querySelector(`#plane-${plane.id} .icon`).style.transform = `rotate(${rotation}deg)`;
       this.swapClass(`plane-${plane.id}`, "node-", `node-${plane.location}`);
+      if (spotlightPlane == plane.id) {
+        this.swapClass(`spotlight-plane`, "node-", `node-${plane.location}`);
+      }
     },
 
     renderPlaneGauges(plane) {
@@ -825,9 +843,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         const scoreEl = document.getElementById(`player_score_${plane.id}`);
         scoreEl.insertAdjacentHTML("beforebegin", `<i id="gps-${plane.id}" class="icon gps" title="${_("Current Position")}"></i>`);
         const gpsEl = document.getElementById(`gps-${plane.id}`);
-        gpsEl.addEventListener("click", (ev) => {
-          this.onEnterGps(plane.id);
-        });
+        gpsEl.addEventListener("click", (ev) => this.onEnterGps(plane.id));
 
         const parentEl = document.getElementById(`player_board_${plane.id}`);
         parentEl.insertAdjacentHTML(
@@ -888,15 +904,15 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       const location = this.gamedatas.planes[planeId]?.location;
       if (location) {
         this.mapEl.insertAdjacentHTML("beforeend", `<div id="spotlight-plane" class="spotlight node node-${location}"></div>`);
+        spotlightPlane = planeId;
         const spotlightEl = document.getElementById(`spotlight-plane`);
-        spotlightEl.addEventListener("click", (ev) => {
-          this.onLeaveGps();
-        });
+        spotlightEl.addEventListener("click", (ev) => this.onLeaveGps());
         this.transitionElement(spotlightEl, (el) => (el.style.opacity = "1"));
       }
     },
 
     async onLeaveGps() {
+      spotlightPlane = null;
       const spotlightEl = document.getElementById(`spotlight-plane`);
       if (spotlightEl) {
         await this.transitionElement(spotlightEl, (el) => (el.style.opacity = "0"));
@@ -933,12 +949,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       );
       if (!document.body.classList.contains("mobile_version")) {
         const manifestEl = document.getElementById(`manifest-${manifestId}`);
-        manifestEl.addEventListener("mouseenter", (ev) => {
-          this.onEnterMapManifest(manifestId);
-        });
-        manifestEl.addEventListener("mouseleave", (ev) => {
-          this.onLeaveMapManifest(manifestId);
-        });
+        manifestEl.addEventListener("mouseenter", (ev) => this.onEnterMapManifest(manifestId));
+        manifestEl.addEventListener("mouseleave", (ev) => this.onLeaveMapManifest(manifestId));
       }
     },
 
@@ -979,12 +991,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         );
         if (!document.body.classList.contains("mobile_version")) {
           const nodeEl = document.getElementById(`node-${node}`);
-          nodeEl.addEventListener("mouseenter", (ev) => {
-            this.onEnterMapManifest(node);
-          });
-          nodeEl.addEventListener("mouseleave", (ev) => {
-            this.onLeaveMapManifest(node);
-          });
+          nodeEl.addEventListener("mouseenter", (ev) => this.onEnterMapManifest(node));
+          nodeEl.addEventListener("mouseleave", (ev) => this.onLeaveMapManifest(node));
         }
       } else {
         // hop
@@ -1300,7 +1308,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     renderBuys() {
       let buysEl = document.getElementById("nbbuys");
       if (!buysEl) {
-        const parentEl = document.getElementById("generalactions");
+        const parentEl = document.getElementById("maintitlebar_content");
         parentEl.insertAdjacentHTML("beforeend", `<div id="nbwrap"><div id="nbbuys"></div></div>`);
         buysEl = document.getElementById("nbbuys");
       } else {
@@ -1343,18 +1351,12 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         buysEl.insertAdjacentHTML("beforeend", buyHtml);
         const buyEl = document.getElementById(id);
         if (buy.enabled && buy.ownerId == null) {
-          buyEl.addEventListener("click", (ev) => {
-            this.takeAction("buy", buy);
-          });
+          buyEl.addEventListener("click", (ev) => this.takeAction("buy", buy));
         }
         if (buy.type == "ALLIANCE") {
           if (!document.body.classList.contains("mobile_version")) {
-            buyEl.addEventListener("mouseenter", (ev) => {
-              this.onEnterMapManifest(buy.alliance);
-            });
-            buyEl.addEventListener("mouseleave", (ev) => {
-              this.onLeaveMapManifest(buy.alliance);
-            });
+            buyEl.addEventListener("mouseenter", (ev) => this.onEnterMapManifest(buy.alliance));
+            buyEl.addEventListener("mouseleave", (ev) => this.onLeaveMapManifest(buy.alliance));
           }
         }
       }
@@ -1446,35 +1448,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         }
         this.mapEl.insertAdjacentHTML("beforeend", `<div id="move-${move.location}" class="move node node-${move.location} gradient-${alliance}">${specialHtml}${move.fuel}</div>`);
         const moveEl = document.getElementById(`move-${move.location}`);
-        moveEl.addEventListener("click", (e) => {
-          let dialog = null;
-          if (plane.location.length == 3) {
-            const pax = Object.values(this.gamedatas.pax);
-            if (
-              this.gamedatas.hour.hour == "MORNING" &&
-              this.gamedatas.hour.round == 1 && // during the first round
-              pax.filter((x) => x.playerId == plane.id && x.status == "SEAT").length == 0 && // plane is empty
-              pax.filter((x) => x.location == plane.location && x.status == "PORT").length > 0 // airport is not
-            ) {
-              // Forgot to board
-              dialog = this.format_string_recursive(_("You are leaving ${location} without boarding passengers") + "<br><br>" + _("Before moving, click passengers waiting at the airport to board them. This reminder only displays during the first round."), {
-                location: plane.location,
-              });
-            } else if (pax.filter((x) => x.playerId == plane.id && x.status == "SEAT" && x.destination == plane.location && x.vipInfo?.key != "STORM").length > 0) {
-              // Forgot to deliver
-              dialog = this.format_string_recursive(_("You are leaving ${location} without delivering passengers"), {
-                location: plane.location,
-              });
-            }
-          }
-          if (dialog) {
-            this.confirmationDialog(dialog, () => {
-              this.takeAction("move", move);
-            });
-          } else {
-            this.takeAction("move", move);
-          }
-        });
+        moveEl.addEventListener("click", (e) => this.takeMoveAction(plane, move));
         moveCount++;
       }
       console.log(`🗺️ Add ${moveCount} possible moves`);
