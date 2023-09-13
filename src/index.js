@@ -682,8 +682,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       Object.values(this.gamedatas.pax).forEach(function (pax) {
         const paxEl = document.getElementById(`pax-${pax.id}`);
         if (paxEl) {
-          // Sort by secret, anger DESC, destination, cash DESC, ID
-          const order = (pax.status == "SECRET" ? 0 : pax.status != "SEAT" ? 5 - pax.anger + "." : "") + pax.destination + "." + (5 - pax.cash) + "." + String(pax.id).padStart(2, "0");
+          // Sort by secret, anger DESC, destination, ID, cash DESC
+          const order = (pax.status == "SECRET" ? 0 : pax.status != "SEAT" ? 5 - pax.anger + "." : "") + pax.destination + "." + String(Math.abs(pax.id)).padStart(2, "0") + "." + (5 - pax.cash);
           paxOrder.push({
             el: paxEl,
             order: order,

@@ -1343,11 +1343,11 @@ class NowBoarding extends Table
             $this->userException('deplanePort');
         }
 
-        $x->location = $plane->location;
         // Erase anger if deplaned at a new location
         if ($x->location != $plane->location) {
             $x->resetAnger();
         }
+        $x->location = $plane->location;
 
         // Is this the final destination?
         $deliver = $x->location == $x->destination;
