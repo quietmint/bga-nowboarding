@@ -1007,7 +1007,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
     resizeMap() {
       if (this.scaleEl && this.mapEl) {
-        this.scaleEl.style.setProperty("--map-width", this.mapEl.clientWidth + "px");
+        this.scaleEl.style.setProperty("--map-width", Math.max(this.mapEl.clientWidth, 950) + "px");
         this.renderMapLeads();
       }
     },
