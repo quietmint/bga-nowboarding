@@ -43,8 +43,11 @@ class NMap extends APP_GameClass implements JsonSerializable
         $this->weather = $weather;
         foreach ($this->weather as $location => $type) {
             if ($type == 'SLOW') {
-                $this->addStorm($this->nodes[$location]);
-                $this->weather["{$location}w"] = $type;
+                $node = @$this->nodes[$location];
+                if ($node != null) {
+                    $this->addStorm($node);
+                    $this->weather["{$location}w"] = $type;
+                }
             }
         }
     }

@@ -2304,7 +2304,7 @@ class NowBoarding extends Table
             $this->setupWeather($this->getPlayersNumber());
         }
 
-        if ($fromVersion <= 2309132045) {
+        if ($fromVersion <= 2309161827) {
             self::warn("upgradeTableDb: fromVersion=$fromVersion, flip locations");
             $flipLocations = [
                 'ATLMIA1' => 'MIAATL1',
