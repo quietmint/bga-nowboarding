@@ -21,6 +21,14 @@ require_once 'modules/NPlane.class.php';
 
 class NowBoarding extends Table
 {
+    public function test()
+    {
+        $this->DbQuery("DELETE FROM `weather`");
+        $this->setupWeather(3);
+        $hourInfo = $this->getHourInfo();
+        $this->advanceWeather($hourInfo);
+    }
+
     public function __construct()
     {
         parent::__construct();
@@ -125,14 +133,13 @@ class NowBoarding extends Table
         }
 
         // Select 6, 12, or 18 random routes
-        $map = $this->getMap();
-        $routeIds = array_rand($map->routes, count($hours) * count($tokens));
+        $map = $this->getMap(false);
+        $routes = $this->getRandomSlice($map->routes, count($hours) * count($tokens));
         foreach ($hours as $hour) {
             foreach ($tokens as $token) {
-                $routeId = array_pop($routeIds);
-                $route = $map->routes[$routeId];
+                $route = array_pop($routes);
                 // Select a random node on this route
-                $node = $route[array_rand($route)];
+                $node = $this->getRandomValue($route);
                 $this->DbQuery("INSERT INTO `weather` (`hour`, `location`, `token`) VALUES ('$hour', '{$node->id}', '$token')");
             }
         }
@@ -141,7 +148,7 @@ class NowBoarding extends Table
         $this->DbQuery("INSERT INTO `weather` (`hour`, `location`, `token`) SELECT 'FINALE', `location`, `token` FROM `weather` WHERE `hour` = 'NIGHT'");
     }
 
-    public function setupVips(int $optionVip, int $playerCount): void
+    private function setupVips(int $optionVip, int $playerCount): void
     {
         // Determine how many VIPs we need
         $optionCount = $this->getGlobal(N_OPTION_VIP_COUNT);
@@ -196,7 +203,7 @@ class NowBoarding extends Table
             'NIGHT' => [],
         ];
         for ($i = 0; $i < $vipCount; $i++) {
-            $hour = array_rand($possibleByHour);
+            $hour = $this->getRandomKey($possibleByHour);
             $key = array_pop($possibleByHour[$hour]);
             if (empty($possibleByHour[$hour])) {
                 unset($possibleByHour[$hour]);
@@ -1104,14 +1111,12 @@ class NowBoarding extends Table
         $plane->origin = $move->getOrigin();
         $plane->location = $location;
         $plane->speedRemain -= $move->fuel;
-        $plane->speedPenalty = $move->penalty;
         if ($plane->speedRemain == -1 && $plane->tempSpeed) {
             $this->useTempSpeed($plane);
         } else if ($plane->speedRemain < 0) {
             throw new BgaVisibleSystemException("move: $plane not enough fuel to reach $location with speedRemain={$plane->speedRemain}, tempSpeed={$plane->tempSpeed} [???]");
         }
-        $penalty = intval($plane->speedPenalty);
-        $this->DbQuery("UPDATE `plane` SET `location` = '{$plane->location}', `origin` = '{$plane->origin}', `speed_penalty` = $penalty, `speed_remain` = {$plane->speedRemain} WHERE `player_id` = {$plane->id}");
+        $this->DbQuery("UPDATE `plane` SET `location` = '{$plane->location}', `origin` = '{$plane->origin}', `speed_remain` = {$plane->speedRemain} WHERE `player_id` = {$plane->id}");
         $this->DbQuery("UPDATE `pax` SET `moves` = `moves` + {$move->fuel} WHERE `status` = 'SEAT' AND `player_id` = {$plane->id}");
 
         // Statistics
@@ -1419,6 +1424,58 @@ class NowBoarding extends Table
     //////////// Helpers
     ////////////
 
+    private function getRandomKey(array &$array)
+    {
+        $size = count($array);
+        if ($size == 0) {
+            trigger_error("getRandomKey(): Array is empty", E_USER_WARNING);
+            return null;
+        }
+        $rand = random_int(0, $size - 1);
+        $slice = array_slice($array, $rand, 1, true);
+        foreach ($slice as $key => $value) {
+            return $key;
+        }
+    }
+
+    private function getRandomValue(array &$array)
+    {
+        $size = count($array);
+        if ($size == 0) {
+            trigger_error("getRandomValue(): Array is empty", E_USER_WARNING);
+            return null;
+        }
+        $rand = random_int(0, $size - 1);
+        $slice = array_slice($array, $rand, 1, true);
+        foreach ($slice as $key => $value) {
+            return $value;
+        }
+    }
+
+    private function getRandomSlice(array &$array, int $count)
+    {
+        $size = count($array);
+        if ($size == 0) {
+            trigger_error("getRandomSlice(): Array is empty", E_USER_WARNING);
+            return null;
+        }
+        if ($count < 1 || $count > $size) {
+            trigger_error("getRandomSlice(): Invalid count $count for array with size $size", E_USER_WARNING);
+            return null;
+        }
+        $slice = [];
+        $randUnique = [];
+        while (count($randUnique) < $count) {
+            $rand = random_int(0, $size - 1);
+            if (array_key_exists($rand, $randUnique)) {
+                continue;
+            }
+            $randUnique[$rand] = true;
+            $slice += array_slice($array, $rand, 1, true);
+        }
+        return $slice;
+    }
+
     private function getGlobal(int $id): ?int
     {
         $value = @$this->gamestate->table_globals[$id];
@@ -1564,33 +1621,8 @@ class NowBoarding extends Table
             $this->notifyAllPlayers('hour', N_REF_MSG['hourFinale'], $hourInfo);
         } else {
             if ($advance) {
-                // Weather speed penalty
-                $this->DbQuery("UPDATE `plane` SET `speed_penalty` = 0 WHERE `location` NOT IN (SELECT `location` FROM `weather` WHERE `hour` = '{$hourInfo['hour']}' AND `token` = 'SLOW')");
-                $this->DbQuery("UPDATE `plane` SET `speed_penalty` = 1 WHERE `location` IN (SELECT `location` FROM `weather` WHERE `hour` = '{$hourInfo['hour']}' AND `token` = 'SLOW')");
-
                 // Notify weather
-                $weather = $this->getWeather($hourInfo['hour']);
-                $desc = [];
-                foreach ($weather as $location => $token) {
-                    $desc[$token][] = substr($location, 0, 3) . "-" . substr($location, 3, 3);
-                }
-                $this->notifyAllPlayers('message', N_REF_MSG['weatherSLOW'], [
-                    'preserve' => ['wrapper', 'weatherIcon'],
-                    'i18n' => ['hourDesc'],
-                    'hourDesc' => $hourInfo['hourDesc'],
-                    'location' => join(', ', $desc['SLOW']),
-                    'weatherIcon' => 'SLOW',
-                    'wrapper' => 'weatherFlex',
-                ]);
-                $this->notifyAllPlayers('weather', N_REF_MSG['weatherFAST'], [
-                    'preserve' => ['wrapper', 'weatherIcon'],
-                    'i18n' => ['hourDesc'],
-                    'hourDesc' => $hourInfo['hourDesc'],
-                    'location' => join(', ', $desc['FAST']),
-                    'weather' => $weather,
-                    'weatherIcon' => 'FAST',
-                    'wrapper' => 'weatherFlex',
-                ]);
+                $this->advanceWeather($hourInfo);
             }
 
             // Notify hour
@@ -1606,6 +1638,46 @@ class NowBoarding extends Table
             }
         }
         return $hourInfo;
+    }
+
+    private function advanceWeather(array $hourInfo): void
+    {
+        $planeIds = $this->getObjectListFromDB("SELECT `player_id` FROM `plane` WHERE LENGTH(`location`) = 8", true);
+        if (!empty($planeIds)) {
+            // Move planes out of storms
+            $this->DbQuery("UPDATE `plane` SET `location` = LEFT(`location`, 7)");
+            $planes = $this->getPlanesByIds($planeIds);
+            foreach ($planes as $plane) {
+                $this->notifyAllPlayers('move', '', [
+                    'plane' => $plane,
+                    'player_id' => $plane->id,
+                ]);
+            }
+        }
+
+        // Notify weather
+        $weather = $this->getWeather($hourInfo['hour']);
+        $desc = [];
+        foreach ($weather as $location => $token) {
+            $desc[$token][] = substr($location, 0, 3) . "-" . substr($location, 3, 3);
+        }
+        $this->notifyAllPlayers('message', N_REF_MSG['weatherSLOW'], [
+            'preserve' => ['wrapper', 'weatherIcon'],
+            'i18n' => ['hourDesc'],
+            'hourDesc' => $hourInfo['hourDesc'],
+            'location' => join(', ', $desc['SLOW']),
+            'weatherIcon' => 'SLOW',
+            'wrapper' => 'weatherFlex',
+        ]);
+        $this->notifyAllPlayers('weather', N_REF_MSG['weatherFAST'], [
+            'preserve' => ['wrapper', 'weatherIcon'],
+            'i18n' => ['hourDesc'],
+            'hourDesc' => $hourInfo['hourDesc'],
+            'location' => join(', ', $desc['FAST']),
+            'weather' => $weather,
+            'weatherIcon' => 'FAST',
+            'wrapper' => 'weatherFlex',
+        ]);
     }
 
     private function createUndo(): void
@@ -1679,11 +1751,11 @@ class NowBoarding extends Table
         }
     }
 
-    private function getMap(): NMap
+    private function getMap(bool $withWeather = true): NMap
     {
         $playerCount = $this->getPlayersNumber();
         $hour = $this->getVar('hour');
-        $weather = $this->getWeather($hour);
+        $weather = $withWeather ? $this->getWeather($hour) : [];
         return new NMap($playerCount, $this->getGlobal(N_OPTION_MAP), $weather);
     }
 
@@ -1855,7 +1927,7 @@ class NowBoarding extends Table
 
         // Compute optimal moves between each airport
         $optimal = [];
-        $map = $this->getMap();
+        $map = $this->getMap(false);
         $fakePlane = new NPlane([
             'player_id' => 0,
             'alliances' => 'ATL,DFW,LAX,ORD,SEA',
@@ -1866,7 +1938,6 @@ class NowBoarding extends Table
             'player_name' => '',
             'seat_remain' => 1,
             'seat' => 1,
-            'speed_penalty' => 0,
             'speed_remain' => 9,
             'speed' => 9,
             'temp_seat' => 0,
@@ -2231,6 +2302,32 @@ class NowBoarding extends Table
         if ($fromVersion <= 2307191554) {
             self::warn("upgradeTableDb: fromVersion=$fromVersion, setupWeather");
             $this->setupWeather($this->getPlayersNumber());
+        }
+
+        if ($fromVersion <= 2309132045) {
+            self::warn("upgradeTableDb: fromVersion=$fromVersion, flip locations");
+            $flipLocations = [
+                'ATLMIA1' => 'MIAATL1',
+                'DENORD1' => 'ORDDEN2',
+                'DENORD2' => 'ORDDEN1',
+                'DENSFO1' => 'SFODEN2',
+                'DENSFO2' => 'SFODEN1',
+                'ORDSEA1' => 'SEAORD3',
+                'ORDSEA2' => 'SEAORD2',
+                'ORDSEA3' => 'SEAORD1',
+                'ORDSFO1' => 'SFOORD3',
+                'ORDSFO2' => 'SFOORD2',
+                'ORDSFO3' => 'SFOORD1',
+            ];
+            foreach ($flipLocations as $old => $new) {
+                self::applyDbUpgradeToAllDB("UPDATE `DBPREFIX_pax` SET `location` = '$new' WHERE `location` = '$old'");
+                self::applyDbUpgradeToAllDB("UPDATE `DBPREFIX_pax_undo` SET `location` = '$new' WHERE `location` = '$old'");
+                self::applyDbUpgradeToAllDB("UPDATE `DBPREFIX_plane` SET `location` = '$new' WHERE `location` = '$old'");
+                self::applyDbUpgradeToAllDB("UPDATE `DBPREFIX_plane_undo` SET `location` = '$new' WHERE `location` = '$old'");
+                self::applyDbUpgradeToAllDB("UPDATE `DBPREFIX_plane` SET `origin` = '$new' WHERE `origin` = '$old'");
+                self::applyDbUpgradeToAllDB("UPDATE `DBPREFIX_plane_undo` SET `origin` = '$new' WHERE `origin` = '$old'");
+                self::applyDbUpgradeToAllDB("UPDATE `DBPREFIX_weather` SET `location` = '$new' WHERE `location` = '$old'");
+            }
         }
 
         // Add 1 minute to all clocks

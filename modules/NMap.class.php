@@ -13,32 +13,40 @@ class NMap extends APP_GameClass implements JsonSerializable
         $this->addRoute('ATL', 'DEN', 3, null);
         $this->addRoute('ATL', 'DFW', 2, 'ATL');
         $this->addRoute('ATL', 'JFK', 2, null);
-        $this->addRoute('ATL', 'MIA', 1, null);
+        $this->addRoute('MIA', 'ATL', 1, null);
         $this->addRoute('ATL', 'ORD', 2, 'ATL');
         $this->addRoute('DEN', 'DFW', 2, 'DFW');
         $this->addRoute('DEN', 'LAX', 2, 'LAX');
-        $this->addRoute('DEN', 'ORD', 2, 'ORD');
-        $this->addRoute('DEN', 'SFO', 2, null);
+        $this->addRoute('ORD', 'DEN', 2, 'ORD');
+        $this->addRoute('SFO', 'DEN', 2, null);
         $this->addRoute('DFW', 'LAX', 3, null);
         $this->addRoute('DFW', 'MIA', 2, 'DFW');
         $this->addRoute('JFK', 'ORD', 2, null);
         $this->addRoute('LAX', 'MIA', 4, 'LAX');
         $this->addRoute('LAX', 'SFO', 1, null);
 
+
         if ($playerCount >= 4 || $optionMap == N_MAP_SEA) {
             // 4-5 player map with Seattle
             $this->name = "map45";
-            $this->addRoute('SEA', 'DEN', 2, 'SEA');
-            $this->addRoute('SEA', 'JFK', 4, 'SEA');
+            $this->addRoute('DEN', 'SEA', 2, 'SEA');
+            $this->addRoute('JFK', 'SEA', 4, 'SEA');
             $this->addRoute('SEA', 'ORD', 3, 'ORD');
             $this->addRoute('SEA', 'SFO', 2, null);
         } else {
             // 2-3 player map without Seattle
             $this->name = "map23";
-            $this->addRoute('ORD', 'SFO', 3, 'ORD');
+            $this->addRoute('SFO', 'ORD', 3, 'ORD');
         }
 
+        // Add weather
         $this->weather = $weather;
+        foreach ($this->weather as $location => $type) {
+            if ($type == 'SLOW') {
+                $this->addStorm($this->nodes[$location]);
+                $this->weather["{$location}w"] = $type;
+            }
+        }
     }
 
     public function jsonSerialize(): array
@@ -54,10 +62,8 @@ class NMap extends APP_GameClass implements JsonSerializable
         ];
     }
 
-    private function addRoute(string $port1, string $port2, int $distance, ?string $alliance)
+    private function addRoute(string $a, string $z, int $distance, ?string $alliance)
     {
-        $a = min($port1, $port2);
-        $z = max($port1, $port2);
         $routeId = "$a$z";
         if (!array_key_exists($a, $this->nodes)) {
             $this->addPort($a);
@@ -90,24 +96,32 @@ class NMap extends APP_GameClass implements JsonSerializable
     private function addHop(string $routeId, ?string $alliance): NNode
     {
         $count = count($this->routes[$routeId]) + 1;
-        $hopNode = new NNode("$routeId$count", $alliance, null);
+        $hopNode = new NNode("$routeId$count", $alliance);
         $this->nodes[$hopNode->id] = &$hopNode;
         return $hopNode;
+    }
+
+    private function addStorm(NNode &$hopNode): NNode
+    {
+        $stormNode = new NNode("{$hopNode->id}w", $hopNode->alliance);
+        $this->nodes[$stormNode->id] = &$stormNode;
+        $first = reset($hopNode->connections);
+        $hopNode->disconnect($first);
+        $stormNode->connect($first);
+        $stormNode->connect($hopNode);
+        return $stormNode;
     }
 
     // ----------------------------------------------------------------------
 
     public function getPossibleMoves(NPlane $plane): array
     {
-        $fuelMax = $plane->speedRemain;
-        if ($plane->tempSpeed) {
-            $fuelMax++;
-        }
+        $fuelMax = $plane->speedRemain + ($plane->tempSpeed ? 1 : 0);
         // VIP Nervous
         $planeHasNervous = intval($this->getUniqueValueFromDB("SELECT COUNT(1) FROM `pax` WHERE `player_id` = {$plane->id} AND `status` = 'SEAT' AND `vip` = 'NERVOUS'")) > 0;
         $visited = [];
         $best = [];
-        $queue = [new NMove(intval($plane->speedPenalty), $this->nodes[$plane->location], [], false)];
+        $queue = [new NMove(0, $this->nodes[$plane->location], [], false)];
         while (!empty($queue)) {
             $nextQueue = [];
             foreach ($queue as $move) {
@@ -119,9 +133,8 @@ class NMap extends APP_GameClass implements JsonSerializable
                 }
                 foreach ($move->node->connections as $connectedNode) {
                     $weather = $this->getNodeWeather($connectedNode);
-                    $fuel = $move->fuel + N_REF_WEATHER_SPEED[$weather];
+                    $fuel = $move->fuel + ($weather == 'FAST' ? 0 : 1);
                     $path = $pathString . $connectedNode->id . "/";
-                    $penalty = false;
 
                     // VIP Nervous: Can't travel through weather
                     if ($planeHasNervous && $weather != null) {
@@ -130,13 +143,7 @@ class NMap extends APP_GameClass implements JsonSerializable
 
                     // Can't exceed maximum fuel
                     if ($fuel > $fuelMax) {
-                        if ($weather == 'SLOW' && $fuel - 1 == $fuelMax) {
-                            // Except for the final move onto a storm, allow them to move 1 now + 1 penalty later
-                            $penalty = true;
-                            $fuel -= 1;
-                        } else {
-                            continue;
-                        }
+                        continue;
                     }
 
                     // Can't travel on special routes without the alliance
@@ -154,7 +161,7 @@ class NMap extends APP_GameClass implements JsonSerializable
                         continue;
                     }
 
-                    $nextQueue[] = new NMove($fuel, $connectedNode, $move->path, $penalty);
+                    $nextQueue[] = new NMove($fuel, $connectedNode, $move->path);
                 }
             }
             $queue = $nextQueue;

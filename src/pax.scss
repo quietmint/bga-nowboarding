@@ -8,7 +8,7 @@
 
   .paxlist {
     background: rgb(255 255 255 / 0.25);
-    max-height: 195px;
+    max-height: 220px;
     outline: 4px dashed rgb(255 255 255 / 0.5);
     overflow: hidden auto;
     transition: outline 200ms linear;
@@ -89,14 +89,16 @@
 
   .emptytxt {
     align-items: center;
-    top: 30px;
     color: rgb(255 255 255 / 0.5);
     display: flex;
     font: bold 17px/1 Consolas, monospace;
+    height: 140px;
     justify-content: center;
-    margin: 30px;
+    left: 20px;
     position: absolute;
+    right: 20px;
     text-align: center;
+    top: 30px;
     transition: color 200ms linear;
   }
 }
@@ -111,7 +113,7 @@
   padding: 5px;
 
   &.is-map {
-    min-height: 85px;
+    min-height: 130px;
   }
 }
 

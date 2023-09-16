@@ -112,10 +112,10 @@
 }
 
 .specialtag {
-  bottom: -5%;
+  bottom: 0;
   font-size: calc(var(--map-width) * 0.0125);
   position: absolute;
-  right: -15%;
+  right: -10%;
 
   .icon {
     height: 1em !important;
@@ -159,10 +159,10 @@
   align-items: center;
   background-image: linear-gradient(180deg, #1a237e, #01579b);
   display: flex;
-  height: 7%;
+  height: 6%;
   justify-content: center;
   transition: opacity 1s linear;
-  width: 3.5%;
+  width: 3%;
   z-index: 1;
 
   body.no-animation & {

@@ -46,7 +46,6 @@ CREATE TABLE `plane` (
     `origin` VARCHAR(50) DEFAULT NULL,
     `seat` INT(2) NOT NULL DEFAULT '1',
     `speed_remain` INT(2) NOT NULL DEFAULT '3',
-    `speed_penalty` TINYINT(1) NOT NULL DEFAULT '0',
     `speed` INT(2) NOT NULL DEFAULT '3',
     `temp_seat` TINYINT(1) NOT NULL DEFAULT '0',
     `temp_speed` TINYINT(1) NOT NULL DEFAULT '0',

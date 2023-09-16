@@ -2,7 +2,7 @@
   background-image: url(img/map23.png);
 
   .node-ATL {
-    left: 66.5%; // 67.1%;
+    left: 66.5%;
     top: 60.6%;
   }
 
@@ -11,9 +11,19 @@
     top: 53.2%;
   }
 
+  .node-ATLDEN1w {
+    left: 63.4%;
+    top: 56.9%;
+  }
+
   .node-ATLDEN2 {
     left: 52.9%;
     top: 45.8%;
+  }
+
+  .node-ATLDEN2w {
+    left: 56.6%;
+    top: 49.5%;
   }
 
   .node-ATLDEN3 {
@@ -21,8 +31,18 @@
     top: 37.8%;
   }
 
+  .node-ATLDEN3w {
+    left: 48.75%;
+    top: 41.8%;
+  }
+
   .node-ATLDFW1 {
     left: 60.8%;
+    top: 60.6%;
+  }
+
+  .node-ATLDFW1w {
+    left: 63.65%;
     top: 60.6%;
   }
 
@@ -31,9 +51,19 @@
     top: 60.6%;
   }
 
+  .node-ATLDFW2w {
+    left: 57.35%;
+    top: 60.6%;
+  }
+
   .node-ATLJFK1 {
     left: 74.2%;
     top: 57.6%;
+  }
+
+  .node-ATLJFK1w {
+    left: 70.35%;
+    top: 59.1%;
   }
 
   .node-ATLJFK2 {
@@ -41,9 +71,9 @@
     top: 49.9%;
   }
 
-  .node-ATLMIA1 {
-    left: 69.4%;
-    top: 72.4%;
+  .node-ATLJFK2w {
+    left: 77.5%;
+    top: 53.75%;
   }
 
   .node-ATLORD1 {
@@ -51,9 +81,19 @@
     top: 47.9%;
   }
 
+  .node-ATLORD1w {
+    left: 67.6%;
+    top: 54.25%;
+  }
+
   .node-ATLORD2 {
     left: 67.7%;
     top: 36.3%;
+  }
+
+  .node-ATLORD2w {
+    left: 68.2%;
+    top: 42.1%;
   }
 
   .node-DEN {
@@ -66,9 +106,19 @@
     top: 39.8%;
   }
 
+  .node-DENDFW1w {
+    left: 38.9%;
+    top: 35.25%;
+  }
+
   .node-DENDFW2 {
     left: 44.3%;
     top: 49.8%;
+  }
+
+  .node-DENDFW2w {
+    left: 42.45%;
+    top: 44.8%;
   }
 
   .node-DENLAX1 {
@@ -76,34 +126,24 @@
     top: 36.1%;
   }
 
+  .node-DENLAX1w {
+    left: 33.45%;
+    top: 33.4%;
+  }
+
   .node-DENLAX2 {
     left: 22.7%;
     top: 41.2%;
   }
 
-  .node-DENORD1 {
-    left: 43.1%;
-    top: 29.1%;
-  }
-
-  .node-DENORD2 {
-    left: 53.6%;
-    top: 27.7%;
-  }
-
-  .node-DENSFO1 {
-    left: 27.7%;
-    top: 30.7%;
-  }
-
-  .node-DENSFO2 {
-    left: 18.2%;
-    top: 30.7%;
+  .node-DENLAX2w {
+    left: 26.2%;
+    top: 38.65%;
   }
 
   .node-DFW {
     left: 48.5%;
-    top: 60%; // 60.3%;
+    top: 60%;
   }
 
   .node-DFWLAX1 {
@@ -111,9 +151,19 @@
     top: 56.8%;
   }
 
+  .node-DFWLAX1w {
+    left: 44.65%;
+    top: 58.4%;
+  }
+
   .node-DFWLAX2 {
     left: 32.2%;
     top: 53.2%;
+  }
+
+  .node-DFWLAX2w {
+    left: 36.5%;
+    top: 55%;
   }
 
   .node-DFWLAX3 {
@@ -121,9 +171,19 @@
     top: 49.9%;
   }
 
+  .node-DFWLAX3w {
+    left: 28.05%;
+    top: 51.55%;
+  }
+
   .node-DFWMIA1 {
     left: 56%;
     top: 69.4%;
+  }
+
+  .node-DFWMIA1w {
+    left: 52.25%;
+    top: 64.7%;
   }
 
   .node-DFWMIA2 {
@@ -131,8 +191,13 @@
     top: 78.3%;
   }
 
+  .node-DFWMIA2w {
+    left: 60%;
+    top: 73.85%;
+  }
+
   .node-JFK {
-    left: 84.4%; // 85.2%;
+    left: 84.4%;
     top: 38.5%;
   }
 
@@ -141,13 +206,23 @@
     top: 34.7%;
   }
 
+  .node-JFKORD1w {
+    left: 81.5%;
+    top: 36.6%;
+  }
+
   .node-JFKORD2 {
     left: 71.5%;
     top: 30.9%;
   }
 
+  .node-JFKORD2w {
+    left: 75.05%;
+    top: 32.8%;
+  }
+
   .node-LAX {
-    left: 17%; // 16.4%;
+    left: 17%;
     top: 47.8%;
   }
 
@@ -156,9 +231,19 @@
     top: 59.6%;
   }
 
+  .node-LAXMIA1w {
+    left: 21.6%;
+    top: 53.7%;
+  }
+
   .node-LAXMIA2 {
     left: 35.9%;
     top: 69.3%;
+  }
+
+  .node-LAXMIA2w {
+    left: 31.05%;
+    top: 64.45%;
   }
 
   .node-LAXMIA3 {
@@ -166,9 +251,19 @@
     top: 78.4%;
   }
 
+  .node-LAXMIA3w {
+    left: 41.45%;
+    top: 73.85%;
+  }
+
   .node-LAXMIA4 {
     left: 58.9%;
     top: 83.8%;
+  }
+
+  .node-LAXMIA4w {
+    left: 52.95%;
+    top: 81.1%;
   }
 
   .node-LAXSFO1 {
@@ -176,9 +271,24 @@
     top: 39.3%;
   }
 
+  .node-LAXSFO1w {
+    left: 15.05%;
+    top: 43.55%;
+  }
+
   .node-MIA {
-    left: 71.5%; // 72.7%;
+    left: 71.5%;
     top: 87.5%;
+  }
+
+  .node-MIAATL1 {
+    left: 69.4%;
+    top: 72.4%;
+  }
+
+  .node-MIAATL1w {
+    left: 70.45%;
+    top: 79.95%;
   }
 
   .node-ORD {
@@ -186,23 +296,78 @@
     top: 28.3%;
   }
 
-  .node-ORDSFO1 {
-    left: 49.5%;
-    top: 19.1%;
+  .node-ORDDEN1 {
+    left: 53.6%;
+    top: 27.7%;
   }
 
-  .node-ORDSFO2 {
-    left: 34.6%;
-    top: 16%;
+  .node-ORDDEN1w {
+    left: 58.8%;
+    top: 28%;
   }
 
-  .node-ORDSFO3 {
+  .node-ORDDEN2 {
+    left: 43.1%;
+    top: 29.1%;
+  }
+
+  .node-ORDDEN2w {
+    left: 48.35%;
+    top: 28.4%;
+  }
+
+  .node-SFO {
+    left: 11.4%;
+    top: 30.3%;
+  }
+
+  .node-SFODEN1 {
+    left: 18.2%;
+    top: 30.7%;
+  }
+
+  .node-SFODEN1w {
+    left: 14.8%;
+    top: 30.5%;
+  }
+
+  .node-SFODEN2 {
+    left: 27.7%;
+    top: 30.7%;
+  }
+
+  .node-SFODEN2w {
+    left: 22.95%;
+    top: 30.7%;
+  }
+
+  .node-SFOORD1 {
     left: 22.6%;
     top: 19.5%;
   }
 
-  .node-SFO {
-    left: 11.4%; // 10.7%;
-    top: 30.3%;
+  .node-SFOORD1w {
+    left: 18%;
+    top: 23%;
+  }
+
+  .node-SFOORD2 {
+    left: 34.6%;
+    top: 16%;
+  }
+
+  .node-SFOORD2w {
+    left: 28.6%;
+    top: 17.75%;
+  }
+
+  .node-SFOORD3 {
+    left: 49.5%;
+    top: 19.1%;
+  }
+
+  .node-SFOORD3w {
+    left: 42.05%;
+    top: 17.55%;
   }
 }

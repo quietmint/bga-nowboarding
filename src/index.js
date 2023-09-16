@@ -186,7 +186,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
             args[k] = `<span class="nbtag vip"><i class="icon vipstar"></i> ${args[k]}</span>`;
           } else if (k == "wrapper") {
             if (args[k] == "weatherFlex") {
-              const weatherIcon = `<div class="weather node"><i class="icon weather-${args.weatherIcon}"></i>` + (args.weatherIcon == "SLOW" ? '<div class="fuel">2</div>' : "") + "</div>";
+              const weatherIcon = `<div class="weather node"><i class="icon weather-${args.weatherIcon}"></i></div>`;
               log = `<div class="log-flex-wrapper">${weatherIcon}<div>${log}</div></div>`;
             }
           }
@@ -633,8 +633,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     },
 
     getRotation(el, otherEl) {
-      const elPos = dojo.position(el);
-      const otherPos = dojo.position(otherEl);
+      const elPos = this.getElement(el)?.getBoundingClientRect();
+      const otherPos = this.getElement(otherEl)?.getBoundingClientRect();
       if (!elPos || !otherPos) {
         return null;
       }
@@ -786,12 +786,19 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       for (const location in this.gamedatas.map.weather) {
         const token = this.gamedatas.map.weather[location];
         this.createWeather(location, token);
+        if (token == "SLOW" && !location.endsWith("w")) {
+          const locationW = location + "w";
+          if (!this.gamedatas.map.nodes[locationW]) {
+            this.gamedatas.map.nodes[locationW] = this.gamedatas.map.nodes[location];
+            this.renderMapNode(locationW);
+          }
+          this.createWeather(locationW, token);
+        }
       }
     },
 
     createWeather(location, token) {
       console.log(`🌤️ Create weather ${token} at ${location}`);
-      const fuel = token == "FAST" ? "" : '<div class="fuel">2</div>';
       const txt = token == "FAST" ? _("Tailwind: No fuel cost to move through this space") : _("Storm: Double fuel cost to move through this space");
       const alliance = this.gamedatas.map.nodes[location];
       let specialHtml = "";
@@ -799,7 +806,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         const specialTxt = this.format_string_recursive(_("Special Route: Restricted to alliance ${specialRoute}"), { specialRoute: alliance });
         specialHtml = `<div class="specialtag alliance-${alliance}" title="${specialTxt}"><i class="icon logo-${alliance}"></i></div>`;
       }
-      this.mapEl.insertAdjacentHTML("beforeend", `<div id="weather-${location}" class="weather node node-${location}" title="${txt}" style="opacity: 0">${specialHtml}<i class="icon weather-${token}"></i>${fuel}</div>`);
+      this.mapEl.insertAdjacentHTML("beforeend", `<div id="weather-${location}" class="weather node node-${location}" title="${txt}" style="opacity: 0">${specialHtml}<i class="icon weather-${token}"></i></div>`);
       const el = document.getElementById(`weather-${location}`);
       this.transitionElement(el, (el) => (el.style.opacity = null));
     },
