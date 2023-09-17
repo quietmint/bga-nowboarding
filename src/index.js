@@ -819,14 +819,14 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
     createWeather(location, token) {
       console.log(`🌤️ Create weather ${token} at ${location}`);
-      const txt = token == "FAST" ? _("Tailwind: No fuel cost to move through this space") : _("Storm: Double fuel cost to move through this space");
+      const txt = token == "FAST" ? _("Tailwind: No fuel cost to move through this space") : _("Storm");
       const alliance = this.gamedatas.map.nodes[location];
       let specialHtml = "";
       if (alliance) {
         const specialTxt = this.format_string_recursive(_("Special Route: Restricted to alliance ${specialRoute}"), { specialRoute: alliance });
         specialHtml = `<div class="specialtag alliance-${alliance}" title="${specialTxt}"><i class="icon logo-${alliance}"></i></div>`;
       }
-      this.mapEl.insertAdjacentHTML("beforeend", `<div id="weather-${location}" class="weather node node-${location}" title="${txt}" style="opacity: 0">${specialHtml}<i class="icon weather-${token}"></i></div>`);
+      this.mapEl.insertAdjacentHTML("beforeend", `<div id="weather-${location}" class="weather node node-${location}" title="${txt}" style="opacity: 0"><i class="icon weather-${token}"></i>${specialHtml}</div>`);
       const el = document.getElementById(`weather-${location}`);
       this.transitionElement(el, (el) => (el.style.opacity = null));
     },
@@ -1473,7 +1473,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
             weatherEl.classList.add("hidespecial");
           }
         }
-        this.mapEl.insertAdjacentHTML("beforeend", `<div id="move-${move.location}" class="move node node-${move.location} gradient-${alliance}">${specialHtml}${move.fuel}</div>`);
+        this.mapEl.insertAdjacentHTML("beforeend", `<div id="move-${move.location}" class="move node node-${move.location} gradient-${alliance}">${move.fuel}${specialHtml}</div>`);
         const moveEl = document.getElementById(`move-${move.location}`);
         moveEl.addEventListener("click", (e) => this.takeMoveAction(plane, move));
         moveCount++;
