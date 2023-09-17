@@ -51,7 +51,7 @@ class action_nowboarding extends APP_GameAction
   {
     self::setAjaxMode();
     self::checkVersion();
-    
+
     $accept = self::getArg('accept', AT_bool, true);
     $this->game->vip($accept);
     self::ajaxResponse();
@@ -121,8 +121,9 @@ class action_nowboarding extends APP_GameAction
   {
     self::setAjaxMode();
     self::checkVersion();
-    $location = self::getArg('location', AT_alphanum, true);
-    $this->game->move($location);
+    $from = self::getArg('from', AT_alphanum, true);
+    $to = self::getArg('to', AT_alphanum, true);
+    $this->game->move($from, $to);
     self::ajaxResponse();
   }
 
@@ -131,7 +132,8 @@ class action_nowboarding extends APP_GameAction
     self::setAjaxMode();
     self::checkVersion();
     $paxId = self::getArg('paxId', AT_int, true);
-    $this->game->board($paxId);
+    $paxPlayerId = self::getArg('paxPlayerId', AT_int, false);
+    $this->game->board($paxId, $paxPlayerId);
     self::ajaxResponse();
   }
 
@@ -140,7 +142,8 @@ class action_nowboarding extends APP_GameAction
     self::setAjaxMode();
     self::checkVersion();
     $paxId = self::getArg('paxId', AT_int, true);
-    $this->game->deplane($paxId);
+    $paxPlayerId = self::getArg('paxPlayerId', AT_int, false);
+    $this->game->deplane($paxId, $paxPlayerId);
     self::ajaxResponse();
   }
 }

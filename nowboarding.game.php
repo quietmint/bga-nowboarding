@@ -23,10 +23,6 @@ class NowBoarding extends Table
 {
     public function test()
     {
-        $this->DbQuery("DELETE FROM `weather`");
-        $this->setupWeather(3);
-        $hourInfo = $this->getHourInfo();
-        $this->advanceWeather($hourInfo);
     }
 
     public function __construct()
@@ -1093,7 +1089,7 @@ class NowBoarding extends Table
         $this->gamestate->initializePrivateState($playerId);
     }
 
-    public function move(string $location): void
+    public function move(string $from, string $to): void
     {
         $this->checkAction('move');
         if ($this->enforceTimer()) {
@@ -1101,20 +1097,24 @@ class NowBoarding extends Table
         }
         $playerId = $this->getCurrentPlayerId();
         $plane = $this->getPlaneById($playerId);
+        if ($plane->location != $from) {
+            // Race condition
+            return;
+        }
         $map = $this->getMap();
         $possible = $map->getPossibleMoves($plane);
-        if (!array_key_exists($location, $possible)) {
-            throw new BgaVisibleSystemException("move: $plane cannot reach $location [???]");
+        if (!array_key_exists($to, $possible)) {
+            throw new BgaVisibleSystemException("move: $plane cannot reach $to [???]");
         }
 
-        $move = $possible[$location];
+        $move = $possible[$to];
         $plane->origin = $move->getOrigin();
-        $plane->location = $location;
+        $plane->location = $to;
         $plane->speedRemain -= $move->fuel;
         if ($plane->speedRemain == -1 && $plane->tempSpeed) {
             $this->useTempSpeed($plane);
         } else if ($plane->speedRemain < 0) {
-            throw new BgaVisibleSystemException("move: $plane not enough fuel to reach $location with speedRemain={$plane->speedRemain}, tempSpeed={$plane->tempSpeed} [???]");
+            throw new BgaVisibleSystemException("move: $plane not enough fuel to reach $to with speedRemain={$plane->speedRemain}, tempSpeed={$plane->tempSpeed} [???]");
         }
         $this->DbQuery("UPDATE `plane` SET `location` = '{$plane->location}', `origin` = '{$plane->origin}', `speed_remain` = {$plane->speedRemain} WHERE `player_id` = {$plane->id}");
         $this->DbQuery("UPDATE `pax` SET `moves` = `moves` + {$move->fuel} WHERE `status` = 'SEAT' AND `player_id` = {$plane->id}");
@@ -1152,7 +1152,7 @@ class NowBoarding extends Table
         }
 
         // Notify UI
-        $msg = strlen($location) == 3 ? N_REF_MSG['movePort'] : N_REF_MSG['move'];
+        $msg = strlen($plane->location) == 3 ? N_REF_MSG['movePort'] : N_REF_MSG['move'];
         $this->notifyAllPlayers('move', $msg, [
             'fuel' => $move->fuel,
             'location' => $plane->location,
@@ -1179,10 +1179,14 @@ class NowBoarding extends Table
         ]);
     }
 
-    public function board(int $paxId): void
+    public function board(int $paxId, ?int $paxPlayerId): void
     {
         $this->checkAction('board');
         if ($this->enforceTimer()) {
+            return;
+        }
+        if (!$this->validatePax($paxId, $paxPlayerId)) {
+            // Race condition
             return;
         }
         $playerId = $this->getCurrentPlayerId();
@@ -1325,10 +1329,14 @@ class NowBoarding extends Table
         ]);
     }
 
-    public function deplane(int $paxId): void
+    public function deplane(int $paxId, ?int $paxPlayerId): void
     {
         $this->checkAction('deplane');
         if ($this->enforceTimer()) {
+            return;
+        }
+        if (!$this->validatePax($paxId, $paxPlayerId)) {
+            // Race condition
             return;
         }
         $playerId = $this->getCurrentPlayerId();
@@ -1839,6 +1847,12 @@ class NowBoarding extends Table
             $sql .= " WHERE `status` IN ('$status')";
         }
         return intval($this->getUniqueValueFromDB($sql));
+    }
+
+    private function validatePax(int $paxId, ?int $paxPlayerId): bool
+    {
+        $sql = "SELECT COUNT(1) FROM `pax` WHERE `pax_id` = $paxId AND `player_id`" . ($paxPlayerId == null ? " IS NULL" : " = $paxPlayerId");
+        return $this->getUniqueValueFromDB($sql) > 0;
     }
 
     private function countComplaint(): int

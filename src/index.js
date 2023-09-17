@@ -583,9 +583,9 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       if (this.isCurrentPlayerActive()) {
         const pax = this.gamedatas.pax[paxId];
         if (pax.status == "SEAT" && pax.playerId == this.player_id) {
-          this.takeAction("deplane", { paxId: Math.abs(pax.id) });
+          this.takeAction("deplane", { paxId: Math.abs(pax.id), paxPlayerId: pax.playerId });
         } else {
-          this.takeAction("board", { paxId: Math.abs(pax.id) });
+          this.takeAction("board", { paxId: Math.abs(pax.id), paxPlayerId: pax.playerId });
         }
       }
     },
@@ -613,7 +613,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       }
       const dialogPromise = dialog ? this.confirmationDialogPromise(dialog) : Promise.resolve();
       dialogPromise.then(
-        () => this.takeAction("move", move),
+        () => this.takeAction("move", { from: plane.location, to: move.location }),
         () => {}
       );
     },
