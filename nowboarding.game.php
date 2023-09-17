@@ -221,7 +221,7 @@ class NowBoarding extends Table
     public function checkVersion(int $clientVersion): void
     {
         if ($clientVersion != $this->getGlobal(N_BGA_VERSION)) {
-            throw new BgaVisibleSystemException(self::_(N_REF_MSG_EX['version']));
+            throw new BgaUserException('!!!checkVersion');
         }
     }
 
@@ -1523,11 +1523,13 @@ class NowBoarding extends Table
     private function enforceTimer(): bool
     {
         // We need to check BGA speed in case table switched to turn-based
+        $endTime = $this->getVarInt('endTime');
         if (
-            $this->getGlobal(N_OPTION_TIMER)
+            $endTime > 0
+            && time() > $endTime
+            && $this->getGlobal(N_OPTION_TIMER)
             && in_array($this->getGlobal(N_BGA_CLOCK), N_REF_BGA_CLOCK_REALTIME)
             && $this->gamestate->state()['name'] == 'fly'
-            && time() > $this->getVarInt('endTime')
         ) {
             $this->notifyAllPlayers('flyTimer', '', []);
             $this->gamestate->setAllPlayersNonMultiactive('maintenance');
@@ -2330,9 +2332,9 @@ class NowBoarding extends Table
             }
         }
 
-        // Add 1 minute to all clocks
-        $this->giveExtraTimeAll(60);
-        self::applyDbUpgradeToAllDB("UPDATE `DBPREFIX_var` SET `value` = `value` + 60 WHERE `key` = 'endTime'");
+        // Give extra time
+        $this->giveExtraTimeAll(9999);
+        $this->setVar('endTime', null);
 
         self::warn("upgradeTableDb complete: fromVersion=$fromVersion");
     }

@@ -199,6 +199,14 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     },
 
     /* @Override */
+    showMessage: function (msg, type) {
+      if (type == "error" && msg?.startsWith("!!!")) {
+        return; // suppress red banner and gamelog message
+      }
+      this.inherited(arguments);
+    },
+
+    /* @Override */
     getRanking: function () {
       this.inherited(arguments);
       this.pageheaderfooter.showSectionFromButton("pageheader_howtoplay");
@@ -545,11 +553,23 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           data,
           this,
           () => {},
-          (error) => {
+          (error, errorMsg) => {
             const duration = Date.now() - start;
             if (error) {
-              console.error(`Take action ${action} error in ${duration}ms`);
-              reject();
+              console.error(`Take action ${action} error in ${duration}ms`, errorMsg);
+              if (errorMsg == "!!!checkVersion") {
+                console.warn(`🆙 New version available`);
+                this.infoDialog(
+                  _("A new version of this game is now available"),
+                  _("Reload Required"),
+                  () => {
+                    window.location.reload();
+                  },
+                  true
+                );
+              } else {
+                reject(errorMsg);
+              }
             } else {
               console.log(`Take action ${action} done in ${duration}ms`);
               resolve();
