@@ -660,6 +660,7 @@ class NowBoarding extends Table
                     $args['vip'] = $vipInfo['name'];
                 }
                 $args['location'] = $x->location;
+                $args['i18n'] = ['desc', 'vip'];
             }
 
             $this->DbQuery("UPDATE `pax` SET `status` = '{$x->status}' WHERE `pax_id` = {$x->id}");
