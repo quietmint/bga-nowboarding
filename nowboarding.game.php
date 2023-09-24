@@ -1100,6 +1100,7 @@ class NowBoarding extends Table
         $plane = $this->getPlaneById($playerId);
         if ($plane->location != $from) {
             // Race condition
+            $this->notifyPlayer($playerId, 'noop', '', []);
             return;
         }
         $map = $this->getMap();
@@ -1186,11 +1187,12 @@ class NowBoarding extends Table
         if ($this->enforceTimer()) {
             return;
         }
+        $playerId = $this->getCurrentPlayerId();
         if (!$this->validatePax($paxId, $paxPlayerId)) {
             // Race condition
+            $this->notifyPlayer($playerId, 'noop', '', []);
             return;
         }
-        $playerId = $this->getCurrentPlayerId();
         $plane = $this->getPlaneById($playerId);
         self::_board($plane, $paxId);
         $this->awakenSnoozers($playerId);
@@ -1336,11 +1338,12 @@ class NowBoarding extends Table
         if ($this->enforceTimer()) {
             return;
         }
+        $playerId = $this->getCurrentPlayerId();
         if (!$this->validatePax($paxId, $paxPlayerId)) {
             // Race condition
+            $this->notifyPlayer($playerId, 'noop', '', []);
             return;
         }
-        $playerId = $this->getCurrentPlayerId();
         $plane = $this->getPlaneById($playerId);
         self::_deplane($plane, $paxId);
         $this->awakenSnoozers($playerId);
