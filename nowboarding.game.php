@@ -49,6 +49,7 @@ class NowBoarding extends Table
         }
         $this->reloadPlayersBasicInfos();
         $optionVip = $this->getGlobal(N_OPTION_VIP);
+        $optionMap = $this->getGlobal(N_OPTION_MAP);
 
         // Erase beginner flags (affects giveExtraTime)
         $this->DbQuery("UPDATE `player` SET `player_beginner` = NULL");
@@ -66,11 +67,17 @@ class NowBoarding extends Table
         $this->initStat('table', 'moves', 0);
         $this->initStat('table', 'movesFAST', 0);
         $this->initStat('table', 'movesSLOW', 0);
+        $this->initStat('table', 'movesNormal', 0);
+        $this->initStat('table', 'movesATL', 0);
+        $this->initStat('table', 'movesDFW', 0);
+        $this->initStat('table', 'movesLAX', 0);
+        $this->initStat('table', 'movesORD', 0);
+        if ($playerCount >= 4 || $optionMap == N_MAP_SEA) {
+            $this->initStat('table', 'movesSEA', 0);
+        }
         $this->initStat('table', 'pax', 0);
         $this->initStat('table', 'journeyAvg', 0);
         $this->initStat('table', 'journeyMax', 0);
-        $this->initStat('table', 'efficiencyAvg', 0);
-        $this->initStat('table', 'efficiencyMin', 0);
         $this->initStat('table', 'alliances', 0);
         $this->initStat('table', 'seat', 0);
         $this->initStat('table', 'speed', 0);
@@ -83,6 +90,11 @@ class NowBoarding extends Table
         $this->initStat('player', 'moves', 0);
         $this->initStat('player', 'movesFAST', 0);
         $this->initStat('player', 'movesSLOW', 0);
+        $this->initStat('player', 'movesNormal', 0);
+        $this->initStat('player', 'movesATL', 0);
+        $this->initStat('player', 'movesDFW', 0);
+        $this->initStat('player', 'movesLAX', 0);
+        $this->initStat('player', 'movesORD', 0);
         $this->initStat('player', 'ATL', 0);
         $this->initStat('player', 'DEN', 0);
         $this->initStat('player', 'DFW', 0);
@@ -90,10 +102,11 @@ class NowBoarding extends Table
         $this->initStat('player', 'LAX', 0);
         $this->initStat('player', 'MIA', 0);
         $this->initStat('player', 'ORD', 0);
-        if ($playerCount >= 4) {
+        $this->initStat('player', 'SFO', 0);
+        if ($playerCount >= 4 || $optionMap == N_MAP_SEA) {
+            $this->initStat('player', 'movesSEA', 0);
             $this->initStat('player', 'SEA', 0);
         }
-        $this->initStat('player', 'SFO', 0);
         $this->initStat('player', 'pax', 0);
         $this->initStat('player', 'cash', 0);
         $this->initStat('player', 'overpay', 0);
@@ -1118,25 +1131,39 @@ class NowBoarding extends Table
         } else if ($plane->speedRemain < 0) {
             throw new BgaVisibleSystemException("move: $plane not enough fuel to reach $to with speedRemain={$plane->speedRemain}, tempSpeed={$plane->tempSpeed} [???]");
         }
+        array_shift($move->path);
+        $distance = count($move->path);
         $this->DbQuery("UPDATE `plane` SET `location` = '{$plane->location}', `origin` = '{$plane->origin}', `speed_remain` = {$plane->speedRemain} WHERE `player_id` = {$plane->id}");
-        $this->DbQuery("UPDATE `pax` SET `moves` = `moves` + {$move->fuel} WHERE `status` = 'SEAT' AND `player_id` = {$plane->id}");
+        $this->DbQuery("UPDATE `pax` SET `moves` = `moves` + $distance WHERE `status` = 'SEAT' AND `player_id` = {$plane->id}");
 
         // Statistics
-        $this->incStat($move->fuel, 'moves');
-        $this->incStat($move->fuel, 'moves', $playerId);
-        array_shift($move->path);
+        $this->incStat($distance, 'moves');
+        $this->incStat($distance, 'moves', $playerId);
         $hasStorm = false;
         foreach ($move->path as $location) {
             if (strlen($location) == 3) {
+                // Airport visit
                 $this->incStat(1, $location, $playerId);
-            }
-            if (array_key_exists($location, $map->weather)) {
-                $type = $map->weather[$location];
-                if ($type == 'SLOW') {
-                    $hasStorm = true;
+            } else {
+                // Route move
+                $alliance = $map->nodes[$location]->alliance ?? "Normal";
+                $this->incStat(1, "moves$alliance");
+                $this->incStat(1, "moves$alliance", $playerId);
+                if (array_key_exists($location, $map->weather)) {
+                    $type = $map->weather[$location];
+                    if ($type == 'SLOW') {
+                        $hasStorm = true;
+                    }
+                    $this->incStat(1, "moves$type");
+                    $this->incStat(1, "moves$type", $playerId);
                 }
-                $this->incStat(1, "moves$type");
-                $this->incStat(1, "moves$type", $playerId);
+            }
+        }
+        $seatFull = $plane->seat - max($plane->seatRemain, 0);
+        for ($seat = 1; $seat <= $plane->seat; $seat++) {
+            $this->incStat($distance, "seatEmpty$seat", $playerId);
+            if ($seat <= $seatFull) {
+                $this->incStat($distance, "seatFull$seat", $playerId);
             }
         }
 
@@ -1156,7 +1183,7 @@ class NowBoarding extends Table
         // Notify UI
         $msg = strlen($plane->location) == 3 ? N_REF_MSG['movePort'] : N_REF_MSG['move'];
         $this->notifyAllPlayers('move', $msg, [
-            'fuel' => $move->fuel,
+            'fuel' => $distance,
             'location' => $plane->location,
             'plane' => $plane,
             'player_id' => $plane->id,
@@ -2148,6 +2175,11 @@ class NowBoarding extends Table
             $speed += $plane->speed;
             $tempSeat += intval($this->getStat('tempSeat', $plane->id));
             $tempSpeed += intval($this->getStat('tempSpeed', $plane->id));
+            for ($seat = 1; $seat <= $plane->seat; $seat++) {
+                $seatEmpty = intval($this->getStat("seatEmpty$seat", $plane->id));
+                $seatFull = intval($this->getStat("seatFull$seat", $plane->id));
+                $this->setStat(round($seatFull / $seatEmpty * 100, 2), "seat$seat", $plane->id);
+            }
         }
         $this->setStat($alliances / $playerCount, 'alliances');
         $this->setStat($seat / $playerCount, 'seat');
@@ -2158,13 +2190,9 @@ class NowBoarding extends Table
         $complaintPort = $this->countPaxByStatus('COMPLAINT');
         $journeyAvg = intval($this->getUniqueValueFromDB("SELECT AVG(`moves`) FROM `pax` WHERE `status` IN ('CASH', 'PAID')"));
         $journeyMax = intval($this->getUniqueValueFromDB("SELECT MAX(`moves`) FROM `pax` WHERE `status` IN ('CASH', 'PAID')"));
-        $efficiencyAvg = floatval($this->getUniqueValueFromDB("SELECT ROUND(SUM(`optimal`)/SUM(`moves`) * 100, 2) FROM `pax` WHERE `status` IN ('CASH', 'PAID')"));
-        $efficiencyMin = floatval($this->getUniqueValueFromDB("SELECT MIN(ROUND(`optimal`/`moves` * 100, 2)) FROM `pax` WHERE `status` IN ('CASH', 'PAID')"));
         $this->setStat($complaintPort, 'complaintPort');
         $this->setStat($journeyAvg, 'journeyAvg');
         $this->setStat($journeyMax, 'journeyMax');
-        $this->setStat($efficiencyAvg, 'efficiencyAvg');
-        $this->setStat($efficiencyMin, 'efficiencyMin');
 
         // Calculate final score
         $complaint = $this->countComplaint();

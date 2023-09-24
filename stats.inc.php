@@ -37,12 +37,42 @@ $stats_type = [
         ],
         'movesFAST' => [
             'id' => 16,
-            'name' => totranslate('Move bonus from tailwinds'),
+            'name' => totranslate('Moves through tailwinds'),
             'type' => 'int'
         ],
         'movesSLOW' => [
             'id' => 17,
-            'name' => totranslate('Move penalty from storms'),
+            'name' => totranslate('Moves through storms'),
+            'type' => 'int'
+        ],
+        'movesNormal' => [
+            'id' => 40,
+            'name' => totranslate('Moves on normal routes'),
+            'type' => 'int'
+        ],
+        'movesATL' => [
+            'id' => 41,
+            'name' => totranslate('Moves on ATL routes'),
+            'type' => 'int'
+        ],
+        'movesDFW' => [
+            'id' => 42,
+            'name' => totranslate('Moves on DFW routes'),
+            'type' => 'int'
+        ],
+        'movesLAX' => [
+            'id' => 43,
+            'name' => totranslate('Moves on LAX routes'),
+            'type' => 'int'
+        ],
+        'movesORD' => [
+            'id' => 44,
+            'name' => totranslate('Moves on ORD routes'),
+            'type' => 'int'
+        ],
+        'movesSEA' => [
+            'id' => 45,
+            'name' => totranslate('Moves on SEA routes'),
             'type' => 'int'
         ],
 
@@ -60,16 +90,6 @@ $stats_type = [
             'id' => 39,
             'name' => totranslate('Maximum moves/passenger'),
             'type' => 'int'
-        ],
-        'efficiencyAvg' => [
-            'id' => 36,
-            'name' => totranslate('Average efficiency %'),
-            'type' => 'float'
-        ],
-        'efficiencyMin' => [
-            'id' => 37,
-            'name' => totranslate('Minimum efficiency %'),
-            'type' => 'float'
         ],
 
         'alliances' => [
@@ -133,12 +153,42 @@ $stats_type = [
         ],
         'movesFAST' => [
             'id' => 16,
-            'name' => totranslate('Move bonus from tailwinds'),
+            'name' => totranslate('Moves through tailwinds'),
             'type' => 'int'
         ],
         'movesSLOW' => [
             'id' => 17,
-            'name' => totranslate('Move penalty from storms'),
+            'name' => totranslate('Moves through storms'),
+            'type' => 'int'
+        ],
+        'movesNormal' => [
+            'id' => 40,
+            'name' => totranslate('Moves on normal routes'),
+            'type' => 'int'
+        ],
+        'movesATL' => [
+            'id' => 41,
+            'name' => totranslate('Moves on ATL routes'),
+            'type' => 'int'
+        ],
+        'movesDFW' => [
+            'id' => 42,
+            'name' => totranslate('Moves on DFW routes'),
+            'type' => 'int'
+        ],
+        'movesLAX' => [
+            'id' => 43,
+            'name' => totranslate('Moves on LAX routes'),
+            'type' => 'int'
+        ],
+        'movesORD' => [
+            'id' => 44,
+            'name' => totranslate('Moves on ORD routes'),
+            'type' => 'int'
+        ],
+        'movesSEA' => [
+            'id' => 45,
+            'name' => totranslate('Moves on SEA routes'),
             'type' => 'int'
         ],
 
@@ -238,6 +288,93 @@ $stats_type = [
             'id' => 58,
             'name' => totranslate('Temporary Speed unused'),
             'type' => 'int'
+        ],
+
+        'seat1' => [
+            'id' => 61,
+            'name' => totranslate('Seat 1 utilization %'),
+            'type' => 'float'
+        ],
+        'seat2' => [
+            'id' => 62,
+            'name' => totranslate('Seat 2 utilization %'),
+            'type' => 'float'
+        ],
+        'seat3' => [
+            'id' => 63,
+            'name' => totranslate('Seat 3 utilization %'),
+            'type' => 'float'
+        ],
+        'seat4' => [
+            'id' => 64,
+            'name' => totranslate('Seat 4 utilization %'),
+            'type' => 'float'
+        ],
+        'seat5' => [
+            'id' => 65,
+            'name' => totranslate('Seat 5 utilization %'),
+            'type' => 'float'
+        ],
+
+        'seatEmpty1' => [
+            'id' => 9061,
+            'name' => '',
+            'type' => 'int',
+            'display' => 'limited',
+        ],
+        'seatFull1' => [
+            'id' => 9161,
+            'name' => '',
+            'type' => 'int',
+            'display' => 'limited',
+        ],
+        'seatEmpty2' => [
+            'id' => 9062,
+            'name' => '',
+            'type' => 'int',
+            'display' => 'limited',
+        ],
+        'seatFull2' => [
+            'id' => 9162,
+            'name' => '',
+            'type' => 'int',
+            'display' => 'limited',
+        ],
+        'seatEmpty3' => [
+            'id' => 9063,
+            'name' => '',
+            'type' => 'int',
+            'display' => 'limited',
+        ],
+        'seatFull3' => [
+            'id' => 9163,
+            'name' => '',
+            'type' => 'int',
+            'display' => 'limited',
+        ],
+        'seatEmpty4' => [
+            'id' => 9064,
+            'name' => '',
+            'type' => 'int',
+            'display' => 'limited',
+        ],
+        'seatFull4' => [
+            'id' => 9164,
+            'name' => '',
+            'type' => 'int',
+            'display' => 'limited',
+        ],
+        'seatEmpty5' => [
+            'id' => 9065,
+            'name' => '',
+            'type' => 'int',
+            'display' => 'limited',
+        ],
+        'seatFull5' => [
+            'id' => 9165,
+            'name' => '',
+            'type' => 'int',
+            'display' => 'limited',
         ],
     ]
 ];
