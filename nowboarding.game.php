@@ -2178,7 +2178,9 @@ class NowBoarding extends Table
             for ($seat = 1; $seat <= $plane->seat; $seat++) {
                 $seatEmpty = intval($this->getStat("seatEmpty$seat", $plane->id));
                 $seatFull = intval($this->getStat("seatFull$seat", $plane->id));
-                $this->setStat(round($seatFull / $seatEmpty * 100, 2), "seat$seat", $plane->id);
+                // BGA bug #109: https://studio.boardgamearena.com/bug?id=109
+                // setStat is broken, use initStat as workaround
+                $this->initStat('player', "seat$seat", round($seatFull / $seatEmpty * 100, 2), $plane->id);
             }
         }
         $this->setStat($alliances / $playerCount, 'alliances');
