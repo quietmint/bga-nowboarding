@@ -2164,15 +2164,15 @@ class NowBoarding extends Table
         // Calculate final statistics
         $planes = $this->getPlanesByIds();
         $playerCount = count($planes);
-        $alliances = 0;
-        $seat = 0;
-        $speed = 0;
+        $totalAlliances = 0;
+        $totalSeat = 0;
+        $totalSpeed = 0;
         $tempSeat = 0;
         $tempSpeed = 0;
         foreach ($planes as $plane) {
-            $alliances += count($plane->alliances);
-            $seat += $plane->seat;
-            $speed += $plane->speed;
+            $totalAlliances += count($plane->alliances);
+            $totalSeat += $plane->seat;
+            $totalSpeed += $plane->speed;
             $tempSeat += intval($this->getStat('tempSeat', $plane->id));
             $tempSpeed += intval($this->getStat('tempSpeed', $plane->id));
             for ($seat = 1; $seat <= $plane->seat; $seat++) {
@@ -2185,9 +2185,9 @@ class NowBoarding extends Table
                 }
             }
         }
-        $this->setStat($alliances / $playerCount, 'alliances');
-        $this->setStat($seat / $playerCount, 'seat');
-        $this->setStat($speed / $playerCount, 'speed');
+        $this->setStat($totalAlliances / $playerCount, 'alliances');
+        $this->setStat($totalSeat / $playerCount, 'seat');
+        $this->setStat($totalSpeed / $playerCount, 'speed');
         $this->setStat($tempSeat, 'tempSeat');
         $this->setStat($tempSpeed, 'tempSpeed');
 
