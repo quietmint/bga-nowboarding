@@ -150,50 +150,50 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         // Translate log message
         log = this.clienttranslate_string(log) || "";
 
-        // Translate args listed in i18n
-        if (args.i18n) {
-          for (const k of args.i18n) {
-            args[k] = this.clienttranslate_string(args[k]) || "";
-          }
-        }
-
-        // Format args with HTML
+        // Create a new object to handle string substitution
+        const sub = {};
         for (const k in args) {
           if (k == "i18n") {
             continue;
           }
 
-          // Process nested objects recursively
+          // Convert argument to (translated) string
           if (args[k]?.log && args[k]?.args) {
-            args[k] = this.format_string_recursive(args[k].log, args[k].args);
+            // Process nested arguments recursively
+            sub[k] = this.format_string_recursive(args[k].log, args[k].args);
+          } else {
+            sub[k] = args[k];
+            if (args.i18n?.includes(k)) {
+              sub[k] = this.clienttranslate_string(sub[k]);
+            }
           }
 
+          // Format argument with HTML
           if (k == "alliance") {
-            args[k] = `<span class="nbtag alliance-${args[k]}"><i class="icon logo-${args[k]}"></i> ${args[k]}</span>`;
+            sub[k] = `<span class="nbtag alliance-${sub[k]}"><i class="icon logo-${sub[k]}"></i> ${sub[k]}</span>`;
           } else if (k == "cash") {
-            args[k] = `<span class="nbtag cash"><i class="icon cash"></i> ${args[k]}</span>`;
+            sub[k] = `<span class="nbtag cash"><i class="icon cash"></i> ${sub[k]}</span>`;
           } else if (k == "complaint") {
-            args[k] = `<span class="nbtag complaint"><i class="icon complaint"></i> ${args[k]}</span>`;
+            sub[k] = `<span class="nbtag complaint"><i class="icon complaint"></i> ${sub[k]}</span>`;
           } else if (k == "location") {
-            args[k] = `<b>${args[k]}</b>`;
+            sub[k] = `<b>${sub[k]}</b>`;
           } else if (k == "seat") {
-            args[k] = `<span class="nbtag seat"><i class="icon seat"></i> ${args[k]}</span>`;
+            sub[k] = `<span class="nbtag seat"><i class="icon seat"></i> ${sub[k]}</span>`;
           } else if (k == "speed") {
-            args[k] = `<span class="nbtag speed"><i class="icon speed"></i> ${args[k]}</span>`;
+            sub[k] = `<span class="nbtag speed"><i class="icon speed"></i> ${sub[k]}</span>`;
           } else if (k == "temp") {
-            args[k] = `<span class="nbtag ${args.tempIcon}"><i class="icon ${args.tempIcon}"></i> ${args[k]}</span>`;
+            sub[k] = `<span class="nbtag ${args.tempIcon}"><i class="icon ${args.tempIcon}"></i> ${sub[k]}</span>`;
           } else if (k == "vip") {
-            args[k] = `<span class="nbtag vip"><i class="icon vipstar"></i> ${args[k]}</span>`;
+            sub[k] = `<span class="nbtag vip"><i class="icon vipstar"></i> ${sub[k]}</span>`;
           } else if (k == "wrapper") {
-            if (args[k] == "weatherFlex") {
-              const weatherIcon = `<div class="weather node"><i class="icon weather-${args.weatherIcon}"></i></div>`;
-              log = `<div class="log-flex-wrapper">${weatherIcon}<div>${log}</div></div>`;
+            if (sub[k] == "weatherFlex") {
+              log = `<div class="log-flex-wrapper"><div class="weather node"><i class="icon weather-${args.weatherIcon}"></i></div><div>${log}</div></div>`;
             }
           }
         }
 
         // Finally apply string substitution
-        return dojo.string.substitute(log, args);
+        return dojo.string.substitute(log, sub);
       }
       return "";
     },
@@ -305,6 +305,10 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
     // ----------------------------------------------------------------------
 
+    isReadOnly() {
+      return this.isSpectator || typeof g_replayFrom != "undefined" || g_archive_mode;
+    },
+
     onEnteringState(stateName, args) {
       if (stateName == "fly") {
         if (args.args.endTime) {
@@ -312,13 +316,15 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           document.body.classList.add("no_time_limit");
           const destEl = document.getElementById("page-title");
           destEl.insertAdjacentHTML("afterbegin", '<div id="nbcountdown"></div>');
-          // Start timer
-          if (flyTimer) {
-            window.clearTimeout(flyTimer);
+          if (!this.isReadOnly()) {
+            // Start timer
+            if (flyTimer) {
+              window.clearTimeout(flyTimer);
+            }
+            const millis = Math.max(0, args.args.endTime * 1000 - Date.now()) + Math.random() * 1000;
+            console.log("⌚ Timer start", millis);
+            flyTimer = window.setTimeout(() => this.takeAction("flyTimer", { lock: false }), millis);
           }
-          const millis = Math.max(0, args.args.endTime * 1000 - Date.now()) + Math.random() * 1000;
-          console.log("⌚ Timer start", millis);
-          flyTimer = window.setTimeout(() => this.takeAction("flyTimer", { lock: false }), millis);
         }
       } else if (stateName == "maintenance") {
         // Stop timer
