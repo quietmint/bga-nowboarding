@@ -16,12 +16,12 @@ class NPlane extends APP_GameClass implements JsonSerializable
     public int $speedRemain;
     public bool $tempSeat;
     public bool $tempSpeed;
+    public array $wallet;
 
     public function __construct(array $dbrow)
     {
         $this->id = intval($dbrow['player_id']);
         $this->alliances = empty($dbrow['alliances']) ? [] : explode(',', $dbrow['alliances']);
-        $this->cash = intval($dbrow['cash']);
         $this->debt = intval($dbrow['debt']);
         $this->location = $dbrow['location'];
         $this->name = $dbrow['player_name'];
@@ -32,6 +32,14 @@ class NPlane extends APP_GameClass implements JsonSerializable
         $this->speedRemain = intval($dbrow['speed_remain']);
         $this->tempSeat = boolval($dbrow['temp_seat']);
         $this->tempSpeed = boolval($dbrow['temp_speed']);
+        $this->wallet = [];
+        if (!empty($dbrow['wallet'])) {
+            foreach (explode(',', $dbrow['wallet']) as $w) {
+                $kv = explode('=', $w);
+                $this->wallet[intval($kv[0])] = intval($kv[1]);
+            }
+        }
+        $this->cash = array_sum($this->wallet);
     }
 
     public function __toString(): string
@@ -55,6 +63,7 @@ class NPlane extends APP_GameClass implements JsonSerializable
             'speedRemain' => $this->speedRemain,
             'tempSeat' => $this->tempSeat,
             'tempSpeed' => $this->tempSpeed,
+            'wallet' => $this->wallet,
         ];
     }
 

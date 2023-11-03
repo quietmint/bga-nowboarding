@@ -910,11 +910,18 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
       // Update seat tag
       const seatEl = document.getElementById(`gauge-seat-${plane.id}`);
-      seatEl.innerHTML = `${plane.seat}`;
+      seatEl.innerHTML = plane.seat;
 
       // Update cash tag
       const cashEl = document.getElementById(`gauge-cash-${plane.id}`);
-      cashEl.textContent = plane.cashRemain;
+      const wallet = Object.values(plane.wallet || {}).sort();
+      let cashHtml = `<span class="${plane.cashRemain > 0 ? "bb" : ""}">${plane.cashRemain}</span>`;
+      if (plane.debt) {
+        cashHtml += '<span class="ss"> (…)</span>';
+      } else if (wallet.length > 1) {
+        cashHtml += `<span class="ss"> (${wallet.join(", ")})</span>`;
+      }
+      cashEl.innerHTML = cashHtml;
 
       // Add/remove temp speed tag
       const tempSpeedEl = document.getElementById(`gauge-temp-speed-${plane.id}`);
@@ -1255,7 +1262,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         vipEl.innerHTML = '<i class="icon vipstar"></i>' + vipName;
       } else {
         paxEl.classList.remove("is-vip");
-        paxEl.title = null;
+        paxEl.title = "";
         vipEl.innerHTML = "";
       }
 

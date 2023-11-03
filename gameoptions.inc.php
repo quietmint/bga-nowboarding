@@ -21,7 +21,6 @@ $game_options = [
             1 => [
                 'name' => totranslate('On'),
                 'description' => totranslate("The flight phase lasts 30 - 45 seconds (depending on player count) and time is STRICTLY ENFORCED"),
-                'nobeginner' => true,
             ],
             2 => [
                 'name' => totranslate('Doubled'),
@@ -86,13 +85,11 @@ $game_options = [
                 'name' => totranslate('Increased'),
                 'description' => totranslate('6/7/8/9 VIPs, depending on player count [unofficial, harder]'),
                 'tmdisplay' => totranslate('VIP Count Increased'),
-                'beta' => true,
             ],
             N_VIP_DOUBLE => [
                 'name' => totranslate('Doubled'),
                 'description' => totranslate('8/10/12/13 VIPs, depending on player count [unofficial, harder]'),
                 'tmdisplay' => totranslate('VIP Count Doubled'),
-                'beta' => true,
             ],
         ],
         'displaycondition' => [
@@ -117,14 +114,12 @@ $game_options = [
                 'description' => totranslate('Play with additional airports intended for more players [unofficial, harder]'),
                 'tmdisplay' => totranslate('Add JFK (2 players)'),
                 'nobeginner' => true,
-                'beta' => true,
             ],
             N_MAP_SEA => [
                 'name' => totranslate('Add JFK and SEA (2-3 players)'),
                 'description' => totranslate('Play with additional airports intended for more players [unofficial, harder]'),
                 'tmdisplay' => totranslate('Add JFK and SEA (2-3 players)'),
                 'nobeginner' => true,
-                'beta' => true,
             ],
         ],
         'displaycondition' => [

@@ -457,7 +457,6 @@ class NowBoarding extends Table
     {
         $plane = $this->getPlaneById($playerId);
         $cash = $plane->getCashRemain();
-        $wallet = $this->getPaxWallet($plane->id);
         $buys = [];
 
         // Seat
@@ -525,11 +524,11 @@ class NowBoarding extends Table
         $args = [
             'buys' => $buys,
             'cash' => $cash,
-            'wallet' => array_values($wallet),
+            'wallet' => array_values($plane->wallet),
         ];
         if ($plane->debt > 0) {
             $ledger = $this->getLedger($playerId);
-            $pay = self::_argPreparePay($plane, $wallet);
+            $pay = self::_argPreparePay($plane);
             $args['ledger'] = $ledger;
             $args['overpay'] = $pay['overpay'];
         }
@@ -540,16 +539,15 @@ class NowBoarding extends Table
     public function argPreparePay(int $playerId): array
     {
         $plane = $this->getPlaneById($playerId);
-        $wallet = $this->getPaxWallet($plane->id);
-        return self::_argPreparePay($plane, $wallet);
+        return self::_argPreparePay($plane);
     }
 
-    private function _argPreparePay(NPlane $plane, array $wallet): array
+    private function _argPreparePay(NPlane $plane): array
     {
-        $walletCount = count($wallet);
+        $walletCount = count($plane->wallet);
         $suggestion = null;
         $overpay = null;
-        foreach ($this->generatePermutations($wallet) as $p) {
+        foreach ($this->generatePermutations($plane->wallet) as $p) {
             $thisSum = 0;
             $thisSuggestion = [];
             for ($i = $walletCount - 1; $thisSum < $plane->debt && $i >= 0; $i--) {
@@ -570,7 +568,7 @@ class NowBoarding extends Table
             'debt' => $plane->debt,
             'overpay' => $overpay,
             'suggestion' => $suggestion,
-            'wallet' => array_values($wallet),
+            'wallet' => array_values($plane->wallet),
         ];
     }
 
@@ -1000,23 +998,21 @@ class NowBoarding extends Table
     {
         $this->checkAction('pay');
         $playerId = $this->getCurrentPlayerId();
-        $wallet = $this->getPaxWallet($playerId);
+        $plane = $this->getPlaneById($playerId);
         $total = 0;
         $validIds = [];
         foreach ($paid as $cash) {
             if (!$cash) {
                 continue;
             }
-            $paxId = array_search($cash, $wallet);
+            $paxId = array_search($cash, $plane->wallet);
             if ($paxId === false) {
-                throw new BgaVisibleSystemException("pay: Wallet $playerId has no \$$cash bill with validIds=" . join(',', $validIds) . " [???]");
+                throw new BgaVisibleSystemException("pay: $plane has no \$$cash bill with validIds=" . join(',', $validIds) . " [???]");
             }
-            unset($wallet[$paxId]);
+            unset($plane->wallet[$paxId]);
             $total += $cash;
             $validIds[] = $paxId;
         }
-
-        $plane = $this->getPlaneById($playerId);
         if ($total < $plane->debt) {
             $this->userException('pay', "\${$plane->debt}");
         }
@@ -1812,7 +1808,7 @@ class NowBoarding extends Table
 
     private function getPlanesByIds($ids = []): array
     {
-        $sql = "SELECT p.*, p.seat - ( SELECT COUNT(1) FROM `pax` x WHERE x.status = 'SEAT' AND x.player_id = p.player_id ) AS seat_remain, ( SELECT SUM(cash) FROM `pax` x WHERE x.status = 'CASH' AND x.player_id = p.player_id ) AS cash, b.player_name FROM `plane` p JOIN `player` b ON (b.player_id = p.player_id)";
+        $sql = "SELECT p.*, p.seat - ( SELECT COUNT(1) FROM `pax` x WHERE x.status = 'SEAT' AND x.player_id = p.player_id ) AS seat_remain, w.wallet, b.player_name FROM `plane` p JOIN `player` b ON (b.player_id = p.player_id) LEFT OUTER JOIN (SELECT `player_id`, GROUP_CONCAT(CONCAT(`pax_id`, '=', `cash`) ORDER BY `pax_id`) AS `wallet` FROM `pax` WHERE `status` = 'CASH' AND `cash` > 0 GROUP BY `player_id`) w ON (w.player_id = p.player_id)";
         if (!empty($ids)) {
             $sql .= " WHERE p.player_id IN (" . join(',', $ids) . ")";
         }
@@ -1923,12 +1919,6 @@ class NowBoarding extends Table
         throw new BgaUserException($msg);
     }
 
-    private function getPaxWallet(int $playerId): array
-    {
-        $sql = "SELECT `pax_id`, `cash` FROM `pax` WHERE `cash` > 0 AND `status` = 'CASH' AND `player_id` = $playerId ORDER BY `cash` DESC, `pax_id`";
-        return array_map('intval', $this->getCollectionFromDB($sql, true));
-    }
-
     private function getLedger(int $playerId): array
     {
         $sql = "SELECT `type`, `arg`, `cost` FROM `ledger` WHERE `player_id` = $playerId ORDER BY `type`, `cost`";
@@ -1989,6 +1979,7 @@ class NowBoarding extends Table
             'speed' => 9,
             'temp_seat' => 0,
             'temp_speed' => 0,
+            'wallet' => '',
         ]);
         foreach ($airports as $airport) {
             $fakePlane->location = $airport;

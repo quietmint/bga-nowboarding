@@ -46,7 +46,7 @@ $gameinfos = [
 
     // Suggest players to play with this number of players. Must be null if there is no such advice, or if there is only one possible player configuration.
     // NB: the automatic lobby will try first the lowest number of players if this is not specified. So you _have to_ specify this parameter if the lowest player number is not compatible with the default options.
-    'suggest_player_number' => 5,
+    'suggest_player_number' => 3,
 
     // Discourage players to play with these numbers of players. Must be null if there is no such advice.
     'not_recommend_player_number' => null,
@@ -80,7 +80,7 @@ $gameinfos = [
     'solo_mode_ranked' => false,
 
     // Game is "beta". A game MUST set is_beta=1 when published on BGA for the first time, and must remains like this until all bugs are fixed.
-    'is_beta' => 1,
+    'is_beta' => 0,
 
     // Is this game cooperative (all players wins together or loose together)
     'is_coop' => 1,
