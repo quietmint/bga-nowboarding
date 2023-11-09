@@ -1,4 +1,13 @@
 define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], function (dojo, declare) {
+  const debounce = (callback, ctx, wait) => {
+    let timeout;
+    return (...args) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => callback.apply(ctx, args), wait);
+    };
+  };
+
+  const viewportEl = document.querySelector('meta[name="viewport"]');
   const playSoundSuper = window.playSound;
   let suppressSounds = [];
   let flyTimer = null;
@@ -7,6 +16,22 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
   return declare("bgagame.nowboarding", ebg.core.gamegui, {
     constructor() {
       dojo.place("loader_mask", "overall-content", "before");
+
+      this.onGameUiWidthChange = debounce(
+        () => {
+          this.updateViewport();
+          const isMobile = document.body.clientWidth < 1280;
+          const logMode = document.body.clientWidth >= 1530 ? document.getElementById("preference_global_control_logsSecondColumn")?.value : "0";
+          document.body.classList.toggle("desktop_version", !isMobile);
+          document.body.classList.toggle("mobile_version", isMobile);
+          this.switchLogModeTo(logMode);
+          this.adaptChatbarDock();
+          this.adaptStatusBar();
+          this.resizeMap();
+        },
+        this,
+        200
+      );
     },
 
     setup(gamedatas) {
@@ -199,7 +224,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     },
 
     /* @Override */
-    showMessage: function (msg, type) {
+    showMessage(msg, type) {
       if (type == "error" && msg?.startsWith("!!!")) {
         return; // suppress red banner and gamelog message
       }
@@ -207,49 +232,41 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     },
 
     /* @Override */
-    getRanking: function () {
+    getRanking() {
       this.inherited(arguments);
       this.pageheaderfooter.showSectionFromButton("pageheader_howtoplay");
       this.onShowGameHelp();
     },
 
     /* @Override */
-    onScreenWidthChange() {
-      // Remove broken "zoom" property added by BGA framework
-      this.gameinterface_zoomFactor = 1;
-      dojo.style("page-content", "zoom", "");
-      dojo.style("page-title", "zoom", "");
-      dojo.style("right-side-first-part", "zoom", "");
-      this.computeViewport();
-      this.resizeMap();
-    },
-
-    computeViewport() {
-      // Force device-width during chat
-      let chatVisible = false;
-      for (const w in this.chatbarWindows) {
-        if (this.chatbarWindows[w].status == "expanded") {
-          chatVisible = true;
-          break;
-        }
-      }
-
-      const width = chatVisible ? "device-width" : 980;
-      this.interface_min_width = width;
-      this.default_viewport = "width=" + width;
-      return this.default_viewport;
+    onZoomToggle() {
+      // do nothing
     },
 
     /* @Override */
     expandChatWindow() {
       this.inherited(arguments);
-      dojo.query('meta[name="viewport"]')[0].content = this.computeViewport();
+      this.updateViewport(true);
     },
 
     /* @Override */
     collapseChatWindow() {
       this.inherited(arguments);
-      dojo.query('meta[name="viewport"]')[0].content = this.computeViewport();
+      this.updateViewport(false);
+    },
+
+    updateViewport(chatVisible) {
+      if (chatVisible === undefined) {
+        chatVisible = false;
+        for (const w in this.chatbarWindows) {
+          if (this.chatbarWindows[w].status == "expanded") {
+            chatVisible = true;
+            break;
+          }
+        }
+      }
+      // Force device-width during chat
+      viewportEl.content = chatVisible ? "width=device-width" : "width=980";
     },
 
     /* @Override */
@@ -1056,11 +1073,11 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       const airports = ["ATL", "DEN", "DFW", "JFK", "LAX", "MIA", "ORD", "SEA", "SFO"];
       for (const airport of airports) {
         const leadEl = document.getElementById(`leadline-${airport}`);
-        if (leadEl) {
-          const manifestEl = document.getElementById(`paxlist-${airport}`);
+        const manifestEl = document.getElementById(`paxlist-${airport}`);
+        const nodeEl = document.getElementById(`node-${airport}`);
+        if (leadEl && manifestEl && nodeEl) {
           const manifestPos = manifestEl.getBoundingClientRect();
           const parentId = manifestEl.parentElement.parentElement.id;
-          const nodeEl = document.getElementById(`node-${airport}`);
           const nodePos = nodeEl.getBoundingClientRect();
           const nodeLeftMid = nodePos.left + nodePos.width / 2;
           const isBetweenLeft = nodeLeftMid >= manifestPos.left && nodeLeftMid <= manifestPos.left + manifestPos.width;

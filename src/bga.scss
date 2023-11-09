@@ -219,6 +219,10 @@ html,
   .player-board {
     float: none;
     width: 319px;
+
+    &.spectator-mode {
+      width: 100%;
+    }
   }
 }
 
