@@ -105,8 +105,9 @@ $machinestates = [
 
     N_STATE_PREPARE => [
         'name' => 'prepare',
+        'args' => 'argPrepare',
         'action' => 'stPrepare',
-        'description' => clienttranslate('Wait for others to prepare'),
+        'description' => clienttranslate('Wait for others to prepare for ${hourDesc} ${round}'),
         'descriptionmyturn' => '',
         'initialprivate' => N_STATE_PREPARE_BUY,
         'possibleactions' => [
@@ -122,7 +123,7 @@ $machinestates = [
     N_STATE_PREPARE_BUY => [
         'name' => 'prepareBuy',
         'args' => 'argPrepareBuy',
-        'descriptionmyturn' => clienttranslate('Discuss plans and purchase upgrades'),
+        'descriptionmyturn' => clienttranslate('Prepare for ${hourDesc} ${round}'),
         'possibleactions' => [
             'buy',
             'prepareDone',

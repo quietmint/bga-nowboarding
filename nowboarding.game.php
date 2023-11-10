@@ -412,6 +412,17 @@ class NowBoarding extends Table
      * Add passengers
      * Players purchase upgrades
      */
+
+    public function argPrepare()
+    {
+        $hourInfo = $this->getHourInfo();
+        return [
+            'i18n' => ['hourDesc'],
+            'hourDesc' => $hourInfo['hourDesc'],
+            'round' => array_key_exists('round', $hourInfo) ? "({$hourInfo['round']}/{$hourInfo['total']})" : '',
+        ];
+    }
+
     public function stPrepare()
     {
         // Reset time to the full amount
@@ -521,7 +532,7 @@ class NowBoarding extends Table
             ];
         }
 
-        $args = [
+        $args = $this->argPrepare() + [
             'buys' => $buys,
             'cash' => $cash,
             'wallet' => array_values($plane->wallet),
