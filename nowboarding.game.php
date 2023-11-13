@@ -1085,13 +1085,38 @@ class NowBoarding extends Table
             return;
         }
         $playerId = $this->getCurrentPlayerId();
+        $playerName = $this->getCurrentPlayerName();
+        $activeCount = intval($this->getUniqueValueFromDB("SELECT COUNT(1) FROM `player` WHERE `player_is_multiactive` = 1 AND `player_id` != $playerId"));
+        $snoozeCount  = intval($this->getUniqueValueFromDB("SELECT COUNT(1) FROM `player` WHERE `player_is_multiactive` = 0 AND `snooze` = 1 AND `player_id` != $playerId ORDER BY `player_name`"));
+
         if ($snooze) {
-            if (intval($this->getUniqueValueFromDB("SELECT COUNT(1) FROM `player` WHERE `player_is_multiactive` = 1 AND `player_id` != $playerId")) == 0) {
+            if ($activeCount == 0 && $snoozeCount == 0) {
+                // Last player cannot snooze
                 $this->userException('noSnooze');
             }
             $this->DbQuery("UPDATE `player` SET `snooze` = 1 WHERE `player_id` = $playerId");
+            $this->notifyAllPlayers('message', N_REF_MSG['snooze'], [
+                'player_id' => $playerId,
+                'player_name' => $playerName,
+            ]);
+            if ($activeCount == 0) {
+                // Snooze deadlock -- nobody active but snoozers exist
+                $this->awakenSnoozers(0, true);
+            } else {
+                // At least one other player is active, so we can really snooze
+                $this->gamestate->setPlayerNonMultiactive($playerId, 'maintenance');
+            }
+        } else {
+            $this->notifyAllPlayers('message', N_REF_MSG['flyDone'], [
+                'player_id' => $playerId,
+                'player_name' => $playerName,
+            ]);
+            if ($activeCount == 0 && $snoozeCount > 0) {
+                // Snooze deadlock -- nobody active but snoozers exist
+                $this->awakenSnoozers(0, true);
+            }
+            $this->gamestate->setPlayerNonMultiactive($playerId, 'maintenance');
         }
-        $this->gamestate->setPlayerNonMultiactive($playerId, 'maintenance');
     }
 
     public function flyTimer(): void
@@ -1106,6 +1131,11 @@ class NowBoarding extends Table
             return;
         }
         $playerId = $this->getCurrentPlayerId();
+        $playerName = $this->getCurrentPlayerName();
+        $this->notifyAllPlayers('message', N_REF_MSG['flyAgain'], [
+            'player_id' => $playerId,
+            'player_name' => $playerName,
+        ]);
         $this->gamestate->setPlayersMultiactive([$playerId], '');
         $this->gamestate->initializePrivateState($playerId);
     }
@@ -1528,12 +1558,26 @@ class NowBoarding extends Table
         return $value == null ? null : intval($value);
     }
 
-    private function awakenSnoozers(int $playerId): void
+    private function awakenSnoozers(int $playerId, bool $deadlock = false): void
     {
-        $snoozers = $this->getObjectListFromDB("SELECT `player_id` FROM `player` WHERE `player_is_multiactive` = 0 AND `snooze` = 1 AND `player_id` != $playerId", true);
+        $snoozers = $this->getCollectionFromDB("SELECT `player_id`, `player_name` FROM `player` WHERE `snooze` = 1 AND `player_id` != $playerId ORDER BY `player_name`", true);
         if (!empty($snoozers)) {
-            $this->DbQuery("UPDATE `player` SET `snooze` = 0 WHERE `player_id` IN (" . join(', ', $snoozers) . ")");
-            $this->gamestate->setPlayersMultiactive($snoozers, '');
+            if ($deadlock) {
+                $args = [];
+                $playerArgs = ['player_name5', 'player_name4', 'player_name3', 'player_name2', 'player_name'];
+                foreach ($snoozers as $snoozerId => $snoozerName) {
+                    $args[array_pop($playerArgs)] = $snoozerName;
+                }
+                $this->notifyAllPlayers('snoozeDeadlock', N_REF_MSG['snoozeDeadlock'], [
+                    'players' => [
+                        'log' => '${' . join('}, ${', array_keys($args)) . '}',
+                        'args' => $args,
+                    ]
+                ]);
+            }
+
+            $this->DbQuery("UPDATE `player` SET `snooze` = 0 WHERE `player_id` IN (" . join(', ', array_keys($snoozers)) . ")");
+            $this->gamestate->setPlayersMultiactive(array_keys($snoozers), '');
         }
     }
 
@@ -1572,12 +1616,12 @@ class NowBoarding extends Table
         $endTime = $this->getVarInt('endTime');
         if (
             $endTime > 0
-            && time() > $endTime
+            && time() >= $endTime
             && $this->getGlobal(N_OPTION_TIMER)
             && in_array($this->getGlobal(N_BGA_CLOCK), N_REF_BGA_CLOCK_REALTIME)
             && $this->gamestate->state()['name'] == 'fly'
         ) {
-            $this->notifyAllPlayers('flyTimer', '', []);
+            $this->notifyAllPlayers('flyTimer', N_REF_MSG['flyTimer'], []);
             $this->gamestate->setAllPlayersNonMultiactive('maintenance');
             return true;
         }
