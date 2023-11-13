@@ -44,9 +44,6 @@ $machinestates = [
         'possibleactions' => [
             'buy',
         ],
-        'possibleActions' => [ // see https://studio.boardgamearena.com/bug?id=101
-            'buy',
-        ],
         'transitions' => [
             'buildAlliance2' => N_STATE_BUILD_ALLIANCE2,
             'buildUpgrade' => N_STATE_BUILD_UPGRADE,
@@ -62,10 +59,6 @@ $machinestates = [
             'buy',
             'undo',
         ],
-        'possibleActions' => [ // see https://studio.boardgamearena.com/bug?id=101
-            'buy',
-            'undo',
-        ],
         'transitions' => [
             'buildAlliance' => N_STATE_BUILD_ALLIANCE,
             'buildUpgrade' => N_STATE_BUILD_UPGRADE,
@@ -78,10 +71,6 @@ $machinestates = [
         'args' => 'argBuildUpgrade',
         'descriptionmyturn' => clienttranslate('Choose a starting upgrade'),
         'possibleactions' => [
-            'buy',
-            'undo',
-        ],
-        'possibleActions' => [ // see https://studio.boardgamearena.com/bug?id=101
             'buy',
             'undo',
         ],
@@ -130,12 +119,6 @@ $machinestates = [
             'undo',
             'vip',
         ],
-        'possibleActions' => [ // see https://studio.boardgamearena.com/bug?id=101
-            'buy',
-            'prepareDone',
-            'undo',
-            'vip',
-        ],
         'transitions' => [
             'prepareBuy' => N_STATE_PREPARE_BUY,
             'preparePay' => N_STATE_PREPARE_PAY,
@@ -148,10 +131,6 @@ $machinestates = [
         'args' => 'argPreparePay',
         'descriptionmyturn' => clienttranslate('Choose how to pay $${debt}'),
         'possibleactions' => [
-            'buyAgain',
-            'pay',
-        ],
-        'possibleActions' => [ // see https://studio.boardgamearena.com/bug?id=101
             'buyAgain',
             'pay',
         ],
@@ -193,13 +172,6 @@ $machinestates = [
         'args' => 'argFlyPrivate',
         'descriptionmyturn' => clienttranslate('Go!'),
         'possibleactions' => [
-            'board',
-            'deplane',
-            'flyDone',
-            'flyTimer',
-            'move',
-        ],
-        'possibleActions' => [ // see https://studio.boardgamearena.com/bug?id=101
             'board',
             'deplane',
             'flyDone',
