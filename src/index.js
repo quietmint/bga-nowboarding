@@ -860,7 +860,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         // Create plane
         console.log(`✈️ Create plane ${plane.id} at ${plane.location}`);
         const cssClass = plane.id == this.player_id ? "mine" : "";
-        this.mapEl.insertAdjacentHTML("beforeend", `<div id="plane-${plane.id}" class="plane node node-${plane.location} ${cssClass}" title="${this.gamedatas.players[plane.id].name}"><div id="planeicon-${plane.id}" class="icon plane-${plane.alliances[0]}"></div></div>`);
+        this.mapEl.insertAdjacentHTML("beforeend", `<div id="plane-${plane.id}" class="plane node node-${plane.location} ${cssClass}" title="${this.gamedatas.players[plane.id].name}"><div id="planeicon-${plane.id}" class="icon plane-${plane.alliances[0]}"></div><div id="planespeed-${plane.id}" class="planespeed">${plane.speedRemain || ""}</div></div>`);
         const rotation = this.getRotationPlane(plane);
         if (rotation) {
           const iconEl = document.getElementById(`planeicon-${plane.id}`);
@@ -880,7 +880,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     movePlane(plane) {
       console.log(`✈️ Move plane ${plane.id} to ${plane.location}`);
       const rotation = this.getRotationPlane(plane);
-      document.querySelector(`#plane-${plane.id} .icon`).style.transform = `rotate(${rotation}deg)`;
+      document.getElementById(`planeicon-${plane.id}`).style.transform = `rotate(${rotation}deg)`;
+      document.getElementById(`planespeed-${plane.id}`).textContent = plane.speedRemain || "";
       this.swapClass(`plane-${plane.id}`, "node-", `node-${plane.location}`);
       if (spotlightPlane == plane.id) {
         this.swapClass(`spotlight-plane`, "node-", `node-${plane.location}`);
