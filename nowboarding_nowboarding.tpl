@@ -1,7 +1,7 @@
 {OVERALL_GAME_HEADER}
 
 <script>
-  document.querySelector('meta[name="viewport"]').content = 'width=980';
+  document.querySelector('meta[name="viewport"]').content = 'width=980,interactive-widget=resizes-content';
 </script>
 
 <audio id="audiosrc_nowboarding_cash" src="{GAMETHEMEURL}img/cash.mp3" preload="none" autobuffer></audio>

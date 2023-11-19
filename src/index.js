@@ -266,7 +266,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         }
       }
       // Force device-width during chat
-      viewportEl.content = chatVisible ? "width=device-width" : "width=980";
+      viewportEl.content = `width=${chatVisible ? "device-width" : "980"},interactive-widget=resizes-content`;
     },
 
     /* @Override */
@@ -290,6 +290,18 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     },
 
     /* @Override */
+    setModeInstataneous() {
+      document.getElementById("leftright_page_wrapper").style.display = "none";
+      this.inherited(arguments);
+    },
+
+    /* @Override */
+    unsetModeInstataneous() {
+      document.getElementById("leftright_page_wrapper").style.display = "block";
+      this.inherited(arguments);
+    },
+
+    /* @Override */
     updateReflexionTime() {
       this.inherited(arguments);
       if (this.gamedatas.gamestate.name == "fly" && this.gamedatas.gamestate.args.endTime) {
@@ -307,6 +319,10 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     },
 
     playSound(sound) {
+      if (this.instantaneousMode) {
+        console.warn("🔈 Suppress sound (instantaneousMode)", sound);
+        return;
+      }
       if (this.gamedatas.gamestate.name == "fly" && this.gamedatas.gamestate.args.endTime && sound == "time_alarm") {
         console.warn("🔈 Suppress sound", sound);
         return;
