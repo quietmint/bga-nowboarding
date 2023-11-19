@@ -735,6 +735,11 @@ class NowBoarding extends Table
     //////////// Actions (ajax)
     ////////////
 
+    public function jsError($userAgent, $msg): void
+    {
+        self::error("JavaScript error from User-Agent: $userAgent\n$msg // ");
+    }
+
     public function undo(): void
     {
         $this->gamestate->checkPossibleAction('undo');
@@ -1839,7 +1844,10 @@ class NowBoarding extends Table
             return;
         }
         foreach ($this->getPlayerIds() as $playerId) {
-            $this->giveExtraTime($playerId, $seconds);
+            try {
+                $this->giveExtraTime($playerId, $seconds);
+            } catch (Exception $ignore) {
+            }
         }
     }
 

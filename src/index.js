@@ -6,12 +6,12 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       timeout = setTimeout(() => callback.apply(ctx, args), wait);
     };
   };
-
-  const viewportEl = document.querySelector('meta[name="viewport"]');
   const playSoundSuper = window.playSound;
-  let suppressSounds = [];
+  const uniqJsError = {};
+  const viewportEl = document.querySelector('meta[name="viewport"]');
   let flyTimer = null;
   let spotlightPlane = null;
+  let suppressSounds = [];
 
   return declare("bgagame.nowboarding", ebg.core.gamegui, {
     constructor() {
@@ -294,8 +294,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       this.inherited(arguments);
       if (this.gamedatas.gamestate.name == "fly" && this.gamedatas.gamestate.args.endTime) {
         const seconds = this.gamedatas.gamestate.args.endTime - Date.now() / 1000;
-        if (!this.gamedatas.gamestate.args.sound && seconds <= 7) {
-          // Play the clock sound only once, at 7 seconds
+        if (!this.gamedatas.gamestate.args.sound && seconds <= 8) {
+          // Play the clock sound only once, at 8 seconds
           playSoundSuper("time_alarm");
           this.gamedatas.gamestate.args.sound = true;
         }
@@ -318,6 +318,16 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         return;
       }
       playSoundSuper(sound);
+    },
+
+    /* @Override */
+    onScriptError(msg) {
+      if (!uniqJsError[msg]) {
+        uniqJsError[msg] = true;
+        console.error("⛔ Reporting JavaScript error", msg);
+        this.takeAction("jsError", { msg, userAgent: navigator.userAgent });
+      }
+      this.inherited(arguments);
     },
 
     // ----------------------------------------------------------------------
@@ -569,6 +579,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         }
 
         // Web call
+        const method = action == "jsError" ? "post" : undefined;
         const start = Date.now();
         console.log(`👆 Take action ${action}`, data);
         this.ajaxcall(
@@ -597,7 +608,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
               console.log(`Take action ${action} done in ${duration}ms`);
               resolve();
             }
-          }
+          },
+          method
         );
       });
     },
@@ -860,7 +872,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         // Create plane
         console.log(`✈️ Create plane ${plane.id} at ${plane.location}`);
         const cssClass = plane.id == this.player_id ? "mine" : "";
-        this.mapEl.insertAdjacentHTML("beforeend", `<div id="plane-${plane.id}" class="plane node node-${plane.location} ${cssClass}" title="${this.gamedatas.players[plane.id].name}"><div id="planeicon-${plane.id}" class="icon plane-${plane.alliances[0]}"></div><div id="planespeed-${plane.id}" class="planespeed">${plane.speedRemain || ""}</div></div>`);
+        const speedRemain = plane.speedRemain > 0 ? plane.speedRemain : "";
+        this.mapEl.insertAdjacentHTML("beforeend", `<div id="plane-${plane.id}" class="plane node node-${plane.location} ${cssClass}" title="${this.gamedatas.players[plane.id].name}"><div id="planeicon-${plane.id}" class="icon plane-${plane.alliances[0]}"></div><div id="planespeed-${plane.id}" class="planespeed">${speedRemain}</div></div>`);
         const rotation = this.getRotationPlane(plane);
         if (rotation) {
           const iconEl = document.getElementById(`planeicon-${plane.id}`);
@@ -881,7 +894,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       console.log(`✈️ Move plane ${plane.id} to ${plane.location}`);
       const rotation = this.getRotationPlane(plane);
       document.getElementById(`planeicon-${plane.id}`).style.transform = `rotate(${rotation}deg)`;
-      document.getElementById(`planespeed-${plane.id}`).textContent = plane.speedRemain || "";
+      document.getElementById(`planespeed-${plane.id}`).textContent = plane.speedRemain > 0 ? plane.speedRemain : "";
       this.swapClass(`plane-${plane.id}`, "node-", `node-${plane.location}`);
       if (spotlightPlane == plane.id) {
         this.swapClass(`spotlight-plane`, "node-", `node-${plane.location}`);

@@ -33,9 +33,16 @@ class action_nowboarding extends APP_GameAction
   // Production bug report handler
   public function loadBugSQL()
   {
-    self::setAjaxMode();
+    self::setAjaxMode(false);
     $reportId = (int) self::getArg('report_id', AT_int, true);
     $this->game->loadBugSQL($reportId);
+    self::ajaxResponse();
+  }
+
+  public function jsError()
+  {
+    self::setAjaxMode(false);
+    $this->game->jsError($_POST['userAgent'], $_POST['msg']);
     self::ajaxResponse();
   }
 
@@ -51,7 +58,6 @@ class action_nowboarding extends APP_GameAction
   {
     self::setAjaxMode();
     self::checkVersion();
-
     $accept = self::getArg('accept', AT_bool, true);
     $this->game->vip($accept);
     self::ajaxResponse();
