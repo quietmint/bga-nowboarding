@@ -1446,7 +1446,8 @@ class NowBoarding extends Table
             }
 
             // VIP Direct
-            if ($vipInfo['key'] == 'DIRECT' && !$deliver) {
+            // (with allowance for misclicks if not yet moved)
+            if ($vipInfo['key'] == 'DIRECT' && !$deliver && $x->moves > 0) {
                 $this->vipException($vipInfo);
             }
 
