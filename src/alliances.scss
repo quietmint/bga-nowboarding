@@ -36,7 +36,7 @@
 }
 
 .gradient-LAX {
-  background: linear-gradient(-30deg, $color-amber-800, $color-amber-600);
+  background: linear-gradient(-30deg, $color-amber-700, $color-amber-500);
   color: white;
 }
 
@@ -51,22 +51,22 @@
 }
 
 .panel-ATL {
-  background-color: $color-green-700;
+  background-color: $color-green-600;
 }
 
 .panel-DFW {
-  background-color: $color-purple-800;
+  background-color: $color-purple-700;
 }
 
 .panel-LAX {
-  background-color: $color-amber-700;
+  background-color: $color-amber-600;
 }
 
 .panel-ORD {
-  background-color: $color-red-800;
+  background-color: $color-red-700;
 }
 
 .panel-SEA {
-  background-color: $color-blue-800;
+  background-color: $color-blue-700;
   color: white !important;
 }

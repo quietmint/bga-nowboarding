@@ -8,7 +8,6 @@
 
   .paxlist {
     background: rgb(255 255 255 / 0.25);
-    max-height: 220px;
     outline: 4px dashed rgb(255 255 255 / 0.5);
     overflow: hidden auto;
     transition: outline 200ms linear;
@@ -109,7 +108,7 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
-  min-width: 210px;
+  min-width: 190px;
   padding: 5px;
 
   &.is-map {
@@ -151,7 +150,7 @@
   flex: 0 0 auto;
   height: 40px;
   position: relative;
-  width: 210px;
+  width: 190px;
 
   &.is-empty .emptyseat,
   &.is-moving .emptyseat {
@@ -167,10 +166,12 @@
   display: none;
   font: 13px/1 Consolas, monospace;
   height: 40px;
+  overflow: hidden;
   position: absolute;
   text-align: center;
   text-transform: uppercase;
-  width: 210px;
+  white-space: nowrap;
+  width: 190px;
 
   .icon {
     font-size: 32px;
@@ -182,7 +183,6 @@
   color: $color-neutral-700;
   cursor: pointer;
   display: grid;
-  filter: drop-shadow(0 0 1px white);
   font: 13px/1 Consolas, monospace;
   gap: 0px 0px;
   grid-template:
@@ -192,7 +192,7 @@
   position: absolute;
   text-transform: uppercase;
   transition: transform 1s ease-out;
-  width: 210px;
+  width: 190px;
   z-index: 20;
 
   body.no-animation & {
@@ -206,7 +206,9 @@
   border-style: solid;
   border-width: 2px;
   color: white;
+  font-weight: bold;
   grid-area: anger;
+  height: 36px;
   position: relative;
   text-align: center;
   width: 32px;
@@ -230,6 +232,7 @@
 .pax .anger .icon {
   filter: drop-shadow(1px 1px 1px black);
   font-size: 24px;
+  margin-top: -1px;
 }
 
 .pax .ticket {

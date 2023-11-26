@@ -8,6 +8,8 @@ This adaptation includes the following licensed material, used with permission. 
 
 - [Now Boarding board game](https://www.fowers.games/products/now-boarding) by Tim Fowers with artwork by Ryan Goldsberry
 
+- [EOS Icons](https://eos-icons.com/), licensed under [MIT](https://opensource.org/license/mit/)
+
 - [Game Icons](https://game-icons.net/), licensed under [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/)
 
 - [Ionicons](https://ionic.io/ionicons), licensed under [MIT](https://opensource.org/license/mit/)

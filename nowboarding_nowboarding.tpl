@@ -23,4 +23,10 @@
   <div id="manifests-bottom" class="manifests"></div>
 </div>
 
+<div id="nbchat">
+  <div id="nbchatheader"></div>
+  <div id="nbchatscroll"></div>
+  <textarea id="nbchatinput" maxlength="300"></textarea>
+</div>
+
 {OVERALL_GAME_FOOTER}

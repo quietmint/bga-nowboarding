@@ -37,6 +37,28 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     setup(gamedatas) {
       console.log("🐣 Setup", gamedatas);
 
+      // Setup inline chat
+      const chatTxt = __("lang_mainsite", "Discuss at this table");
+      document.getElementById("nbchatheader").textContent = chatTxt;
+      const inputEl = document.getElementById("nbchatinput");
+      inputEl.placeholder = chatTxt;
+      inputEl.addEventListener("keyup", (e) => {
+        inputEl.value = inputEl.value.replace(/(\r\n|\n|\r)/gm, "");
+        const chat = this.chatbarWindows[`table_${this.table_id}`]?.input;
+        if (chat) {
+          chat.input_div.value = inputEl.value;
+          const now = Math.floor(Date.now() / 1000);
+          if (chat.lastTimeStartWriting == null || now >= chat.lastTimeStartWriting + 5) {
+            chat.lastTimeStartWriting = now;
+            this.socket?.emit("startWriting", chat.writingNowChannel);
+          }
+          if (e.key == "Enter") {
+            chat.sendMessage();
+            inputEl.value = "";
+          }
+        }
+      });
+
       // Setup common
       this.renderCommon();
 
@@ -273,15 +295,54 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     onPlaceLogOnChannel(notif) {
       const chatId = this.next_log_id;
       const result = this.inherited(arguments);
-      if (result && chatId != this.next_log_id && this.gamedatas.planes && (notif.type == "chatmessage" || notif.type == "tablechat") && notif.args?.player_id) {
-        const chatEl = document.getElementById(`dockedlog_${chatId}`);
-        const chatPlane = this.gamedatas.planes[notif.args.player_id];
-        if (chatEl && chatPlane?.alliances?.length) {
-          // Color chat messages by plane alliance
-          chatEl.classList.add(`chatlog-${chatPlane.alliances[0]}`);
+      if (result && notif.channelorig == `/table/t${this.table_id}` && (notif.type == "chatmessage" || notif.type == "tablechat" || (notif.type == "startWriting" && notif.args.player_id != this.player_id))) {
+        const plane = this.gamedatas.planes[notif.args.player_id];
+        const alliance = plane?.alliances?.length ? plane.alliances[0] : null;
+
+        // Color BGA chat with plane alliance
+        if (alliance && chatId != this.next_log_id) {
+          document.getElementById(`dockedlog_${chatId}`)?.classList.add(`chatlog-${alliance}`);
+        }
+
+        // Inline chat
+        let logHtml = "";
+        const self = notif.args.player_id == this.player_id ? "self" : "";
+        const avatarUrl = document.getElementById(`avatar_${notif.args.player_id}`)?.src || "https://x.boardgamearena.net/data/avatar/default_32.jpg";
+        const avatarHtml = self ? "" : `<img class="avatar emblem" src="${avatarUrl}">`;
+        const timeOptions = { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false };
+        if (notif.type == "startWriting") {
+          const writingEl = document.getElementById(`nbwriting_${notif.args.player_id}`);
+          if (!writingEl) {
+            const newArgs = this.notifqueue.playerNameFilterGame({ player_name: notif.args.player_name });
+            const msgHtml = `<div class="nbchatmsg chatlog-${alliance}">${newArgs.player_name}: <i class="icon typing"></i></div>`;
+            const timeHtml = '<div class="nbchattime">' + new Date().toLocaleString([], timeOptions) + "</div>";
+            logHtml = `<div id="nbwriting_${notif.args.player_id}" data-player-name="${notif.args.player_name}" class="nbwriting nbchatwrap ${self}" style="order: ${Math.floor(Date.now() / 1000)}">${avatarHtml}<div class="nbchatlog">${msgHtml}${timeHtml}</div></div>`;
+          }
+        } else {
+          const msgHtml = `<div class="nbchatmsg chatlog-${alliance}">${notif.args.player_name}: ${notif.args.text || notif.args.message}</div>`;
+          const timeHtml = '<div class="nbchattime">' + new Date(notif.time * 1000).toLocaleString([], timeOptions) + "</div>";
+          logHtml = `<div class="nbchatwrap ${self}" style="order: ${notif.time}">${avatarHtml}<div class="nbchatlog">${msgHtml}${timeHtml}</div></div>`;
+        }
+        if (logHtml) {
+          const scrollEl = document.getElementById("nbchatscroll");
+          scrollEl.insertAdjacentHTML("afterbegin", logHtml);
+          scrollEl.scrollTop = scrollEl.scrollHeight * -1;
         }
       }
       return result;
+    },
+
+    /* @Override */
+    onUpdateIsWritingStatus(chatWindow) {
+      if (chatWindow == `table_${this.table_id}`) {
+        const writingEls = document.querySelectorAll("#nbchatscroll .nbwriting");
+        for (let writingEl of writingEls) {
+          if (!this.chatbarWindows[chatWindow].is_writing_now[writingEl.dataset.playerName]) {
+            writingEl.remove();
+          }
+        }
+      }
+      this.inherited(arguments);
     },
 
     /* @Override */
@@ -889,7 +950,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         console.log(`✈️ Create plane ${plane.id} at ${plane.location}`);
         const cssClass = plane.id == this.player_id ? "mine" : "";
         const speedRemain = plane.speedRemain > 0 ? plane.speedRemain : "";
-        this.mapEl.insertAdjacentHTML("beforeend", `<div id="plane-${plane.id}" class="plane node node-${plane.location} ${cssClass}" title="${this.gamedatas.players[plane.id].name}"><div id="planeicon-${plane.id}" class="icon plane-${plane.alliances[0]}"></div><div id="planespeed-${plane.id}" class="planespeed">${speedRemain}</div></div>`);
+        this.mapEl.insertAdjacentHTML("beforeend", `<div id="plane-${plane.id}" class="plane node node-${plane.location} ${cssClass}" title="${this.gamedatas.players[plane.id].name}"><div id="planeicon-${plane.id}" class="icon plane-${plane.alliances[0]}"></div><div id="planespeed-${plane.id}" class="planespeed planespeed-${plane.alliances[0]}">${speedRemain}</div></div>`);
         const rotation = this.getRotationPlane(plane);
         if (rotation) {
           const iconEl = document.getElementById(`planeicon-${plane.id}`);
@@ -910,7 +971,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       console.log(`✈️ Move plane ${plane.id} to ${plane.location}`);
       const rotation = this.getRotationPlane(plane);
       document.getElementById(`planeicon-${plane.id}`).style.transform = `rotate(${rotation}deg)`;
-      document.getElementById(`planespeed-${plane.id}`).textContent = plane.speedRemain > 0 ? plane.speedRemain : "";
       this.swapClass(`plane-${plane.id}`, "node-", `node-${plane.location}`);
       if (spotlightPlane == plane.id) {
         this.swapClass(`spotlight-plane`, "node-", `node-${plane.location}`);
@@ -954,6 +1014,12 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       const speedEl = document.getElementById(`gauge-speed-${plane.id}`);
       const speedRemain = Math.max(0, plane.speedRemain) + (plane.tempSpeed ? 1 : 0);
       speedEl.innerHTML = `<span class="${speedRemain > 0 ? "bb" : ""}">${speedRemain}</span>/${plane.speed}`;
+
+      // Update plane speed
+      const planespeedEl = document.getElementById(`planespeed-${plane.id}`);
+      if (planespeedEl) {
+        planespeedEl.textContent = speedRemain > 0 ? speedRemain : "";
+      }
 
       // Update seat tag
       const seatEl = document.getElementById(`gauge-seat-${plane.id}`);
