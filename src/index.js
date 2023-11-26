@@ -1,4 +1,42 @@
 define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], function (dojo, declare) {
+  const escapeRegExp = (txt) => txt.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+  const emojiMap = {
+    ":)": "🙂",
+    ":-)": "🙂",
+    ";)": "😉",
+    ";-)": "😉",
+    ":D": "😁",
+    ":-D": "😁",
+    ":P": "😛",
+    ":-P": "😛",
+    ";P": "😜",
+    ";-P": "😜",
+    ":/": "🫤",
+    ":-/": "🫤",
+    ":(": "🙁",
+    ":-(": "🙁",
+    ";(": "😢",
+    ";-(": "😢",
+    ":'(": "😢",
+    ":S": "😖",
+    ":-S": "😖",
+    ":@": "😡",
+    ":-@": "😡",
+    ">:@": "😡",
+    ":$": "😳",
+    ":-$": "😳",
+    ":O": "😮",
+    ":-O": "😮",
+    ":0": "😮",
+    ":-0": "😮",
+    O_O: "😮",
+    "8)": "😎",
+    "8-)": "😎",
+    ":airplane:": "✈️",
+  };
+  const emojiUnique = Object.fromEntries(Object.values(emojiMap).map((value) => [value, value]));
+  const emojiPattern = new RegExp("(^|\\s+)(" + Object.keys(emojiMap).map(escapeRegExp).join("|") + ")(?=$|\\s+)", "gi");
+
   const debounce = (callback, ctx, wait) => {
     let timeout;
     return (...args) => {
@@ -269,12 +307,18 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     expandChatWindow() {
       this.inherited(arguments);
       this.updateViewport(true);
+      if (this.chatbarWindows[`table_${this.table_id}`]?.status == "expanded") {
+        document.getElementById("nbchat").style.display = "none";
+      }
     },
 
     /* @Override */
     collapseChatWindow() {
       this.inherited(arguments);
       this.updateViewport(false);
+      if (this.chatbarWindows[`table_${this.table_id}`]?.status != "expanded") {
+        document.getElementById("nbchat").style.display = "";
+      }
     },
 
     updateViewport(chatVisible) {
@@ -304,12 +348,13 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           document.getElementById(`dockedlog_${chatId}`)?.classList.add(`chatlog-${alliance}`);
         }
 
-        // Inline chat
+        // Add to inline chat
         let logHtml = "";
         const self = notif.args.player_id == this.player_id ? "self" : "";
         const avatarUrl = document.getElementById(`avatar_${notif.args.player_id}`)?.src || "https://x.boardgamearena.net/data/avatar/default_32.jpg";
         const avatarHtml = self ? "" : `<img class="avatar emblem" src="${avatarUrl}">`;
         const timeOptions = { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false };
+        const msgTxt = this.addSmileyToText(notif.args.text || notif.args.message || "");
         if (notif.type == "startWriting") {
           const writingEl = document.getElementById(`nbwriting_${notif.args.player_id}`);
           if (!writingEl) {
@@ -318,8 +363,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
             const timeHtml = '<div class="nbchattime">' + new Date().toLocaleString([], timeOptions) + "</div>";
             logHtml = `<div id="nbwriting_${notif.args.player_id}" data-player-name="${notif.args.player_name}" class="nbwriting nbchatwrap ${self}" style="order: ${Math.floor(Date.now() / 1000)}">${avatarHtml}<div class="nbchatlog">${msgHtml}${timeHtml}</div></div>`;
           }
-        } else {
-          const msgHtml = `<div class="nbchatmsg chatlog-${alliance}">${notif.args.player_name}: ${notif.args.text || notif.args.message}</div>`;
+        } else if (msgTxt) {
+          const msgHtml = `<div class="nbchatmsg chatlog-${alliance}">${notif.args.player_name}: ${msgTxt}</div>`;
           const timeHtml = '<div class="nbchattime">' + new Date(notif.time * 1000).toLocaleString([], timeOptions) + "</div>";
           logHtml = `<div class="nbchatwrap ${self}" style="order: ${notif.time}">${avatarHtml}<div class="nbchatlog">${msgHtml}${timeHtml}</div></div>`;
         }
@@ -343,6 +388,22 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         }
       }
       this.inherited(arguments);
+    },
+
+    /* @Override */
+    addSmileyToText(txt) {
+      try {
+        txt = txt.replaceAll(emojiPattern, (match) => " " + emojiMap[match.trim().toUpperCase()] + " ");
+        txt = txt.replaceAll("&zwj;", "\u200D").replaceAll(/(\p{RGI_Emoji}+)/gv, '<span class="emoji">$1</span>');
+      } catch (e) {
+        // unicodeSets flag not supported
+      }
+      return txt;
+    },
+
+    /* @Override */
+    getSmileyClassToCodeTable() {
+      return emojiUnique;
     },
 
     /* @Override */
