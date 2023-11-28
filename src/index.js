@@ -5,12 +5,18 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     ":-)": "🙂",
     ";)": "😉",
     ";-)": "😉",
-    ":D": "😁",
-    ":-D": "😁",
-    ":P": "😛",
-    ":-P": "😛",
-    ";P": "😜",
-    ";-P": "😜",
+    ":$": "🤭",
+    ":-$": "🤭",
+    ":partying_face:": "🥳",
+    "8)": "😎",
+    "8-)": "😎",
+    ":vip:": "🤩",
+    ":D": "😀",
+    ":-D": "😀",
+    ":P": "🤪",
+    ":-P": "🤪",
+    ";P": "🤪",
+    ";-P": "🤪",
     ":/": "🫤",
     ":-/": "🫤",
     ":(": "🙁",
@@ -23,15 +29,11 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     ":@": "😡",
     ":-@": "😡",
     ">:@": "😡",
-    ":$": "😳",
-    ":-$": "😳",
     ":O": "😮",
     ":-O": "😮",
     ":0": "😮",
     ":-0": "😮",
-    O_O: "😮",
-    "8)": "😎",
-    "8-)": "😎",
+    O_O: "🤯",
     ":airplane:": "✈️",
   };
   const emojiUnique = Object.fromEntries(Object.values(emojiMap).map((value) => [value, value]));
@@ -318,6 +320,9 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       this.updateViewport(false);
       if (this.chatbarWindows[`table_${this.table_id}`]?.status != "expanded") {
         document.getElementById("nbchat").style.display = "";
+        document.getElementById("nbchatinput").value = this.chatbarWindows[`table_${this.table_id}`].input.input_div.value || "";
+        const scrollEl = document.getElementById("nbchatscroll");
+        scrollEl.scrollTop = scrollEl.scrollHeight * -1;
       }
     },
 
