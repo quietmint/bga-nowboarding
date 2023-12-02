@@ -1,27 +1,27 @@
 @use "colors" as *;
 
 .alliance-ATL {
-  background-color: $color-green-600;
+  background-color: $color-green-600 !important;
   color: white !important;
 }
 
 .alliance-DFW {
-  background-color: $color-purple-700;
+  background-color: $color-purple-700 !important;
   color: white !important;
 }
 
 .alliance-LAX {
-  background-color: $color-amber-600;
+  background-color: $color-amber-600 !important;
   color: white !important;
 }
 
 .alliance-ORD {
-  background-color: $color-red-700;
+  background-color: $color-red-700 !important;
   color: white !important;
 }
 
 .alliance-SEA {
-  background-color: $color-blue-700;
+  background-color: $color-blue-700 !important;
   color: white !important;
 }
 

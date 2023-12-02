@@ -185,6 +185,13 @@ html,
   }
 }
 
+#spectatorbox {
+  border-radius: 0;
+  box-shadow: none;
+  margin: 0;
+  width: auto;
+}
+
 .roundedbox .roundedbox_topleft,
 .roundedbox .roundedbox_topmain,
 .roundedbox .roundedbox_topright,
@@ -223,7 +230,7 @@ html,
 
   .player-board {
     float: none;
-    width: 319px;
+    width: 289px;
 
     &.spectator-mode {
       width: 100%;
@@ -363,74 +370,11 @@ html,
   width: 100% !important;
 }
 
-/* Chat */
-.desktop_version #chatbardock {
-  right: 273px;
-}
-
-.desktop_version.logs_on_additional_column #chatbardock {
-  right: 238px;
-}
-
-.chatwindowexpanded .dropshadow {
-  display: none;
-}
-
-.mobile_version.chatbar_ontop #chatbar_inner:before {
-  background: $color-neutral-50;
-}
-
+/* BGA chat */
 .msgtime {
   position: static;
   font-size: 75%;
   float: right;
-}
-
-.chatwindowlogs {
-  background-color: rgb(0 0 0 / 0.25);
-}
-
-.chatwindowlogs_zone .roundedbox,
-.load_previous_message {
-  background: rgb(255 255 255 / 0.5);
-}
-
-.chatwindowexpanded {
-  background: $color-neutral-300;
-}
-
-.chatwindowlogs_zone .roundedbox.chatlog {
-  background: none;
-}
-
-.chatwindowlogs_zone .roundedbox.chatlog .roundedboxinner,
-.chatwindowlogs_zone .roundedbox.chatlog.ownchatlog .roundedboxinner {
-  background: rgb(255 255 255 / 0.85);
-}
-.chatwindowlogs_zone .roundedbox.chatlog.chatlog-ATL .roundedboxinner,
-.nbchatmsg.chatlog-ATL {
-  background: color.change($color-green-200, $alpha: 0.85) !important;
-  color: black !important;
-}
-.chatwindowlogs_zone .roundedbox.chatlog.chatlog-DFW .roundedboxinner,
-.nbchatmsg.chatlog-DFW {
-  background: color.change($color-purple-200, $alpha: 0.85) !important;
-  color: black !important;
-}
-.chatwindowlogs_zone .roundedbox.chatlog.chatlog-LAX .roundedboxinner,
-.nbchatmsg.chatlog-LAX {
-  background: color.change($color-orange-200, $alpha: 0.85) !important;
-  color: black !important;
-}
-.chatwindowlogs_zone .roundedbox.chatlog.chatlog-ORD .roundedboxinner,
-.nbchatmsg.chatlog-ORD {
-  background: color.change($color-red-200, $alpha: 0.85) !important;
-  color: black !important;
-}
-.chatwindowlogs_zone .roundedbox.chatlog.chatlog-SEA .roundedboxinner,
-.nbchatmsg.chatlog-SEA {
-  background: color.change($color-blue-200, $alpha: 0.85) !important;
-  color: black !important;
 }
 
 #logs .timestamp,
@@ -439,9 +383,27 @@ html,
   text-shadow: 1px 1px black;
 }
 
+.roundedboxinner.alliance-ATL,
+.roundedboxinner.alliance-DFW,
+.roundedboxinner.alliance-LAX,
+.roundedboxinner.alliance-ORD,
+.roundedboxinner.alliance-SEA {
+  .playername {
+    color: white !important;
+  }
+  .msgtime {
+    color: $color-neutral-300 !important;
+  }
+}
+
 /* Wiki */
+.mobile_version .pagesection {
+  max-width: 900px;
+  overflow: auto;
+}
+
 .mobile_version .wikicontent {
-  font-size: 32px;
+  font-size: 24px;
 }
 
 .wikicontent p {

@@ -2,8 +2,8 @@
 @use "sass:color";
 
 #nbscale {
-  --map-width: 950px;
-  min-width: 980px;
+  --map-width: 875px;
+  min-width: 900px;
 }
 
 #nbmap {
@@ -48,8 +48,8 @@
   z-index: 1;
 
   .leadline {
-    border-right: 4px dashed rgba(255, 255, 255, 0.5);
-    border-top: 4px dashed rgba(255, 255, 255, 0.5);
+    border-right: 3px dotted rgba(255, 255, 255, 0.5);
+    border-top: 3px dotted rgba(255, 255, 255, 0.5);
     position: absolute;
     transition: border-color 200ms linear;
 
@@ -62,7 +62,7 @@
     }
 
     &.left {
-      border-left: 4px dashed rgba(255, 255, 255, 0.5);
+      border-left: 3px dotted rgba(255, 255, 255, 0.5);
       border-right: none;
       border-top-left-radius: 8px;
       border-top-right-radius: 0;

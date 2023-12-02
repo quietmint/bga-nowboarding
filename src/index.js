@@ -1,4 +1,11 @@
 define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], function (dojo, declare) {
+  let flyTimer = null;
+  let isMobile = false;
+  let spotlightPlane = null;
+  let suppressSounds = [];
+  const uniqJsError = {};
+
+  // Emoji
   const escapeRegExp = (txt) => txt.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
   const emojiMap = {
     ":)": "🙂",
@@ -39,6 +46,29 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
   const emojiUnique = Object.fromEntries(Object.values(emojiMap).map((value) => [value, value]));
   const emojiPattern = new RegExp("(^|\\s+)(" + Object.keys(emojiMap).map(escapeRegExp).join("|") + ")(?=$|\\s+)", "gi");
 
+  // Local storage
+  const getStorage = (key) => {
+    try {
+      return localStorage.getItem(`nowboarding.${key}`);
+    } catch (e) {
+      // Local storage unavailable
+    }
+  };
+  const saveStorage = (key, value) => {
+    try {
+      localStorage.setItem(`nowboarding.${key}`, value);
+      return true;
+    } catch (e) {
+      // Local storage unavailable
+    }
+    return false;
+  };
+
+  // Sounds
+  const playSoundSuper = window.playSound;
+
+  // Viewport
+  const viewportEl = document.querySelector('meta[name="viewport"]');
   const debounce = (callback, ctx, wait) => {
     let timeout;
     return (...args) => {
@@ -46,64 +76,39 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       timeout = setTimeout(() => callback.apply(ctx, args), wait);
     };
   };
-  const playSoundSuper = window.playSound;
-  const uniqJsError = {};
-  const viewportEl = document.querySelector('meta[name="viewport"]');
-  let flyTimer = null;
-  let spotlightPlane = null;
-  let suppressSounds = [];
 
   return declare("bgagame.nowboarding", ebg.core.gamegui, {
     constructor() {
       dojo.place("loader_mask", "overall-content", "before");
-
+      this.updateMobile();
       this.onGameUiWidthChange = debounce(
         () => {
+          this.updateMobile();
           this.updateViewport();
-          const isMobile = document.body.clientWidth < 1280;
-          const logMode = document.body.clientWidth >= 1530 ? document.getElementById("preference_global_control_logsSecondColumn")?.value : "0";
-          document.body.classList.toggle("desktop_version", !isMobile);
-          document.body.classList.toggle("mobile_version", isMobile);
+          const logMode = !isMobile && document.body.clientWidth > 1440 ? document.getElementById("preference_global_control_logsSecondColumn")?.value : "0";
           this.switchLogModeTo(logMode);
           this.adaptChatbarDock();
           this.adaptStatusBar();
           this.resizeMap();
         },
         this,
-        200
+        100
       );
     },
 
     setup(gamedatas) {
       console.log("🐣 Setup", gamedatas);
 
-      // Setup inline chat
-      const chatTxt = __("lang_mainsite", "Discuss at this table");
-      document.getElementById("nbchatheader").textContent = chatTxt;
-      const inputEl = document.getElementById("nbchatinput");
-      inputEl.placeholder = chatTxt;
-      inputEl.addEventListener("keyup", (e) => {
-        inputEl.value = inputEl.value.replace(/(\r\n|\n|\r)/gm, "");
-        const chat = this.chatbarWindows[`table_${this.table_id}`]?.input;
-        if (chat) {
-          chat.input_div.value = inputEl.value;
-          const now = Math.floor(Date.now() / 1000);
-          if (chat.lastTimeStartWriting == null || now >= chat.lastTimeStartWriting + 5) {
-            chat.lastTimeStartWriting = now;
-            this.socket?.emit("startWriting", chat.writingNowChannel);
-          }
-          if (e.key == "Enter") {
-            chat.sendMessage();
-            inputEl.value = "";
-          }
-        }
-      });
+      // Setup chat
+      this.chatHeaderEl = document.getElementById("nbchatheader");
+      this.chatHeaderEl.insertAdjacentText("beforeend", __("lang_mainsite", "Discuss at this table"));
+      this.chatHeaderEl.insertAdjacentElement("afterend", document.getElementById("spectatorbox"));
 
       // Setup common
+      this.scaleEl = document.getElementById("nbscale");
       this.renderCommon();
 
       // Setup map
-      this.scaleEl = document.getElementById("nbscale");
       this.mapEl = document.getElementById("nbmap");
       this.mapEl.classList.add(gamedatas.map.name);
       const manifestContainer = {
@@ -294,35 +299,102 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     },
 
     /* @Override */
-    getRanking() {
-      this.inherited(arguments);
-      this.pageheaderfooter.showSectionFromButton("pageheader_howtoplay");
-      this.onShowGameHelp();
-    },
-
-    /* @Override */
     onZoomToggle() {
       // do nothing
     },
 
-    /* @Override */
-    expandChatWindow() {
-      this.inherited(arguments);
-      this.updateViewport(true);
-      if (this.chatbarWindows[`table_${this.table_id}`]?.status == "expanded") {
-        document.getElementById("nbchat").style.display = "none";
+    /*@Override */
+    createChatBarWindow(args) {
+      const output = this.inherited(arguments);
+      const chat = this.chatbarWindows[`table_${this.table_id}`];
+      if (args.type == "table" && args.id == this.table_id && chat && !chat.nbinit) {
+        console.log("🐣 Setup chat");
+        chat.nbinit = true;
+        chat.input.readaptChatHeight = () => {};
+        this.autoChatWhilePressingKey = new dijit.TooltipDialog({ id: "autoChatWhilePressingKey", content: "" });
+        this.moveChatElements(true);
+        if (!isMobile) {
+          this.expandChatWindow(`table_${this.table_id}`);
+        }
+      }
+      return output;
+    },
+
+    moveChatElements(inline) {
+      const barEl = document.getElementById(`chatbarbelowinput_table_${this.table_id}`);
+      const inputEl = document.getElementById(`chatbarinput_table_${this.table_id}_input`);
+      if (inline) {
+        // move chat elements to inline
+        this.chatHeaderEl.insertAdjacentElement("afterend", barEl);
+        this.chatHeaderEl.insertAdjacentElement("afterend", inputEl);
+      } else {
+        // move chat elements to BGA popup
+        const bgaEl = document.getElementById(`chatbarinput_table_${this.table_id}`);
+        bgaEl.querySelector(".chatinputctrl").insertAdjacentElement("afterbegin", inputEl);
+        bgaEl.insertAdjacentElement("afterend", barEl);
       }
     },
 
+    hideBgaChat() {
+      document.getElementById(`chatwindowcollapsed_table_${this.table_id}`).style.display = "none";
+      document.getElementById(`chatwindowexpanded_table_${this.table_id}`).style.display = "none";
+      document.getElementById(`chatwindowpreview_table_${this.table_id}`).style.display = "none";
+    },
+
     /* @Override */
-    collapseChatWindow() {
+    expandChatWindow(id) {
+      console.log("expandChatWindow", id);
       this.inherited(arguments);
+      if (id == `table_${this.table_id}`) {
+        if (isMobile) {
+          // on mobile, move chat to BGA popup
+          this.moveChatElements(false);
+        } else {
+          // on desktop, hide BGA popup :)
+          this.hideBgaChat();
+        }
+      }
+      this.updateViewport(true);
+    },
+
+    /* @Override */
+    collapseChatWindow(id) {
+      console.log("collapseChatWindow", id);
+      const isTableChat = id == `table_${this.table_id}`;
+      if (isTableChat && !isMobile) {
+        // on desktop, ignore collapse (via ESC key)
+        this.hideBgaChat();
+        return;
+      }
+      this.inherited(arguments);
+      if (isTableChat && isMobile) {
+        // on mobile, move chat to inline
+        this.moveChatElements(true);
+      }
       this.updateViewport(false);
-      if (this.chatbarWindows[`table_${this.table_id}`]?.status != "expanded") {
-        document.getElementById("nbchat").style.display = "";
-        document.getElementById("nbchatinput").value = this.chatbarWindows[`table_${this.table_id}`].input.input_div.value || "";
-        const scrollEl = document.getElementById("nbchatscroll");
-        scrollEl.scrollTop = scrollEl.scrollHeight * -1;
+    },
+
+    /* @Override */
+    onShowPredefined(t) {
+      this.inherited(arguments);
+      const predefinedEl = document.getElementById(`chatbarinput_predefined_table_${this.table_id}_dropdown`);
+      if (predefinedEl) {
+        predefinedEl.style.zIndex = 99999;
+      }
+    },
+
+    updateMobile() {
+      const oldMobile = isMobile;
+      isMobile = document.body.clientWidth < 1180;
+      document.body.classList.toggle("desktop_version", !isMobile);
+      document.body.classList.toggle("mobile_version", isMobile);
+      console.info("📱 isMobile", isMobile, "clientWidth", document.body.clientWidth, "screenWidth", window.screen.width);
+      if (isMobile != oldMobile && this.chatbarWindows[`table_${this.table_id}`]) {
+        if (isMobile) {
+          this.collapseChatWindow(`table_${this.table_id}`);
+        } else {
+          this.expandChatWindow(`table_${this.table_id}`);
+        }
       }
     },
 
@@ -337,7 +409,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         }
       }
       // Force device-width during chat
-      viewportEl.content = `width=${chatVisible ? "device-width" : "980"},interactive-widget=resizes-content`;
+      viewportEl.content = `width=${chatVisible ? "device-width" : "900"},interactive-widget=resizes-content`;
     },
 
     /* @Override */
@@ -347,39 +419,90 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       if (result && notif.channelorig == `/table/t${this.table_id}` && (notif.type == "chatmessage" || notif.type == "tablechat" || (notif.type == "startWriting" && notif.args.player_id != this.player_id))) {
         const plane = this.gamedatas.planes[notif.args.player_id];
         const alliance = plane?.alliances?.length ? plane.alliances[0] : null;
-
-        // Color BGA chat with plane alliance
-        if (alliance && chatId != this.next_log_id) {
-          document.getElementById(`dockedlog_${chatId}`)?.classList.add(`chatlog-${alliance}`);
-        }
-
-        // Add to inline chat
-        let logHtml = "";
-        const self = notif.args.player_id == this.player_id ? "self" : "";
-        const avatarUrl = document.getElementById(`avatar_${notif.args.player_id}`)?.src || "https://x.boardgamearena.net/data/avatar/default_32.jpg";
-        const avatarHtml = self ? "" : `<img class="avatar emblem" src="${avatarUrl}">`;
-        const timeOptions = { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false };
-        const msgTxt = this.addSmileyToText(notif.args.text || notif.args.message || "");
         if (notif.type == "startWriting") {
+          // Add writing indicator to inline chat
           const writingEl = document.getElementById(`nbwriting_${notif.args.player_id}`);
           if (!writingEl) {
-            const newArgs = this.notifqueue.playerNameFilterGame({ player_name: notif.args.player_name });
-            const msgHtml = `<div class="nbchatmsg chatlog-${alliance}">${newArgs.player_name}: <i class="icon typing"></i></div>`;
-            const timeHtml = '<div class="nbchattime">' + new Date().toLocaleString([], timeOptions) + "</div>";
-            logHtml = `<div id="nbwriting_${notif.args.player_id}" data-player-name="${notif.args.player_name}" class="nbwriting nbchatwrap ${self}" style="order: ${Math.floor(Date.now() / 1000)}">${avatarHtml}<div class="nbchatlog">${msgHtml}${timeHtml}</div></div>`;
+            this.appendNbChatMessage({
+              alliance,
+              playerId: notif.args.player_id,
+              time: Date.now(),
+              writing: notif.args.player_name,
+            });
           }
-        } else if (msgTxt) {
-          const msgHtml = `<div class="nbchatmsg chatlog-${alliance}">${notif.args.player_name}: ${msgTxt}</div>`;
-          const timeHtml = '<div class="nbchattime">' + new Date(notif.time * 1000).toLocaleString([], timeOptions) + "</div>";
-          logHtml = `<div class="nbchatwrap ${self}" style="order: ${notif.time}">${avatarHtml}<div class="nbchatlog">${msgHtml}${timeHtml}</div></div>`;
-        }
-        if (logHtml) {
-          const scrollEl = document.getElementById("nbchatscroll");
-          scrollEl.insertAdjacentHTML("afterbegin", logHtml);
-          scrollEl.scrollTop = scrollEl.scrollHeight * -1;
+        } else if (chatId != this.next_log_id) {
+          if (alliance) {
+            // Color BGA chat
+            document.getElementById(`dockedlog_${chatId}`)?.querySelector(".roundedboxinner").classList.add(`alliance-${alliance}`);
+          }
+
+          // Add message to inline chat
+          let message = "";
+          if (notif.log == "${player_name} ${message}") {
+            message = this.addSmileyToText(notif.args.message || "");
+          } else if (notif.log == "${player_name} ${text}") {
+            message = this.addSmileyToText(notif.args.text || "");
+          } else {
+            message = this.format_string_recursive(notif.log, notif.args);
+          }
+          this.appendNbChatMessage({
+            alliance,
+            message,
+            playerId: notif.args.player_id,
+            playerNameHtml: notif.args.player_name,
+            time: notif.time * 1000,
+          });
+        } else {
+          console.warn("ignore by next_log_id", JSON.stringify(notif, undefined, 2));
         }
       }
       return result;
+    },
+
+    appendNbChatMessage(args) {
+      const self = args.playerId == this.player_id ? "self" : "";
+      if (args.writing) {
+        args.message = '<i class="icon typing"></i>';
+      }
+      if (!self && !args.alliance) {
+        args.message = (args.playerNameHtml || "<b>" + args.writing + "</b>") + ": " + args.message;
+      }
+      let avatarHtml = "";
+      if (!self) {
+        const avatarUrl = document.getElementById(`avatar_${args.playerId}`)?.src || "https://x.boardgamearena.net/data/avatar/default_32.jpg";
+        avatarHtml = `<img class="avatar emblem" src="${avatarUrl}">`;
+      }
+      const time = new Date(args.time).toLocaleString([], { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
+      const order = Math.floor(args.time / 1000) - 1701388800; // 2023-12-01
+      const logHtml = `<div class="nbchatlog">
+  <div class="nbchatmsg alliance-${args.alliance}">${args.message}</div>
+  <div class="nbchattime">${time}</div>
+</div>`;
+
+      let wrapHtml = "";
+      if (args.writing) {
+        wrapHtml = `<div id="nbwriting_${args.playerId}" data-player-name="${args.writing}" class="nbwriting nbchatwrap ${self}" data-order="${order}">${avatarHtml}${logHtml}</div>`;
+      } else {
+        wrapHtml = `<div class="nbchatwrap ${self}" data-order="${order}">${avatarHtml}${logHtml}</div>`;
+      }
+
+      // Insert at the proper position
+      const scrollEl = document.getElementById("nbchatscroll");
+      let inserted = false;
+      for (const child of scrollEl.children) {
+        const childOrder = +child.dataset.order;
+        if (order >= childOrder) {
+          child.insertAdjacentHTML("beforebegin", wrapHtml);
+          inserted = true;
+          break;
+        }
+      }
+      if (!inserted) {
+        scrollEl.insertAdjacentHTML("beforeend", wrapHtml);
+      }
+      if (!args.writing) {
+        scrollEl.scrollTop = scrollEl.scrollHeight * -1;
+      }
     },
 
     /* @Override */
@@ -919,7 +1042,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
   ${vipHtml}
   <div class="nbsection">
     <div class="nblabel">${_("Map Size")}</div>
-    <div class="nbtag"><input type="range" id="nbrange" min="40" max="100" step="2" value="100"></div>
+    <div class="nbtag"><input type="range" id="nbrange" min="40" max="100" step="2" value="60"></div>
   </div>
 </div>`;
         const parentEl = document.getElementById("player_boards");
@@ -927,27 +1050,17 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         commonEl = document.getElementById("nbcommon");
 
         const nbrange = document.getElementById("nbrange");
-        nbrange.addEventListener("input", (ev) => {
-          const scaleEl = document.getElementById("nbscale");
-          if (scaleEl) {
-            scaleEl.style.width = `${nbrange.value}%`;
-            this.resizeMap();
-            try {
-              localStorage.setItem("nowboarding.scale", nbrange.value);
-            } catch (e) {
-              // Local storage unavailable
-            }
+        const adjustScale = (ev, save) => {
+          this.scaleEl.style.width = `${nbrange.value}%`;
+          this.resizeMap();
+          if (save !== false) {
+            saveStorage("scale", nbrange.value);
           }
-        });
-        try {
-          const storageValue = localStorage.getItem("nowboarding.scale");
-          if (storageValue) {
-            nbrange.value = storageValue;
-            nbrange.dispatchEvent(new Event("input"));
-          }
-        } catch (e) {
-          // Local storage unavailable
-        }
+        };
+        nbrange.addEventListener("input", adjustScale);
+        const initialScale = getStorage("scale") || 60;
+        nbrange.value = initialScale;
+        adjustScale(null, false);
       }
 
       const complaintTextEl = document.getElementById("nbcommon-complaint");
@@ -1166,7 +1279,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
   <div id="paxlist-${manifestId}" class="paxlist is-map"></div>
 </div>`
       );
-      if (!document.body.classList.contains("mobile_version")) {
+      if (isMobile) {
         const manifestEl = document.getElementById(`manifest-${manifestId}`);
         manifestEl.addEventListener("mouseenter", (ev) => this.onEnterMapManifest(manifestId));
         manifestEl.addEventListener("mouseleave", (ev) => this.onLeaveMapManifest(manifestId));
@@ -1208,7 +1321,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
   <i class="icon people"></i><span id="nodecount-${node}">0</span>
 </div>`
         );
-        if (!document.body.classList.contains("mobile_version")) {
+        if (isMobile) {
           const nodeEl = document.getElementById(`node-${node}`);
           nodeEl.addEventListener("mouseenter", (ev) => this.onEnterMapManifest(node));
           nodeEl.addEventListener("mouseleave", (ev) => this.onLeaveMapManifest(node));
@@ -1226,7 +1339,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
     resizeMap() {
       if (this.scaleEl && this.mapEl) {
-        this.scaleEl.style.setProperty("--map-width", Math.max(this.mapEl.clientWidth, 950) + "px");
+        this.scaleEl.style.setProperty("--map-width", Math.max(this.mapEl.clientWidth, 875) + "px");
         this.renderMapLeads();
       }
     },
@@ -1246,7 +1359,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
           if (parentId == "manifests-top") {
             // straight lead up
-            let height = nodePos.top - manifestPos.top - manifestPos.height - 8;
+            let height = nodePos.top - manifestPos.top - manifestPos.height - 6;
             leadEl.style.height = `${height}px`;
             leadEl.style.width = "0px";
             leadEl.style.top = null;
@@ -1254,7 +1367,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
             leadEl.style.left = null;
             leadEl.style.right = null;
           } else if (parentId == "manifests-bottom") {
-            let height = manifestPos.top - nodePos.top - nodePos.height - 8;
+            let height = manifestPos.top - nodePos.top - nodePos.height - 6;
             let width = 0;
             if (isBetweenLeft) {
               // straight lead down
@@ -1270,13 +1383,13 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
               height += nodePos.height / 2;
               if (manifestPos.left > nodePos.left) {
                 // curved lead right down
-                width = manifestPos.left + manifestPos.width * 0.15 - nodePos.left - nodePos.width - 8;
+                width = manifestPos.left + manifestPos.width * 0.15 - nodePos.left - nodePos.width - 6;
                 leadEl.style.left = `${nodePos.width}px`;
                 leadEl.style.right = null;
                 leadEl.classList.toggle("left", false);
               } else {
                 // curved to the left down (DFW)
-                width = nodePos.left - manifestPos.left - manifestPos.width * 0.85 - 8;
+                width = nodePos.left - manifestPos.left - manifestPos.width * 0.85 - 6;
                 leadEl.style.left = null;
                 leadEl.style.right = `${nodePos.width}px`;
                 leadEl.classList.toggle("left", true);
@@ -1288,11 +1401,11 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
               leadEl.classList.toggle("curved", true);
             }
           } else if (parentId == "manifests-right") {
-            let height = manifestPos.top - nodePos.top - nodePos.height / 2 - 8;
+            let height = manifestPos.top - nodePos.top - nodePos.height / 2 - 6;
             if (height > 4) {
               // curved lead right + down
-              let height = manifestPos.top - nodePos.top - nodePos.height / 2 - 8;
-              let width = manifestPos.left + manifestPos.width * 0.25 - nodePos.left - nodePos.width - 8;
+              let height = manifestPos.top - nodePos.top - nodePos.height / 2 - 6;
+              let width = manifestPos.left + manifestPos.width * 0.25 - nodePos.left - nodePos.width - 6;
               leadEl.style.height = `${height}px`;
               leadEl.style.width = `${width}px`;
               leadEl.style.top = `${nodePos.height / 2}px`;
@@ -1302,7 +1415,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
               leadEl.classList.toggle("curved", true);
             } else {
               // straight lead right
-              let width = manifestPos.left - nodePos.left - nodePos.width - 8;
+              let width = manifestPos.left - nodePos.left - nodePos.width - 6;
               leadEl.style.height = "0px";
               leadEl.style.width = `${width}px`;
               leadEl.style.top = null;
@@ -1573,7 +1686,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           buyEl.addEventListener("click", (ev) => this.takeAction("buy", buy));
         }
         if (buy.type == "ALLIANCE") {
-          if (!document.body.classList.contains("mobile_version")) {
+          if (isMobile) {
             buyEl.addEventListener("mouseenter", (ev) => this.onEnterMapManifest(buy.alliance));
             buyEl.addEventListener("mouseleave", (ev) => this.onLeaveMapManifest(buy.alliance));
           }

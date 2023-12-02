@@ -1,85 +1,107 @@
+@use "colors" as *;
+
+#nbroot {
+  display: flex;
+  flex-wrap: wrap;
+}
+
 #nbchat {
-  border: 1px solid black;
   border-radius: 4px;
+  border: 1px solid black;
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 200px;
+  font-size: 15px;
+  overflow: hidden;
+
+  .mobile_version & {
+    font-size: 19px;
+  }
+
+  .fa-comment {
+    width: 1.5em;
+  }
+
+  .chatinput {
+    color: black;
+    font-size: inherit;
+    font-style: normal;
+    height: 2.5em;
+    overflow: auto !important;
+    padding: 5px;
+    position: static;
+    resize: vertical !important;
+    text-align: left;
+    width: auto;
+  }
+
+  .chatbarbelowinput {
+    align-items: center;
+    background: $color-neutral-300;
+    display: flex;
+    justify-content: space-around;
+    padding: 5px;
+    position: static;
+
+    .chatwindow_startaudiochat,
+    .chatwindow_startvideochat,
+    .chatbarbelowinput_item_showcursor {
+      display: block;
+    }
+  }
 }
 
 #nbchatheader {
   background-color: black;
   color: white;
+  font-size: 80%;
   font-weight: bold;
-  padding: 6px;
-}
-
-#nbchatinput {
-  height: 3.5em;
-  padding: 6px;
-  width: 100%;
+  padding: 5px;
 }
 
 #nbchatscroll {
-  background: rgb(0 0 0 / 0.2);
+  background: $color-slate-800;
+  color: white;
   display: flex;
-  flex-direction: column-reverse;
-  height: 350px;
+  flex-direction: column;
+  flex: 1 0 350px;
   overflow-y: auto;
-  padding: 6px;
-  position: relative;
+  padding: 5px;
+}
 
-  .nbchatwrap {
-    display: grid;
-    flex-direction: column;
-    gap: 0px 0px;
-    grid-template: "avatar log empty" auto / auto 1fr 10%;
-    margin-bottom: 6px;
+.nbchatwrap {
+  display: flex;
+  margin-bottom: 10px;
 
-    &.self {
-      grid-template: "empty log" auto / 10% 1fr;
-      text-align: right;
-
-      .nbchatlog {
-        justify-self: flex-end;
-      }
-    }
-
-    .avatar {
-      grid-area: avatar;
-      margin: 0 6px 0 0;
-    }
+  &.self {
+    justify-content: flex-end;
+    text-align: right;
   }
 
-  .nbchatlog {
-    grid-area: log;
+  .avatar {
+    margin: 0 5px 0 0;
   }
 
-  .nbchattime {
-    color: white;
-    font-size: 75%;
-    text-shadow: 1px 1px black;
-  }
-
-  .nbchatmsg {
-    background: rgb(255 255 255 / 0.85);
-    border-radius: 4px;
-    display: inline-block;
-    padding: 2px 8px;
-
-    .playername {
-      text-shadow: 1px 1px white;
-    }
+  .playername {
+    color: white !important;
   }
 }
 
-.mobile_version {
-  #nbchatheader,
-  #nbchatinput,
-  #nbchat {
-    font-size: 22px;
-  }
+.nbchatmsg {
+  background: $color-neutral-600;
+  border-radius: 4px;
+  display: inline-block;
+  padding: 2px 8px;
+}
+
+.nbchattime {
+  font-size: 80%;
 }
 
 .emoji {
   font-size: 180%;
   line-height: 1;
+  vertical-align: sub;
 }
 
 .predefined_message {
@@ -89,9 +111,4 @@
   justify-content: center;
   padding: 0;
   width: 37px;
-}
-
-.chatinput {
-  font-style: normal;
-  text-align: left;
 }
