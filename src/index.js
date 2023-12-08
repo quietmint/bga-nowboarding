@@ -1197,7 +1197,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       // Update plane speed
       const planespeedEl = document.getElementById(`planespeed-${plane.id}`);
       if (planespeedEl) {
-        planespeedEl.textContent = speedRemain > 0 ? speedRemain : "";
+        planespeedEl.textContent = speedRemain > 0 ? speedRemain : "0";
       }
 
       // Update seat tag
