@@ -15,12 +15,13 @@ require_once 'modules/constants.inc.php';
 $game_options = [
     N_OPTION_TIMER => [
         'name' => totranslate('Flight Phase Timer'),
-        'default' => 1,
+        'default' => 2,
         'notdisplayedmessage' => totranslate('Off'),
         'values' => [
             1 => [
                 'name' => totranslate('On'),
                 'description' => totranslate("The flight phase lasts 30 - 45 seconds (depending on player count) and time is STRICTLY ENFORCED"),
+                'tmdisplay' => totranslate('Flight Phase Timer On'),
             ],
             2 => [
                 'name' => totranslate('Doubled'),
@@ -126,6 +127,36 @@ $game_options = [
             [
                 'type' => 'maxplayers',
                 'value' => [2, 3],
+            ],
+        ],
+    ],
+
+    N_OPTION_UPGRADE => [
+        'level' => 'additional',
+        'name' => totranslate('Starting Upgrade'),
+        'default' => 0,
+        'values' => [
+            0 => [
+                'name' => totranslate('Normal'),
+                'description' => totranslate('Choose to start with either 1 seat, 4 speed or 2 seats, 3 speed'),
+            ],
+            N_UPGRADE_SEAT => [
+                'name' => totranslate('Seat'),
+                'description' => totranslate('Start with 2 seats, 3 speed'),
+                'tmdisplay' => totranslate('Start With Seat Upgrade'),
+                'nobeginner' => true,
+            ],
+            N_UPGRADE_SPEED => [
+                'name' => totranslate('Speed'),
+                'description' => totranslate('Start with 1 seat, 4 speed'),
+                'tmdisplay' => totranslate('Start With Speed Upgrade'),
+                'nobeginner' => true,
+            ],
+            N_UPGRADE_BOTH => [
+                'name' => totranslate('Both'),
+                'description' => totranslate('Start with 2 seats, 4 speed [unofficial, easier]'),
+                'tmdisplay' => totranslate('Start With Both Upgrades'),
+                'nobeginner' => true,
             ],
         ],
     ],

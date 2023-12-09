@@ -349,6 +349,24 @@ class NowBoarding extends Table
         ];
     }
 
+    public function autoUpgrade(NPlane $plane): bool
+    {
+        $optionUpgrade = $this->getGlobal(N_OPTION_UPGRADE);
+        if ($optionUpgrade > 0) {
+            if ($optionUpgrade == N_UPGRADE_SEAT) {
+                $this->buySeat($plane);
+            } elseif ($optionUpgrade == N_UPGRADE_SPEED) {
+                $this->buySpeed($plane);
+            } else if ($optionUpgrade == N_UPGRADE_BOTH) {
+                $this->buySeat($plane, false);
+                $this->buySpeed($plane);
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     /*
      * MAINTENANCE
      * Create passengers (first turn only)
@@ -815,8 +833,13 @@ class NowBoarding extends Table
             'state' => 'buildAlliance',
         ]);
 
-        $playerCount = $this->getPlayersNumber();
-        $this->gamestate->nextPrivateState($plane->id,  $playerCount == 2 ? 'buildAlliance2' : 'buildUpgrade');
+        if ($this->getPlayersNumber() > 2) {
+            if (!$this->autoUpgrade($plane)) {
+                $this->gamestate->nextPrivateState($plane->id, 'buildUpgrade');
+            }
+        } else {
+            $this->gamestate->nextPrivateState($plane->id, 'buildAlliance2');
+        }
     }
 
     private function buyAlliance(NPlane $plane, string $alliance): void
@@ -846,10 +869,16 @@ class NowBoarding extends Table
             'player_name' => $plane->name,
         ]);
 
-        $this->gamestate->nextPrivateState($plane->id, $isBuild ? 'buildUpgrade' : 'prepareBuy');
+        if ($isBuild) {
+            if (!$this->autoUpgrade($plane)) {
+                $this->gamestate->nextPrivateState($plane->id, 'buildUpgrade');
+            }
+        } else {
+            $this->gamestate->nextPrivateState($plane->id, 'prepareBuy');
+        }
     }
 
-    private function buySeat(NPlane $plane): void
+    private function buySeat(NPlane $plane, bool $transition = true): void
     {
         if ($plane->seat >= 5) {
             throw new BgaVisibleSystemException("buySeat: $plane already at maximum seats 5 [???]");
@@ -877,10 +906,12 @@ class NowBoarding extends Table
             'seat' => $plane->seat,
         ]);
 
-        if ($isBuild) {
-            $this->gamestate->setPlayerNonMultiactive($plane->id, 'maintenance');
-        } else {
-            $this->gamestate->nextPrivateState($plane->id, 'prepareBuy');
+        if ($transition) {
+            if ($isBuild) {
+                $this->gamestate->setPlayerNonMultiactive($plane->id, 'maintenance');
+            } else {
+                $this->gamestate->nextPrivateState($plane->id, 'prepareBuy');
+            }
         }
     }
 
@@ -926,7 +957,7 @@ class NowBoarding extends Table
         $this->gamestate->nextPrivateState($plane->id, 'prepareBuy');
     }
 
-    private function buySpeed(NPlane $plane): void
+    private function buySpeed(NPlane $plane, bool $transition = true): void
     {
         if ($plane->speed >= 9) {
             throw new BgaVisibleSystemException("buySpeed: $plane already at maximum speed 9 [???]");
@@ -954,10 +985,12 @@ class NowBoarding extends Table
             'speed' => $plane->speed,
         ]);
 
-        if ($isBuild) {
-            $this->gamestate->setPlayerNonMultiactive($plane->id, 'maintenance');
-        } else {
-            $this->gamestate->nextPrivateState($plane->id, 'prepareBuy');
+        if ($transition) {
+            if ($isBuild) {
+                $this->gamestate->setPlayerNonMultiactive($plane->id, 'maintenance');
+            } else {
+                $this->gamestate->nextPrivateState($plane->id, 'prepareBuy');
+            }
         }
     }
 

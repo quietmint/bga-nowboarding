@@ -35,6 +35,10 @@ define('N_VIP_DOUBLE', 4);
 define('N_OPTION_MAP', 110);
 define('N_MAP_JFK', 1);
 define('N_MAP_SEA', 2);
+define('N_OPTION_UPGRADE', 112);
+define('N_UPGRADE_SEAT', 2);
+define('N_UPGRADE_SPEED', 3);
+define('N_UPGRADE_BOTH', 4);
 
 // Game preferences
 define('N_PREF_ANIMATION', 150);
