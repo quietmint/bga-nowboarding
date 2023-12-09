@@ -2,7 +2,10 @@
 
 #nbroot {
   display: flex;
-  flex-wrap: wrap;
+
+  .mobile_version & {
+    display: block;
+  }
 }
 
 #nbchat {
@@ -23,10 +26,10 @@
   }
 
   .chatinput {
-    color: black;
+    color: initial;
     font-size: inherit;
     font-style: normal;
-    height: 2.5em;
+    height: 4em;
     overflow: auto !important;
     padding: 5px;
     position: static;
@@ -60,7 +63,7 @@
 }
 
 #nbchatscroll {
-  background: $color-slate-800;
+  background: $color-slate-700;
   color: white;
   display: flex;
   flex-direction: column;
@@ -91,7 +94,14 @@
   background: $color-neutral-600;
   border-radius: 4px;
   display: inline-block;
-  padding: 2px 8px;
+  padding: 4px 8px;
+  text-shadow: black 1px 1px;
+  word-break: break-word;
+
+  a {
+    color: inherit !important;
+    text-decoration: underline;
+  }
 }
 
 .nbchattime {

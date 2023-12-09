@@ -85,7 +85,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         () => {
           this.updateMobile();
           this.updateViewport();
-          const logMode = !isMobile && document.body.clientWidth > 1440 ? document.getElementById("preference_global_control_logsSecondColumn")?.value : "0";
+          const logMode = !isMobile && document.body.clientWidth > 1640 ? document.getElementById("preference_global_control_logsSecondColumn")?.value : "0";
           this.switchLogModeTo(logMode);
           this.adaptChatbarDock();
           this.adaptStatusBar();
@@ -313,9 +313,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         chat.input.readaptChatHeight = () => {};
         this.autoChatWhilePressingKey = new dijit.TooltipDialog({ id: "autoChatWhilePressingKey", content: "" });
         this.moveChatElements(true);
-        if (!isMobile) {
-          this.expandChatWindow(`table_${this.table_id}`);
-        }
+        document.getElementById(`chatwindowpreview_table_${this.table_id}`).style.display = "none";
       }
       return output;
     },
@@ -335,24 +333,21 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       }
     },
 
-    hideBgaChat() {
-      document.getElementById(`chatwindowcollapsed_table_${this.table_id}`).style.display = "none";
-      document.getElementById(`chatwindowexpanded_table_${this.table_id}`).style.display = "none";
-      document.getElementById(`chatwindowpreview_table_${this.table_id}`).style.display = "none";
-    },
-
     /* @Override */
-    expandChatWindow(id) {
-      console.log("expandChatWindow", id);
+    expandChatWindow(id, autoExpand) {
+      console.log("expandChatWindow", id, autoExpand);
+      const isTable = id == `table_${this.table_id}`;
+      if (isTable && autoExpand) {
+        // don't auto-expand, instead just focus the text box
+        document.getElementById(`chatbarinput_table_${this.table_id}_input`).focus();
+        return;
+      }
       this.inherited(arguments);
-      if (id == `table_${this.table_id}`) {
-        if (isMobile) {
-          // on mobile, move chat to BGA popup
-          this.moveChatElements(false);
-        } else {
-          // on desktop, hide BGA popup :)
-          this.hideBgaChat();
-        }
+      if (isTable) {
+        // move table chat to BGA popup
+        this.moveChatElements(false);
+        document.getElementById("nbchat").style.display = "none";
+        this.resizeMap();
       }
       this.updateViewport(true);
     },
@@ -360,16 +355,13 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     /* @Override */
     collapseChatWindow(id) {
       console.log("collapseChatWindow", id);
-      const isTableChat = id == `table_${this.table_id}`;
-      if (isTableChat && !isMobile) {
-        // on desktop, ignore collapse (via ESC key)
-        this.hideBgaChat();
-        return;
-      }
       this.inherited(arguments);
-      if (isTableChat && isMobile) {
-        // on mobile, move chat to inline
+      if (id == `table_${this.table_id}`) {
+        // move table chat to inline
         this.moveChatElements(true);
+        document.getElementById("nbchat").style.display = "";
+        document.getElementById(`chatwindowpreview_table_${this.table_id}`).style.display = "none";
+        this.resizeMap();
       }
       this.updateViewport(false);
     },
@@ -384,18 +376,10 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     },
 
     updateMobile() {
-      const oldMobile = isMobile;
       isMobile = document.body.clientWidth < 1180;
       document.body.classList.toggle("desktop_version", !isMobile);
       document.body.classList.toggle("mobile_version", isMobile);
       console.info("📱 isMobile", isMobile, "clientWidth", document.body.clientWidth, "screenWidth", window.screen.width);
-      if (isMobile != oldMobile && this.chatbarWindows[`table_${this.table_id}`]) {
-        if (isMobile) {
-          this.collapseChatWindow(`table_${this.table_id}`);
-        } else {
-          this.expandChatWindow(`table_${this.table_id}`);
-        }
-      }
     },
 
     updateViewport(chatVisible) {

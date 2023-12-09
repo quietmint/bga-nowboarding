@@ -213,19 +213,22 @@ html,
 
   #right-side {
     float: none;
-    position: static;
     order: 1;
+    position: static;
+    width: 900px;
   }
 
   #left-side-wrapper {
     float: none;
     order: 2;
+    width: 900px;
   }
 
   #player_boards {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
+    margin: 0;
   }
 
   .player-board {
@@ -235,6 +238,16 @@ html,
     &.spectator-mode {
       width: 100%;
     }
+  }
+
+  /* Wiki */
+  .pagesection {
+    max-width: 900px;
+    overflow: auto;
+  }
+
+  .wikicontent {
+    font-size: 24px;
   }
 }
 
@@ -379,8 +392,8 @@ html,
 
 #logs .timestamp,
 .chatwindowlogs_zone .timestamp {
-  color: white;
-  text-shadow: 1px 1px black;
+  color: white !important;
+  text-shadow: 1px 1px black !important;
 }
 
 .roundedboxinner.alliance-ATL,
@@ -388,24 +401,23 @@ html,
 .roundedboxinner.alliance-LAX,
 .roundedboxinner.alliance-ORD,
 .roundedboxinner.alliance-SEA {
+  text-shadow: 1px 1px black !important;
+
   .playername {
     color: white !important;
   }
+
   .msgtime {
     color: $color-neutral-300 !important;
+  }
+
+  a {
+    color: inherit !important;
+    text-decoration: underline;
   }
 }
 
 /* Wiki */
-.mobile_version .pagesection {
-  max-width: 900px;
-  overflow: auto;
-}
-
-.mobile_version .wikicontent {
-  font-size: 24px;
-}
-
 .wikicontent p {
   margin-bottom: 0.5em;
   margin-top: 0.5em;
