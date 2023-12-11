@@ -1,4 +1,5 @@
 define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], function (dojo, declare) {
+  let endTime = null;
   let flyTimer = null;
   let isMobile = false;
   let spotlightPlane = null;
@@ -107,6 +108,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       // Setup common
       this.scaleEl = document.getElementById("nbscale");
       this.renderCommon();
+      this.renderCountdown();
 
       // Setup map
       this.mapEl = document.getElementById("nbmap");
@@ -538,17 +540,14 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     /* @Override */
     updateReflexionTime() {
       this.inherited(arguments);
-      if (this.gamedatas.gamestate.name == "fly" && this.gamedatas.gamestate.args.endTime) {
-        const seconds = this.gamedatas.gamestate.args.endTime - Date.now() / 1000;
+      if (this.gamedatas.gamestate.name == "fly" && endTime) {
+        const seconds = (endTime - Date.now()) / 1000;
         if (!this.gamedatas.gamestate.args.sound && seconds <= 8) {
           // Play the clock sound only once, at 8 seconds
           playSoundSuper("time_alarm");
           this.gamedatas.gamestate.args.sound = true;
         }
-        const countdownEl = document.getElementById("nbcountdown");
-        if (countdownEl) {
-          countdownEl.textContent = this.formatReflexionTime(seconds).string;
-        }
+        this.renderCountdown(this.formatReflexionTime(seconds).string);
       }
     },
 
@@ -557,7 +556,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         console.warn("🔈 Suppress sound (instantaneousMode)", sound);
         return;
       }
-      if (this.gamedatas.gamestate.name == "fly" && this.gamedatas.gamestate.args.endTime && sound == "time_alarm") {
+      if (this.gamedatas.gamestate.name == "fly" && endTime && sound == "time_alarm") {
         console.warn("🔈 Suppress sound", sound);
         return;
       }
@@ -588,19 +587,18 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
     onEnteringState(stateName, args) {
       if (stateName == "fly") {
-        if (args.args.endTime) {
-          // Add action bar countdown
+        if (args.args.remain != null) {
           document.body.classList.add("no_time_limit");
-          const destEl = document.getElementById("page-title");
-          destEl.insertAdjacentHTML("afterbegin", '<div id="nbcountdown"></div>');
           if (!this.isReadOnly()) {
             // Start timer
             if (flyTimer) {
               window.clearTimeout(flyTimer);
             }
-            const millis = Math.max(0, args.args.endTime * 1000 - Date.now()) + Math.random() * 1000;
-            console.log("⌚ Timer start", millis);
-            flyTimer = window.setTimeout(() => this.takeAction("flyTimer", { lock: false }), millis);
+            const millis = Math.max(0, args.args.remain) * 1000;
+            const timerMillis = millis + Math.random() * 1500;
+            console.log("⌚ Timer start", timerMillis);
+            flyTimer = window.setTimeout(() => this.takeAction("flyTimer", { lock: false }), timerMillis);
+            endTime = Date.now() + millis;
           }
         }
       } else if (stateName == "maintenance") {
@@ -608,12 +606,12 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         if (flyTimer) {
           window.clearTimeout(flyTimer);
           flyTimer = null;
+          endTime = null;
         }
-        // Remove action bar countdown
-        document.getElementById("nbcountdown")?.remove();
         if (!this.gamedatas.noTimeLimit) {
           document.body.classList.remove("no_time_limit");
         }
+        this.renderCountdown();
       } else if (stateName == "prepare" || stateName == "gameEnd") {
         this.stabilizerOff();
       }
@@ -726,6 +724,11 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       } else if (notif.type == "flyTimer") {
         suppressSounds = ["yourturn"];
         playSound("nowboarding_chime");
+        if (flyTimer) {
+          window.clearTimeout(flyTimer);
+          flyTimer = null;
+          endTime = null;
+        }
         this.showMessage(_("Time is up!") + '<div class="flyTimer"><i class="icon timer"></i></div>', "info");
         this.deleteMoves();
       } else if (notif.type == "hour") {
@@ -1058,6 +1061,22 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         hourTxt += ` (${this.gamedatas.hour.round}/${this.gamedatas.hour.total})`;
       }
       hourTextEl.textContent = hourTxt;
+    },
+
+    renderCountdown(txt) {
+      let countdownEl = document.getElementById("nbcountdown");
+      if (!countdownEl) {
+        const titleEl = document.getElementById("page-title");
+        titleEl.insertAdjacentHTML("afterbegin", `<div id="nbcountdown" title="${_("Flight Phase Timer")}"><i class="icon timer-off"></i></div>`);
+        countdownEl = document.getElementById("nbcountdown");
+      }
+      if (txt) {
+        countdownEl.classList.add("active");
+        countdownEl.textContent = txt;
+      } else if (this.gamedatas.timer) {
+        countdownEl.classList.remove("active");
+        countdownEl.textContent = this.formatReflexionTime(this.gamedatas.timer).string;
+      }
     },
 
     async renderWeather() {

@@ -237,14 +237,16 @@ class NowBoarding extends Table
     protected function getAllDatas(): array
     {
         $players = $this->getCollectionFromDb("SELECT player_id id, player_score score FROM player");
+        $bgaClock = $this->getGlobal(N_BGA_CLOCK);
         return [
             'complaint' => $this->countComplaint(),
             'hour' => $this->getHourInfo(),
             'map' => $this->getMap(),
-            'noTimeLimit' => in_array($this->getGlobal(N_BGA_CLOCK), N_REF_BGA_CLOCK_UNLIMITED),
+            'noTimeLimit' => in_array($bgaClock, N_REF_BGA_CLOCK_UNLIMITED),
             'pax' => $this->filterPax($this->getPaxByStatus(['SECRET', 'PORT', 'SEAT'])),
             'planes' => $this->getPlanesByIds(),
             'players' => $players,
+            'timer' => (in_array($bgaClock, N_REF_BGA_CLOCK_REALTIME) ? $this->getGlobal(N_OPTION_TIMER) : 0) * (count($players) * 5 + 20),
             'version' => $this->getGlobal(N_BGA_VERSION),
             'vip' => $this->getGlobal(N_OPTION_VIP) ? $this->getVipInfo()['overall'] : null,
         ];
@@ -709,18 +711,17 @@ class NowBoarding extends Table
         $this->notifyAllPlayers('pax', $msg, $args);
 
         // Start the timer
-        $seconds = null;
+        $endTime = null;
         if (in_array($this->getGlobal(N_BGA_CLOCK), N_REF_BGA_CLOCK_REALTIME)) {
+            $seconds = 9999;
             $duration = $this->getGlobal(N_OPTION_TIMER) * ($this->getPlayersNumber() * 5 + 20);
             if ($duration) {
-                $seconds = $duration;
-                $endTime = time() + $seconds;
-                $this->setVar('endTime', $endTime);
+                $endTime = time() + $duration;
+                $seconds = $duration + 60;
             }
-        } else {
-            $this->setVar('endTime', null);
+            $this->giveExtraTimeAll($seconds);
         }
-        $this->giveExtraTimeAll($seconds + 60);
+        $this->setVar('endTime', $endTime);
 
         // Play the sound and begin flying
         $this->notifyAllPlayers('sound', '', [
@@ -732,9 +733,12 @@ class NowBoarding extends Table
 
     public function argFly(): array
     {
-        return [
-            'endTime' => $this->getVarInt('endTime'),
-        ];
+        $args = [];
+        $endTime = $this->getVarInt('endTime');
+        if ($endTime) {
+            $args['remain'] = max(0, $endTime - time());
+        }
+        return $args;
     }
 
     public function argFlyPrivate(int $playerId): array
@@ -1651,7 +1655,7 @@ class NowBoarding extends Table
 
     private function enforceTimer(): bool
     {
-        // We need to check BGA speed in case table switched to turn-based
+        // We need to check BGA clock in case table switched to turn-based
         $endTime = $this->getVarInt('endTime');
         if (
             $endTime > 0

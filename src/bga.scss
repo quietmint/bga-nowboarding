@@ -25,12 +25,21 @@ html,
 }
 
 #nbcountdown {
-  color: red;
+  color: $color-neutral-400;
   font-size: 24px;
   left: 5px;
   line-height: 32px;
   position: absolute;
   top: 5px;
+  z-index: 10;
+
+  &.active {
+    color: red;
+  }
+
+  .icon {
+    font-size: 28px;
+  }
 }
 
 #nbwrap {
