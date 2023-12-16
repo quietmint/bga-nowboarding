@@ -2036,7 +2036,7 @@ class NowBoarding extends Table
             ];
         }
         $msg = $this->exceptionMsg('vip', self::_($vipInfo['name']), self::_($vipInfo['desc']));
-        if (array_key_exists('args', $vipInfo)) {
+        if (array_key_exists('args', $vipInfo) && $vipInfo['args']) {
             foreach ($vipInfo['args'] as $argKey => $argValue) {
                 $msg = str_replace('${' . $argKey . '}', $argValue, $msg);
             }
