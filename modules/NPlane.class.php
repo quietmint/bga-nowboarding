@@ -14,7 +14,7 @@ class NPlane extends APP_GameClass implements JsonSerializable
     public int $seatRemain;
     public int $speed;
     public int $speedRemain;
-    public bool $tempSeat;
+    public int $tempSeat;
     public bool $tempSpeed;
     public array $wallet;
 
@@ -30,7 +30,7 @@ class NPlane extends APP_GameClass implements JsonSerializable
         $this->seatRemain = intval($dbrow['seat_remain']);
         $this->speed = intval($dbrow['speed']);
         $this->speedRemain = intval($dbrow['speed_remain']);
-        $this->tempSeat = boolval($dbrow['temp_seat']);
+        $this->tempSeat = intval($dbrow['temp_seat']);
         $this->tempSpeed = boolval($dbrow['temp_speed']);
         $this->wallet = [];
         if (!empty($dbrow['wallet'])) {

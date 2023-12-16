@@ -450,6 +450,8 @@ class NowBoarding extends Table
         $this->gamestate->setAllPlayersMultiactive();
         $this->gamestate->initializePrivateStateForAllActivePlayers();
         $this->DbQuery("UPDATE `plane` SET `speed_remain` = `speed`");
+        // Truly use the temp seat
+        $this->DbQuery("UPDATE `plane` SET `temp_seat` = 0 WHERE `temp_seat` = -1");
         $this->createUndo();
         $planes = $this->getPlanesByIds();
         $this->notifyAllPlayers('planes', '', [
@@ -457,7 +459,7 @@ class NowBoarding extends Table
         ]);
 
         foreach ($planes as $plane) {
-            if ($plane->tempSeat) {
+            if ($plane->tempSeat == 1) {
                 $this->notifyAllPlayers('message', N_REF_MSG['tempUnused'], [
                     'i18n' => ['temp'],
                     'preserve' => ['tempIcon'],
@@ -932,7 +934,7 @@ class NowBoarding extends Table
         }
 
         $plane->debt += $cost;
-        $plane->tempSeat = true;
+        $plane->tempSeat = 1;
         $this->DbQuery("UPDATE `plane` SET `debt` = {$plane->debt}, `temp_seat` = 1 WHERE `player_id` = {$plane->id}");
         $this->addLedger($plane->id, 'TEMP_SEAT', null, $cost);
 
@@ -1205,6 +1207,10 @@ class NowBoarding extends Table
         $plane->origin = $move->getOrigin();
         $plane->location = $to;
         $plane->speedRemain -= $move->fuel;
+        if ($plane->tempSeat == -1) {
+            // Truly use the temp seat
+            $plane->tempSeat = 0;
+        }
         if ($plane->speedRemain == -1 && $plane->tempSpeed) {
             $this->useTempSpeed($plane);
         } else if ($plane->speedRemain < 0) {
@@ -1212,7 +1218,7 @@ class NowBoarding extends Table
         }
         array_shift($move->path);
         $distance = count($move->path);
-        $this->DbQuery("UPDATE `plane` SET `location` = '{$plane->location}', `origin` = '{$plane->origin}', `speed_remain` = {$plane->speedRemain} WHERE `player_id` = {$plane->id}");
+        $this->DbQuery("UPDATE `plane` SET `location` = '{$plane->location}', `origin` = '{$plane->origin}', `speed_remain` = {$plane->speedRemain}, `temp_seat` = {$plane->tempSeat} WHERE `player_id` = {$plane->id}");
         $this->DbQuery("UPDATE `pax` SET `moves` = `moves` + $distance WHERE `status` = 'SEAT' AND `player_id` = {$plane->id}");
 
         // Statistics
@@ -1311,7 +1317,9 @@ class NowBoarding extends Table
         $planeIds = [$plane->id];
 
         $msg = N_REF_MSG['board'];
-        $args = [];
+        $args = [
+            'route' => $x->origin . "-" . $x->destination
+        ];
         if ($x->status == 'SEAT') {
             if ($x->playerId == $plane->id) {
                 throw new BgaVisibleSystemException("board: $x player ID is already {$plane->id} [???]");
@@ -1397,7 +1405,7 @@ class NowBoarding extends Table
         }
 
         if ($plane->seatRemain <= 0) {
-            if (!$plane->tempSeat) {
+            if ($plane->tempSeat != 1) {
                 $this->userException('noSeat');
             }
             $this->useTempSeat($plane);
@@ -1423,10 +1431,10 @@ class NowBoarding extends Table
         }
     }
 
-    public function useTempSeat(NPlane &$plane): void
+    public function useTempSeat(NPlane &$plane, bool $zombie = false): void
     {
-        $plane->tempSeat = false;
-        $this->DbQuery("UPDATE `plane` SET `temp_seat` = 0 WHERE `player_id` = {$plane->id}");
+        $plane->tempSeat = $zombie ? 0 : -1;
+        $this->DbQuery("UPDATE `plane` SET `temp_seat` = {$plane->tempSeat} WHERE `player_id` = {$plane->id}");
         $this->notifyAllPlayers('planes', N_REF_MSG['tempUsed'], [
             'i18n' => ['temp'],
             'preserve' => ['tempIcon'],
@@ -1505,6 +1513,7 @@ class NowBoarding extends Table
             'pax' => [$x],
             'player_id' => $plane->id,
             'player_name' => $plane->name,
+            'route' => $x->origin . "-" . $x->destination,
         ];
         if ($deliver) {
             $x->status = 'CASH';
@@ -1525,6 +1534,21 @@ class NowBoarding extends Table
         } else {
             $x->playerId = null;
             $x->status = 'PORT';
+
+            // Undo Temporary Seat
+            if ($plane->tempSeat == -1) {
+                $plane->tempSeat = 1;
+                $this->DbQuery("UPDATE `plane` SET `temp_seat` = {$plane->tempSeat} WHERE `player_id` = {$plane->id}");
+                $this->notifyAllPlayers('plane', N_REF_MSG['tempUndo'], [
+                    'i18n' => ['temp'],
+                    'preserve' => ['tempIcon'],
+                    'plane' => $plane,
+                    'player_id' => $plane->id,
+                    'player_name' => $plane->name,
+                    'temp' => clienttranslate('Temporary Seat'),
+                    'tempIcon' => 'seat',
+                ]);
+            }
         }
         $this->DbQuery("UPDATE `pax` SET `anger` = {$x->anger}, `location` = '{$x->location}', `player_id` = {$x->getPlayerIdSql()}, `status` = '{$x->status}' WHERE `pax_id` = {$x->id}");
 
@@ -2012,7 +2036,7 @@ class NowBoarding extends Table
             ];
         }
         $msg = $this->exceptionMsg('vip', self::_($vipInfo['name']), self::_($vipInfo['desc']));
-        if ($vipInfo['args']) {
+        if (array_key_exists('args', $vipInfo)) {
             foreach ($vipInfo['args'] as $argKey => $argValue) {
                 $msg = str_replace('${' . $argKey . '}', $argValue, $msg);
             }
@@ -2371,13 +2395,13 @@ class NowBoarding extends Table
 
         // Surrender temporary purchases
         if ($plane->tempSeat) {
-            $this->useTempSeat($plane);
+            $this->useTempSeat($plane, true);
         }
         if ($plane->tempSpeed) {
             $this->useTempSpeed($plane);
         }
         if ($plane->tempSeat || $plane->tempSpeed) {
-            $plane->tempSeat = false;
+            $plane->tempSeat = 0;
             $plane->tempSpeed = false;
             $this->notifyAllPlayers('planes', '', [
                 'planes' => [$plane],
@@ -2397,6 +2421,7 @@ class NowBoarding extends Table
                         'location' => $x->location,
                         'player_id' => $plane->id,
                         'player_name' => $plane->name,
+                        'route' => $x->origin . "-" . $x->destination,
                     ]);
                 }
             }

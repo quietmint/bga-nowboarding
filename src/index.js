@@ -1228,9 +1228,9 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
       // Add/remove temp seat tag
       const tempSeatEl = document.getElementById(`gauge-temp-seat-${plane.id}`);
-      if (plane.tempSeat && !tempSeatEl) {
+      if (plane.tempSeat == 1 && !tempSeatEl) {
         gaugesEl.insertAdjacentHTML("beforeend", `<div class="nbtag seat" id="gauge-temp-seat-${plane.id}" title="${_("Temporary Seat")}"><i class="icon seat"></i> <span class="ss">${_("Temp Seat")}</span></div>`);
-      } else if (!plane.tempSeat && tempSeatEl) {
+      } else if (plane.tempSeat != 1 && tempSeatEl) {
         tempSeatEl.remove();
       }
     },
@@ -1259,7 +1259,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       const listEl = document.getElementById(`paxlist-${plane.id}`);
 
       // Add empty seats (purchase during prepare)
-      const emptyCount = Math.max(plane.seatRemain, 0) + (plane.tempSeat ? 1 : 0);
+      const emptyCount = Math.max(plane.seatRemain, 0) + (plane.tempSeat == 1 ? 1 : 0);
       const emptyEls = listEl.querySelectorAll(".paxslot.is-empty");
       for (let i = emptyEls.length; i < emptyCount; i++) {
         this.renderSlot(listEl);
@@ -1282,7 +1282,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
   <div id="paxlist-${manifestId}" class="paxlist is-map"></div>
 </div>`
       );
-      if (isMobile) {
+      if (!isMobile) {
         const manifestEl = document.getElementById(`manifest-${manifestId}`);
         manifestEl.addEventListener("mouseenter", (ev) => this.onEnterMapManifest(manifestId));
         manifestEl.addEventListener("mouseleave", (ev) => this.onLeaveMapManifest(manifestId));
@@ -1324,7 +1324,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
   <i class="icon people"></i><span id="nodecount-${node}">0</span>
 </div>`
         );
-        if (isMobile) {
+        if (!isMobile) {
           const nodeEl = document.getElementById(`node-${node}`);
           nodeEl.addEventListener("mouseenter", (ev) => this.onEnterMapManifest(node));
           nodeEl.addEventListener("mouseleave", (ev) => this.onLeaveMapManifest(node));
@@ -1497,8 +1497,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         // Pax shouldn't exist
         if (paxEl) {
           this.deletePax(pax);
-          if (plane && !plane.seatRemain) {
-            this.deleteTempSeat(plane);
+          if (plane) {
+            this.renderPlaneManifest(plane);
           }
         }
         return;
@@ -1563,7 +1563,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
       // Move the pax (if necessary)
       this.movePax(paxEl, destEl);
-      if (plane && !plane.seatRemain) {
+      if (plane && !plane.seatRemain && plane.tempSeat == 0) {
         this.deleteTempSeat(plane);
       }
     },
@@ -1688,11 +1688,9 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         if (buy.enabled && buy.ownerId == null) {
           buyEl.addEventListener("click", (ev) => this.takeAction("buy", buy));
         }
-        if (buy.type == "ALLIANCE") {
-          if (isMobile) {
-            buyEl.addEventListener("mouseenter", (ev) => this.onEnterMapManifest(buy.alliance));
-            buyEl.addEventListener("mouseleave", (ev) => this.onLeaveMapManifest(buy.alliance));
-          }
+        if (buy.type == "ALLIANCE" && !isMobile) {
+          buyEl.addEventListener("mouseenter", (ev) => this.onEnterMapManifest(buy.alliance));
+          buyEl.addEventListener("mouseleave", (ev) => this.onLeaveMapManifest(buy.alliance));
         }
       }
     },
