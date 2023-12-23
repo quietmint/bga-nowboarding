@@ -532,7 +532,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     },
 
     /* @Override */
-    unsetModeInstataneous() {
+    unsetModeInstantaneous() {
       document.getElementById("leftright_page_wrapper").style.display = "block";
       this.inherited(arguments);
     },
