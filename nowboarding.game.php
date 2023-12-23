@@ -561,7 +561,7 @@ class NowBoarding extends Table
         ];
         if ($plane->debt > 0) {
             $ledger = $this->getLedger($playerId);
-            $pay = self::_argPreparePay($plane);
+            $pay = $this->_argPreparePay($plane);
             $args['ledger'] = $ledger;
             $args['overpay'] = $pay['overpay'];
         }
@@ -572,7 +572,7 @@ class NowBoarding extends Table
     public function argPreparePay(int $playerId): array
     {
         $plane = $this->getPlaneById($playerId);
-        return self::_argPreparePay($plane);
+        return $this->_argPreparePay($plane);
     }
 
     private function _argPreparePay(NPlane $plane): array
@@ -761,7 +761,7 @@ class NowBoarding extends Table
 
     public function jsError($userAgent, $msg): void
     {
-        self::error("JavaScript error from User-Agent: $userAgent\n$msg // ");
+        $this->error("JavaScript error from User-Agent: $userAgent\n$msg // ");
     }
 
     public function undo(): void
@@ -925,7 +925,7 @@ class NowBoarding extends Table
     {
         $owner = $this->getOwnerName("`temp_seat` = 1");
         if ($owner != null) {
-            $this->userException('tempOwner', $owner, self::_('Temporary Seat'));
+            $this->userException('tempOwner', $owner, $this->_('Temporary Seat'));
         }
         $cost = 2;
         $cash = $plane->getCashRemain();
@@ -1004,7 +1004,7 @@ class NowBoarding extends Table
     {
         $owner = $this->getOwnerName("`temp_speed` = 1");
         if ($owner != null) {
-            $this->userException('tempOwner', $owner, self::_('Temporary Speed'));
+            $this->userException('tempOwner', $owner, $this->_('Temporary Speed'));
         }
         $cost = 1;
         $cash = $plane->getCashRemain();
@@ -1087,7 +1087,6 @@ class NowBoarding extends Table
         $this->notifyAllPlayers('planes', '', [
             'planes' => [$plane],
         ]);
-
 
         $this->gamestate->setPlayerNonMultiactive($playerId, 'reveal');
     }
@@ -1306,7 +1305,7 @@ class NowBoarding extends Table
             return;
         }
         $plane = $this->getPlaneById($playerId);
-        self::_board($plane, $paxId);
+        $this->_board($plane, $paxId);
         $this->awakenSnoozers($playerId);
         $this->gamestate->nextPrivateState($plane->id, 'flyPrivate');
     }
@@ -1333,7 +1332,7 @@ class NowBoarding extends Table
             // Implicit deplane
             $msg = N_REF_MSG['boardTransfer'];
             $args['player_name2'] = $other->name;
-            self::_deplane($other, $paxId, true);
+            $this->_deplane($other, $paxId, true);
             $planeIds[] = $other->id;
             $x = $this->getPaxById($paxId, true);
         }
@@ -1360,7 +1359,7 @@ class NowBoarding extends Table
             // VIP Double
             // Board the fugitive (must be BEFORE the real pax)
             if ($vipInfo && $vipInfo['key'] == 'DOUBLE' && $x->id > 0) {
-                self::_board($plane, $x->id * -1);
+                $this->_board($plane, $x->id * -1);
                 $plane = $this->getPlaneById($plane->id);
             }
 
@@ -1419,26 +1418,26 @@ class NowBoarding extends Table
         // Notify UI (except for VIP Double)
         if ($x->id > 0) {
             $planes = $this->getPlanesByIds($planeIds);
-            $this->notifyAllPlayers('planes', '', [
-                'planes' => array_values($planes)
-            ]);
             $this->notifyAllPlayers('pax', $msg, [
                 'location' => $x->location,
                 'pax' => [$x],
                 'player_id' => $plane->id,
                 'player_name' => $plane->name,
             ] + $args);
+            $this->notifyAllPlayers('planes', '', [
+                'planes' => array_values($planes)
+            ]);
         }
     }
 
-    public function useTempSeat(NPlane &$plane, bool $zombie = false): void
+    public function useTempSeat(NPlane &$plane, int $value = -1): void
     {
-        $plane->tempSeat = $zombie ? 0 : -1;
+        $msg = $value == 1 ? N_REF_MSG['tempUndo'] : N_REF_MSG['tempUsed'];
+        $plane->tempSeat = $value;
         $this->DbQuery("UPDATE `plane` SET `temp_seat` = {$plane->tempSeat} WHERE `player_id` = {$plane->id}");
-        $this->notifyAllPlayers('planes', N_REF_MSG['tempUsed'], [
+        $this->notifyAllPlayers('message', $msg, [
             'i18n' => ['temp'],
             'preserve' => ['tempIcon'],
-            'planes' => [$plane],
             'player_id' => $plane->id,
             'player_name' => $plane->name,
             'temp' => clienttranslate('Temporary Seat'),
@@ -1459,7 +1458,7 @@ class NowBoarding extends Table
             return;
         }
         $plane = $this->getPlaneById($playerId);
-        self::_deplane($plane, $paxId);
+        $this->_deplane($plane, $paxId);
         $this->awakenSnoozers($playerId);
         $this->gamestate->nextPrivateState($plane->id, 'flyPrivate');
     }
@@ -1487,7 +1486,7 @@ class NowBoarding extends Table
             // VIP Double
             // Deplane the fugitive (must be BEFORE the real pax)
             if ($vipInfo['key'] == 'DOUBLE' && $x->id > 0) {
-                self::_deplane($plane, $x->id * -1);
+                $this->_deplane($plane, $x->id * -1);
             }
 
             // VIP Direct
@@ -1537,29 +1536,19 @@ class NowBoarding extends Table
 
             // Undo Temporary Seat
             if ($plane->tempSeat == -1) {
-                $plane->tempSeat = 1;
-                $this->DbQuery("UPDATE `plane` SET `temp_seat` = {$plane->tempSeat} WHERE `player_id` = {$plane->id}");
-                $this->notifyAllPlayers('plane', N_REF_MSG['tempUndo'], [
-                    'i18n' => ['temp'],
-                    'preserve' => ['tempIcon'],
-                    'plane' => $plane,
-                    'player_id' => $plane->id,
-                    'player_name' => $plane->name,
-                    'temp' => clienttranslate('Temporary Seat'),
-                    'tempIcon' => 'seat',
-                ]);
+                $this->useTempSeat($plane, 1);
             }
         }
         $this->DbQuery("UPDATE `pax` SET `anger` = {$x->anger}, `location` = '{$x->location}', `player_id` = {$x->getPlayerIdSql()}, `status` = '{$x->status}' WHERE `pax_id` = {$x->id}");
 
         // Notify UI (except for transfers and VIP Double)
         if (!$transfer && $x->id > 0) {
+            $msg = $deliver ? N_REF_MSG['deplaneDeliver'] : N_REF_MSG['deplane'];
+            $this->notifyAllPlayers('pax', $msg, $args);
             $planes = $this->getPlanesByIds([$plane->id]);
             $this->notifyAllPlayers('planes', '', [
                 'planes' => array_values($planes)
             ]);
-            $msg = $deliver ? N_REF_MSG['deplaneDeliver'] : N_REF_MSG['deplane'];
-            $this->notifyAllPlayers('pax', $msg, $args);
         }
     }
 
@@ -1933,7 +1922,7 @@ class NowBoarding extends Table
 
     private function getPlanesByIds($ids = []): array
     {
-        $sql = "SELECT p.*, p.seat - ( SELECT COUNT(1) FROM `pax` x WHERE x.status = 'SEAT' AND x.player_id = p.player_id ) AS seat_remain, w.wallet, b.player_name FROM `plane` p JOIN `player` b ON (b.player_id = p.player_id) LEFT OUTER JOIN (SELECT `player_id`, GROUP_CONCAT(CONCAT(`pax_id`, '=', `cash`) ORDER BY `pax_id`) AS `wallet` FROM `pax` WHERE `status` = 'CASH' AND `cash` > 0 GROUP BY `player_id`) w ON (w.player_id = p.player_id)";
+        $sql = "SELECT p.*, p.seat + IF(p.temp_seat = -1, 1, 0) - ( SELECT COUNT(1) FROM `pax` x WHERE x.status = 'SEAT' AND x.player_id = p.player_id ) AS seat_remain, w.wallet, b.player_name FROM `plane` p JOIN `player` b ON (b.player_id = p.player_id) LEFT OUTER JOIN (SELECT `player_id`, GROUP_CONCAT(CONCAT(`pax_id`, '=', `cash`) ORDER BY `cash`, `pax_id`) AS `wallet` FROM `pax` WHERE `status` = 'CASH' AND `cash` > 0 GROUP BY `player_id`) w ON (w.player_id = p.player_id)";
         if (!empty($ids)) {
             $sql .= " WHERE p.player_id IN (" . join(',', $ids) . ")";
         }
@@ -2014,7 +2003,7 @@ class NowBoarding extends Table
 
     private function exceptionMsg(string $msgExKey, ...$args): string
     {
-        $msg = self::_(N_REF_MSG_EX[$msgExKey]);
+        $msg = $this->_(N_REF_MSG_EX[$msgExKey]);
         if (!empty($args)) {
             $msg = sprintf($msg, ...$args);
         }
@@ -2035,7 +2024,7 @@ class NowBoarding extends Table
                 'desc' => N_REF_VIP[$vipInfo]['desc'],
             ];
         }
-        $msg = $this->exceptionMsg('vip', self::_($vipInfo['name']), self::_($vipInfo['desc']));
+        $msg = $this->exceptionMsg('vip', $this->_($vipInfo['name']), $this->_($vipInfo['desc']));
         if (array_key_exists('args', $vipInfo) && $vipInfo['args']) {
             foreach ($vipInfo['args'] as $argKey => $argValue) {
                 $msg = str_replace('${' . $argKey . '}', $argValue, $msg);
@@ -2377,7 +2366,7 @@ class NowBoarding extends Table
                 }
             }
         } while ($found);
-        self::debug("generatePermutations completed: $y iterations for count=$count // ");
+        $this->debug("generatePermutations completed: $y iterations for count=$count // ");
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -2387,26 +2376,11 @@ class NowBoarding extends Table
     public function zombieTurn($state, $playerId)
     {
         $stateName = $state['name'];
-        self::debug("zombieTurn state name $stateName // ");
+        $this->debug("zombieTurn state name $stateName // ");
         if ($stateName == 'build' || $stateName == 'prepare') {
             $this->applyUndo($playerId);
         }
         $plane = $this->getPlaneById($playerId);
-
-        // Surrender temporary purchases
-        if ($plane->tempSeat) {
-            $this->useTempSeat($plane, true);
-        }
-        if ($plane->tempSpeed) {
-            $this->useTempSpeed($plane);
-        }
-        if ($plane->tempSeat || $plane->tempSpeed) {
-            $plane->tempSeat = 0;
-            $plane->tempSpeed = false;
-            $this->notifyAllPlayers('planes', '', [
-                'planes' => [$plane],
-            ]);
-        }
 
         // Surrender passengers
         $pax = $this->getPaxByStatus('SEAT', null, $playerId);
@@ -2429,6 +2403,19 @@ class NowBoarding extends Table
                 'pax' => array_values($this->filterPax($pax)),
             ]);
         }
+
+        // Surrender temporary purchases
+        if ($plane->tempSeat) {
+            $this->useTempSeat($plane, 0);
+        }
+        if ($plane->tempSpeed) {
+            $this->useTempSpeed($plane);
+        }
+        $plane->tempSeat = 0;
+        $plane->tempSpeed = false;
+        $this->notifyAllPlayers('planes', '', [
+            'planes' => [$plane],
+        ]);
 
         // End turn
         $next = $stateName == 'prepare'  ? 'reveal' : 'maintenance';
@@ -2463,18 +2450,18 @@ class NowBoarding extends Table
 
         foreach ($changes as [$version, $sql]) {
             if ($fromVersion <= $version) {
-                self::warn("upgradeTableDb: fromVersion=$fromVersion, change=[ $version, $sql ]");
-                self::applyDbUpgradeToAllDB($sql);
+                $this->warn("upgradeTableDb: fromVersion=$fromVersion, change=[ $version, $sql ]");
+                $this->applyDbUpgradeToAllDB($sql);
             }
         }
 
         if ($fromVersion <= 2307191554) {
-            self::warn("upgradeTableDb: fromVersion=$fromVersion, setupWeather");
+            $this->warn("upgradeTableDb: fromVersion=$fromVersion, setupWeather");
             $this->setupWeather($this->getPlayersNumber());
         }
 
         if ($fromVersion <= 2309161827) {
-            self::warn("upgradeTableDb: fromVersion=$fromVersion, flip locations");
+            $this->warn("upgradeTableDb: fromVersion=$fromVersion, flip locations");
             $flipLocations = [
                 'ATLMIA1' => 'MIAATL1',
                 'DENORD1' => 'ORDDEN2',
@@ -2489,13 +2476,13 @@ class NowBoarding extends Table
                 'ORDSFO3' => 'SFOORD1',
             ];
             foreach ($flipLocations as $old => $new) {
-                self::applyDbUpgradeToAllDB("UPDATE `DBPREFIX_pax` SET `location` = '$new' WHERE `location` = '$old'");
-                self::applyDbUpgradeToAllDB("UPDATE `DBPREFIX_pax_undo` SET `location` = '$new' WHERE `location` = '$old'");
-                self::applyDbUpgradeToAllDB("UPDATE `DBPREFIX_plane` SET `location` = '$new' WHERE `location` = '$old'");
-                self::applyDbUpgradeToAllDB("UPDATE `DBPREFIX_plane_undo` SET `location` = '$new' WHERE `location` = '$old'");
-                self::applyDbUpgradeToAllDB("UPDATE `DBPREFIX_plane` SET `origin` = '$new' WHERE `origin` = '$old'");
-                self::applyDbUpgradeToAllDB("UPDATE `DBPREFIX_plane_undo` SET `origin` = '$new' WHERE `origin` = '$old'");
-                self::applyDbUpgradeToAllDB("UPDATE `DBPREFIX_weather` SET `location` = '$new' WHERE `location` = '$old'");
+                $this->applyDbUpgradeToAllDB("UPDATE `DBPREFIX_pax` SET `location` = '$new' WHERE `location` = '$old'");
+                $this->applyDbUpgradeToAllDB("UPDATE `DBPREFIX_pax_undo` SET `location` = '$new' WHERE `location` = '$old'");
+                $this->applyDbUpgradeToAllDB("UPDATE `DBPREFIX_plane` SET `location` = '$new' WHERE `location` = '$old'");
+                $this->applyDbUpgradeToAllDB("UPDATE `DBPREFIX_plane_undo` SET `location` = '$new' WHERE `location` = '$old'");
+                $this->applyDbUpgradeToAllDB("UPDATE `DBPREFIX_plane` SET `origin` = '$new' WHERE `origin` = '$old'");
+                $this->applyDbUpgradeToAllDB("UPDATE `DBPREFIX_plane_undo` SET `origin` = '$new' WHERE `origin` = '$old'");
+                $this->applyDbUpgradeToAllDB("UPDATE `DBPREFIX_weather` SET `location` = '$new' WHERE `location` = '$old'");
             }
         }
 
@@ -2503,7 +2490,7 @@ class NowBoarding extends Table
         $this->giveExtraTimeAll(9999);
         $this->setVar('endTime', null);
 
-        self::warn("upgradeTableDb complete: fromVersion=$fromVersion");
+        $this->warn("upgradeTableDb complete: fromVersion=$fromVersion");
     }
 
     ///////////////////////////////////////////////////////////////////////////////////:
@@ -2512,10 +2499,10 @@ class NowBoarding extends Table
 
     public function loadBug($reportId): void
     {
-        $db = explode('_', self::getUniqueValueFromDB("SELECT SUBSTRING_INDEX(DATABASE(), '_', -2)"));
+        $db = explode('_', $this->getUniqueValueFromDB("SELECT SUBSTRING_INDEX(DATABASE(), '_', -2)"));
         $game = $db[0];
         $tableId = $db[1];
-        self::notifyAllPlayers('loadBug', "Trying to load <a href='https://boardgamearena.com/bug?id=$reportId' target='_blank'>bug report $reportId</a>", [
+        $this->notifyAllPlayers('loadBug', "Trying to load <a href='https://boardgamearena.com/bug?id=$reportId' target='_blank'>bug report $reportId</a>", [
             'urls' => [
                 "https://studio.boardgamearena.com/admin/studio/getSavedGameStateFromProduction.html?game=$game&report_id=$reportId&table_id=$tableId",
                 "https://studio.boardgamearena.com/table/table/loadSaveState.html?table=$tableId&state=1",
@@ -2527,8 +2514,8 @@ class NowBoarding extends Table
 
     public function loadBugSQL($reportId): void
     {
-        $studioPlayer = self::getCurrentPlayerId();
-        $playerIds = self::getObjectListFromDb("SELECT player_id FROM player", true);
+        $studioPlayer = $this->getCurrentPlayerId();
+        $playerIds = $this->getObjectListFromDb("SELECT player_id FROM player", true);
 
         $sql = [
             "UPDATE global SET global_value=2 WHERE global_id=1 AND global_value=99"
@@ -2545,12 +2532,12 @@ class NowBoarding extends Table
             $studioPlayer++;
         }
         $msg = "<b>Loaded <a href='https://boardgamearena.com/bug?id=$reportId' target='_blank'>bug report $reportId</a></b><hr><ul><li>" . implode(';</li><li>', $sql) . ';</li></ul>';
-        self::warn($msg);
-        self::notifyAllPlayers('message', $msg, []);
+        $this->warn($msg);
+        $this->notifyAllPlayers('message', $msg, []);
 
         foreach ($sql as $q) {
-            self::DbQuery($q);
+            $this->DbQuery($q);
         }
-        self::reloadPlayersBasicInfos();
+        $this->reloadPlayersBasicInfos();
     }
 }

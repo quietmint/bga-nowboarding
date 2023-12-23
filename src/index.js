@@ -142,7 +142,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           const plane = gamedatas.planes[planeId];
           this.renderPlane(plane);
           this.renderPlaneGauges(plane);
-          this.renderPlaneManifest(plane);
         }
       }
 
@@ -163,7 +162,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       if (gamedatas.planes) {
         for (const planeId in gamedatas.planes) {
           const plane = gamedatas.planes[planeId];
-          this.renderPlaneManifest(plane);
+          this.renderPlaneEmptySeats(plane);
         }
       }
       this.sortManifests();
@@ -773,9 +772,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           this.gamedatas.planes[plane.id] = plane;
           this.renderPlane(plane);
           this.renderPlaneGauges(plane);
-          if (this.gamedatas.gamestate.name != "fly") {
-            this.renderPlaneManifest(plane);
-          }
+          this.renderPlaneEmptySeats(plane);
         }
       } else if (notif.type == "sound") {
         suppressSounds = notif.args.suppress;
@@ -1261,17 +1258,17 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       }
     },
 
-    renderPlaneManifest(plane) {
+    renderPlaneEmptySeats(plane) {
       const listEl = document.getElementById(`paxlist-${plane.id}`);
 
-      // Add empty seats (purchase during prepare)
+      // Add empty seats
       const emptyCount = Math.max(plane.seatRemain, 0) + (plane.tempSeat == 1 ? 1 : 0);
       const emptyEls = listEl.querySelectorAll(".paxslot.is-empty");
       for (let i = emptyEls.length; i < emptyCount; i++) {
         this.renderSlot(listEl);
       }
 
-      // Remove empty seats (undo during prepare)
+      // Remove empty seats
       for (let i = emptyCount; i < emptyEls.length; i++) {
         console.log(`❌ Delete empty seat for plane ${plane.id}`);
         emptyEls[i].remove();
@@ -1493,19 +1490,10 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       let paxEl = document.getElementById(`pax-${pax.id}`);
       let destEl = this.getSlot(pax, paxEl);
 
-      let plane = null;
-      if (paxEl) {
-        const planeId = paxEl.parentElement.parentElement.id.split("-").pop();
-        plane = this.gamedatas.planes[planeId];
-      }
-
       if (!destEl) {
         // Pax shouldn't exist
         if (paxEl) {
           this.deletePax(pax);
-          if (plane) {
-            this.renderPlaneManifest(plane);
-          }
         }
         return;
       }
@@ -1569,9 +1557,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
       // Move the pax (if necessary)
       this.movePax(paxEl, destEl);
-      if (plane && !plane.seatRemain && plane.tempSeat == 0) {
-        this.deleteTempSeat(plane);
-      }
     },
 
     async movePax(paxEl, destEl) {
@@ -1639,11 +1624,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       // Animate the copy to the end
       await this.translateElement(cloneEl, start, end);
       cloneEl.remove();
-    },
-
-    deleteTempSeat(plane) {
-      console.log(`❌ Delete temporary seat for plane ${plane.id}`);
-      document.querySelector(`#paxlist-${plane.id} .paxslot.is-empty`)?.remove();
     },
 
     renderBuys() {

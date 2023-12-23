@@ -131,7 +131,7 @@ class NMap extends APP_GameClass implements JsonSerializable
                 $pathString = $move->getPathString();
                 $visited[$pathString] = true;
                 if (!array_key_exists($move->location, $best) || $best[$move->location]->fuel > $move->fuel) {
-                    self::debug("getPossibleMoves best: $move // ");
+                    $this->debug("getPossibleMoves best: $move // ");
                     $best[$move->location] = $move;
                 }
                 foreach ($move->node->connections as $connectedNode) {
@@ -169,7 +169,7 @@ class NMap extends APP_GameClass implements JsonSerializable
             }
             $queue = $nextQueue;
         }
-        self::debug("getPossibleMoves complete: " . count($visited) . " iterations // ");
+        $this->debug("getPossibleMoves complete: " . count($visited) . " iterations // ");
         // Remove your current location
         unset($best[$plane->location]);
         // Remove fast weather

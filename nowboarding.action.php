@@ -15,141 +15,141 @@ class action_nowboarding extends APP_GameAction
   // Constructor: please do not modify
   public function __default()
   {
-    if (self::isArg('notifwindow')) {
+    if ($this->isArg('notifwindow')) {
       $this->view = 'common_notifwindow';
-      $this->viewArgs['table'] = self::getArg('table', AT_posint, true);
+      $this->viewArgs['table'] = $this->getArg('table', AT_posint, true);
     } else {
       $this->view = 'nowboarding_nowboarding';
-      self::trace('Complete reinitialization of board game');
+      $this->trace('Complete reinitialization of board game');
     }
   }
 
   private function checkVersion()
   {
-    $clientVersion = (int) self::getArg('version', AT_int, false);
+    $clientVersion = (int) $this->getArg('version', AT_int, false);
     $this->game->checkVersion($clientVersion);
   }
 
   // Production bug report handler
   public function loadBugSQL()
   {
-    self::setAjaxMode(false);
-    $reportId = (int) self::getArg('report_id', AT_int, true);
+    $this->setAjaxMode(false);
+    $reportId = (int) $this->getArg('report_id', AT_int, true);
     $this->game->loadBugSQL($reportId);
-    self::ajaxResponse();
+    $this->ajaxResponse();
   }
 
   public function jsError()
   {
-    self::setAjaxMode(false);
+    $this->setAjaxMode(false);
     $this->game->jsError($_POST['userAgent'], $_POST['msg']);
-    self::ajaxResponse();
+    $this->ajaxResponse();
   }
 
   function undo()
   {
-    self::setAjaxMode();
-    self::checkVersion();
+    $this->setAjaxMode();
+    $this->checkVersion();
     $this->game->undo();
-    self::ajaxResponse();
+    $this->ajaxResponse();
   }
 
   function vip()
   {
-    self::setAjaxMode();
-    self::checkVersion();
-    $accept = self::getArg('accept', AT_bool, true);
+    $this->setAjaxMode();
+    $this->checkVersion();
+    $accept = $this->getArg('accept', AT_bool, true);
     $this->game->vip($accept);
-    self::ajaxResponse();
+    $this->ajaxResponse();
   }
 
   public function buy()
   {
-    self::setAjaxMode();
-    self::checkVersion();
-    $type = self::getArg('type', AT_alphanum, true);
-    $alliance = self::getArg('alliance', AT_alphanum, false);
+    $this->setAjaxMode();
+    $this->checkVersion();
+    $type = $this->getArg('type', AT_alphanum, true);
+    $alliance = $this->getArg('alliance', AT_alphanum, false);
     $this->game->buy($type, $alliance);
-    self::ajaxResponse();
+    $this->ajaxResponse();
   }
 
   public function buyAgain()
   {
-    self::setAjaxMode();
-    self::checkVersion();
+    $this->setAjaxMode();
+    $this->checkVersion();
     $this->game->buyAgain();
-    self::ajaxResponse();
+    $this->ajaxResponse();
   }
 
   public function pay()
   {
-    self::setAjaxMode();
-    self::checkVersion();
-    $paid = explode(',', self::getArg('paid', AT_numberlist, true));
+    $this->setAjaxMode();
+    $this->checkVersion();
+    $paid = explode(',', $this->getArg('paid', AT_numberlist, true));
     $this->game->pay($paid);
-    self::ajaxResponse();
+    $this->ajaxResponse();
   }
 
   public function prepareDone()
   {
-    self::setAjaxMode();
-    self::checkVersion();
+    $this->setAjaxMode();
+    $this->checkVersion();
     $this->game->prepareDone();
-    self::ajaxResponse();
+    $this->ajaxResponse();
   }
 
   public function flyDone()
   {
-    self::setAjaxMode();
-    self::checkVersion();
-    $snooze = boolval(self::getArg('snooze', AT_bool, false));
+    $this->setAjaxMode();
+    $this->checkVersion();
+    $snooze = boolval($this->getArg('snooze', AT_bool, false));
     $this->game->flyDone($snooze);
-    self::ajaxResponse();
+    $this->ajaxResponse();
   }
 
   public function flyAgain()
   {
-    self::setAjaxMode();
-    self::checkVersion();
+    $this->setAjaxMode();
+    $this->checkVersion();
     $this->game->flyAgain();
-    self::ajaxResponse();
+    $this->ajaxResponse();
   }
 
   public function flyTimer()
   {
-    self::setAjaxMode();
-    self::checkVersion();
+    $this->setAjaxMode();
+    $this->checkVersion();
     $this->game->flyTimer();
-    self::ajaxResponse();
+    $this->ajaxResponse();
   }
 
   public function move()
   {
-    self::setAjaxMode();
-    self::checkVersion();
-    $from = self::getArg('from', AT_alphanum, true);
-    $to = self::getArg('to', AT_alphanum, true);
+    $this->setAjaxMode();
+    $this->checkVersion();
+    $from = $this->getArg('from', AT_alphanum, true);
+    $to = $this->getArg('to', AT_alphanum, true);
     $this->game->move($from, $to);
-    self::ajaxResponse();
+    $this->ajaxResponse();
   }
 
   public function board()
   {
-    self::setAjaxMode();
-    self::checkVersion();
-    $paxId = self::getArg('paxId', AT_int, true);
-    $paxPlayerId = self::getArg('paxPlayerId', AT_int, false);
+    $this->setAjaxMode();
+    $this->checkVersion();
+    $paxId = $this->getArg('paxId', AT_int, true);
+    $paxPlayerId = $this->getArg('paxPlayerId', AT_int, false);
     $this->game->board($paxId, $paxPlayerId);
-    self::ajaxResponse();
+    $this->ajaxResponse();
   }
 
   public function deplane()
   {
-    self::setAjaxMode();
-    self::checkVersion();
-    $paxId = self::getArg('paxId', AT_int, true);
-    $paxPlayerId = self::getArg('paxPlayerId', AT_int, false);
+    $this->setAjaxMode();
+    $this->checkVersion();
+    $paxId = $this->getArg('paxId', AT_int, true);
+    $paxPlayerId = $this->getArg('paxPlayerId', AT_int, false);
     $this->game->deplane($paxId, $paxPlayerId);
-    self::ajaxResponse();
+    $this->ajaxResponse();
   }
 }
