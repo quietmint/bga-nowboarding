@@ -104,6 +104,13 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       this.chatHeaderEl = document.getElementById("nbchatheader");
       this.chatHeaderEl.insertAdjacentText("beforeend", __("lang_mainsite", "Discuss at this table"));
       this.chatHeaderEl.insertAdjacentElement("afterend", document.getElementById("spectatorbox"));
+      document.getElementById("nbchathide").addEventListener("click", (ev) => {
+        // move table chat to BGA popup
+        this.moveChatElements(false);
+        document.getElementById("nbchat").style.display = "none";
+        this.resizeMap();
+        this.updateViewport(false);
+      });
 
       // Setup common
       this.scaleEl = document.getElementById("nbscale");
@@ -336,7 +343,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
     /* @Override */
     expandChatWindow(id, autoExpand) {
-      console.log("expandChatWindow", id, autoExpand);
       const isTable = id == `table_${this.table_id}`;
       if (isTable && autoExpand) {
         // don't auto-expand, instead just focus the text box
@@ -355,7 +361,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
     /* @Override */
     collapseChatWindow(id) {
-      console.log("collapseChatWindow", id);
       this.inherited(arguments);
       if (id == `table_${this.table_id}`) {
         // move table chat to inline
@@ -1135,20 +1140,25 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         console.log(`✈️ Create plane ${plane.id} at ${plane.location}`);
         const cssClass = plane.id == this.player_id ? "mine" : "";
         const speedRemain = plane.speedRemain > 0 ? plane.speedRemain : "";
-        this.mapEl.insertAdjacentHTML("beforeend", `<div id="plane-${plane.id}" class="plane node node-${plane.location} ${cssClass}" title="${this.gamedatas.players[plane.id].name}"><div id="planeicon-${plane.id}" class="icon plane-${plane.alliances[0]}"></div><div id="planespeed-${plane.id}" class="planespeed planespeed-${plane.alliances[0]}">${speedRemain}</div></div>`);
+        this.mapEl.insertAdjacentHTML("beforeend", `<div id="plane-${plane.id}" class="plane node node-${plane.location} ${cssClass}" title="${this.gamedatas.players[plane.id].name}"><div id="planeicon-${plane.id}" class="icon plane alliance-${plane.alliances[0]}"></div><div id="planespeed-${plane.id}" class="planespeed planespeed-${plane.alliances[0]}">${speedRemain}</div></div>`);
+        const iconEl = document.getElementById(`planeicon-${plane.id}`);
+        iconEl.style.background = this.getGradient(plane.alliances, "plane");
         const rotation = this.getRotationPlane(plane);
         if (rotation) {
-          const iconEl = document.getElementById(`planeicon-${plane.id}`);
           iconEl.style.transform = `rotate(${rotation}deg)`;
         }
         // Update panel
-        this.swapClass(`overall_player_board_${plane.id}`, "panel-", `panel-${plane.alliances[0]}`);
+        const panelEl = document.getElementById(`overall_player_board_${plane.id}`);
+        this.swapClass(panelEl, "panel-", `panel-${plane.alliances[0]}`);
+        panelEl.style.background = this.getGradient(plane.alliances, "panel");
       } else if (!plane.location && planeEl) {
         // Delete plane
         console.log(`❌ Delete plane ${plane.id}`);
         planeEl.remove();
         // Update panel
-        this.swapClass(`overall_player_board_${plane.id}`, "panel-");
+        const panelEl = document.getElementById(`overall_player_board_${plane.id}`);
+        this.swapClass(panelEl, "panel-");
+        panelEl.style.background = null;
       }
     },
 
@@ -1192,6 +1202,12 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         alliancesEl.textContent = "";
         for (const alliance of plane.alliances) {
           alliancesEl.insertAdjacentHTML("beforeend", `<div class="nbtag alliance alliance-${alliance}" data-alliance="${alliance}"><i class="icon logo-${alliance}"></i> ${alliance}</div>`);
+        }
+        const panelEl = document.getElementById(`overall_player_board_${plane.id}`);
+        panelEl.style.background = this.getGradient(plane.alliances, "panel");
+        const iconEl = document.getElementById(`planeicon-${plane.id}`);
+        if (iconEl) {
+          iconEl.style.background = this.getGradient(plane.alliances, "plane");
         }
       }
 
@@ -1777,6 +1793,23 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       console.log(`❌ Delete possible moves`);
       document.querySelectorAll("#nbmap .move").forEach((el) => el.remove());
       document.querySelectorAll(".weather.node.hidespecial").forEach((el) => el.classList.remove("hidespecial"));
+    },
+
+    getGradient(alliances, context) {
+      if (alliances.length <= 1) {
+        return null;
+      }
+      const primary = alliances[0];
+      const width = 12;
+      const rotation = context == "plane" ? 90 : 135;
+      let position = 50 - (alliances.length - 1) * (width / 2);
+      let background = `linear-gradient(${rotation}deg, var(--alliance-${primary}) ${position}%, `;
+      for (let i = 1; i < alliances.length; i++) {
+        background += `var(--alliance-${alliances[i]}) ${position}% ${position + width}%, `;
+        position += width;
+      }
+      background += `var(--alliance-${primary}) ${position}%)`;
+      return background;
     },
   });
 });

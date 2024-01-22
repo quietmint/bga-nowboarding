@@ -25,7 +25,10 @@
   </div>
 
   <div id="nbchat">
-    <div id="nbchatheader"><i class="fa fa-comment" aria-hidden="true"></i></div>
+    <div id="nbchatheader">
+      <i id="nbchathide" class="fa fa-minus-circle pull-right" aria-hidden="true"></i>
+      <i class="fa fa-comment" aria-hidden="true"></i>
+    </div>
     <div id="nbchatscroll"></div>
   </div>
 </div>

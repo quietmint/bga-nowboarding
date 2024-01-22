@@ -1,5 +1,13 @@
 @use "colors" as *;
 
+html {
+  --alliance-ATL: #{$color-green-600};
+  --alliance-DFW: #{$color-purple-700};
+  --alliance-LAX: #{$color-amber-600};
+  --alliance-ORD: #{$color-red-700};
+  --alliance-SEA: #{$color-blue-700};
+}
+
 .alliance-ATL {
   background-color: $color-green-600 !important;
   color: white !important;
@@ -68,5 +76,4 @@
 
 .panel-SEA {
   background-color: $color-blue-700;
-  color: white !important;
 }

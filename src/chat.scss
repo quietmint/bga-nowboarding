@@ -22,7 +22,8 @@
   }
 
   .fa-comment {
-    width: 1.5em;
+    font-size: 115%;
+    width: 1.25em;
   }
 
   .chatinput {
@@ -60,6 +61,12 @@
   font-size: 80%;
   font-weight: bold;
   padding: 5px;
+}
+
+#nbchathide {
+  cursor: pointer;
+  font-size: 120%;
+  opacity: 0.6;
 }
 
 #spectatorbox {
