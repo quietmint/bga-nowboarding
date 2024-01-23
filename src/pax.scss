@@ -157,14 +157,14 @@
 }
 
 .emptyseat {
-  background: rgb(255 255 255 / 0.25);
+  background: rgb(0 0 0 / 0.5);
   border-radius: 4px;
-  border: 3px dotted rgb(255 255 255 / 0.5);
   box-sizing: border-box;
   display: none;
   font: 13px/1 Consolas, monospace;
   height: 40px;
   overflow: hidden;
+  padding: 4px;
   position: absolute;
   text-align: center;
   text-transform: uppercase;
@@ -299,11 +299,7 @@
 
 .pax.is-vip {
   .ticket {
-    background-color: $color-fuchsia-700;
-    color: white;
-  }
-
-  .destination {
-    text-shadow: 1px 1px black;
+    background-color: $color-fuchsia-300;
+    color: $color-fuchsia-800;
   }
 }

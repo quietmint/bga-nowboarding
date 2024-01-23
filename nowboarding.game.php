@@ -23,6 +23,7 @@ class NowBoarding extends Table
 {
     public function test()
     {
+        // insert into pax select player_id as pax_id, 0 as anger, 44 as cash, 'DEN' as destination, null as location, 0 as moves, 1 as optimal, 'DEN' as origin, player_id, 'CASH' as status, null as vip from player;
     }
 
     public function __construct()

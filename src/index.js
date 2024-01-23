@@ -1799,16 +1799,24 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       if (alliances.length <= 1) {
         return null;
       }
-      const primary = alliances[0];
-      const width = 12;
-      const rotation = context == "plane" ? 90 : 135;
-      let position = 50 - (alliances.length - 1) * (width / 2);
-      let background = `linear-gradient(${rotation}deg, var(--alliance-${primary}) ${position}%, `;
+      let background, position, width;
+      if (context == "plane") {
+        position = 40;
+        width = 20 / (alliances.length - 1);
+        background = `conic-gradient(transparent ${position}%`;
+      } else {
+        position = 75;
+        width = 25 / (alliances.length - 1);
+        background = `linear-gradient(135deg, transparent ${position}%`;
+      }
       for (let i = 1; i < alliances.length; i++) {
-        background += `var(--alliance-${alliances[i]}) ${position}% ${position + width}%, `;
+        background += `, var(--alliance-${alliances[i]}) ${position}% ${position + width}%`;
         position += width;
       }
-      background += `var(--alliance-${primary}) ${position}%)`;
+      if (position < 100) {
+        background += `, transparent ${position}%`;
+      }
+      background += `), var(--alliance-${alliances[0]})`;
       return background;
     },
   });
