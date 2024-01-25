@@ -1553,10 +1553,9 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         destinationEl.textContent = pax.destination;
       }
       this.swapClass(angerEl, "anger-", `anger-${pax.anger}`);
-      this.swapClass(angerIconEl, "anger-", `anger-${pax.anger}`);
       angerCountEl.textContent = pax.anger;
       if (pax.vipInfo) {
-        paxEl.classList.add("is-vip");
+        this.swapClass(angerIconEl, ["anger-", "vipstar"], "vipstar");
         let vipName = _(pax.vipInfo.name);
         let vipDesc = _(pax.vipInfo.name) + ": " + _(pax.vipInfo.desc);
         if (pax.vipInfo.args) {
@@ -1564,11 +1563,11 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           vipDesc = this.format_string_recursive(vipDesc, pax.vipInfo.args);
         }
         paxEl.title = vipDesc;
-        vipEl.innerHTML = '<i class="icon vipstar"></i>' + vipName;
+        vipEl.textContent = vipName;
       } else {
-        paxEl.classList.remove("is-vip");
+        this.swapClass(angerIconEl, ["anger-", "vipstar"], `anger-${pax.anger}`);
         paxEl.title = "";
-        vipEl.innerHTML = "";
+        vipEl.textContent = "";
       }
 
       // Move the pax (if necessary)
@@ -1805,8 +1804,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         width = 20 / (alliances.length - 1);
         background = `conic-gradient(transparent ${position}%`;
       } else {
-        position = 75;
-        width = 25 / (alliances.length - 1);
+        position = 66;
+        width = 33 / (alliances.length - 1);
         background = `linear-gradient(135deg, transparent ${position}%`;
       }
       for (let i = 1; i < alliances.length; i++) {

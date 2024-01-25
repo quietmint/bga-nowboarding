@@ -266,12 +266,12 @@
 
 .pax .vip {
   background: linear-gradient(45deg, $color-neutral-700 87%, transparent 87%);
-  color: $color-fuchsia-300;
+  color: white;
   font-weight: bold;
   grid-area: vip;
   height: 12px;
   overflow: hidden;
-  padding-right: 16px;
+  padding: 0 16px 0 2px;
   text-overflow: ellipsis;
   white-space: nowrap;
 
@@ -294,12 +294,5 @@
 
   .destination {
     text-shadow: none;
-  }
-}
-
-.pax.is-vip {
-  .ticket {
-    background-color: $color-fuchsia-300;
-    color: $color-fuchsia-800;
   }
 }
