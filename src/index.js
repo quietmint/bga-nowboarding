@@ -269,7 +269,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           }
 
           // Format argument with HTML
-          if (k == "alliance") {
+          if (k == "1" || k == "alliance") {
             sub[k] = `<span class="nbtag alliance-${sub[k]}"><i class="icon logo-${sub[k]}"></i> ${sub[k]}</span>`;
           } else if (k == "cash") {
             sub[k] = `<span class="nbtag cash"><i class="icon cash"></i> ${sub[k]}</span>`;
@@ -998,8 +998,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       Object.values(this.gamedatas.pax).forEach(function (pax) {
         const paxEl = document.getElementById(`pax-${pax.id}`);
         if (paxEl) {
-          // Sort by secret, anger DESC, destination, ID, cash DESC
-          const order = (pax.status == "SECRET" ? 0 : pax.status != "SEAT" ? 5 - pax.anger + "." : "") + pax.destination + "." + String(Math.abs(pax.id)).padStart(2, "0") + "." + (5 - pax.cash);
+          // Sort by secret, vip DESC, anger DESC, destination, ID, cash DESC
+          const order = (pax.status == "SECRET" ? 0 : 1) + "." + (pax.vipInfo ? 0 : 1) + "." + (5 - pax.anger) + "." + pax.destination + "." + String(Math.abs(pax.id)).padStart(2, "0") + "." + (5 - pax.cash);
           paxOrder.push({
             el: paxEl,
             order: order,
@@ -1561,9 +1561,11 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         if (pax.vipInfo.args) {
           vipName = this.format_string_recursive(vipName, pax.vipInfo.args);
           vipDesc = this.format_string_recursive(vipDesc, pax.vipInfo.args);
+          vipEl.innerHTML = vipDesc;
+          vipDesc = vipEl.textContent;
         }
         paxEl.title = vipDesc;
-        vipEl.textContent = vipName;
+        vipEl.innerHTML = vipName;
       } else {
         this.swapClass(angerIconEl, ["anger-", "vipstar"], `anger-${pax.anger}`);
         paxEl.title = "";
