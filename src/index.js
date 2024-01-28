@@ -67,6 +67,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
   // Sounds
   const playSoundSuper = window.playSound;
+  const getRandomInt = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
 
   // Viewport
   const viewportEl = document.querySelector('meta[name="viewport"]');
@@ -727,7 +728,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         }
       } else if (notif.type == "complaint") {
         suppressSounds = ["yourturn"];
-        playSound("nowboarding_complaint");
+        playSound("nowboarding_complaint" + getRandomInt(1, 4));
         this.gamedatas.complaint = notif.args.total;
         this.renderCommon();
       } else if (notif.type == "flyTimer") {
