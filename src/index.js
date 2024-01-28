@@ -275,7 +275,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
             sub[k] = `<span class="nbtag cash"><i class="icon cash"></i> ${sub[k]}</span>`;
           } else if (k == "complaint") {
             sub[k] = `<span class="nbtag complaint"><i class="icon complaint"></i> ${sub[k]}</span>`;
-          } else if (k == "location") {
+          } else if (k == "countToWin" || k == "location") {
             sub[k] = `<b>${sub[k]}</b>`;
           } else if (k == "seat") {
             sub[k] = `<span class="nbtag seat"><i class="icon seat"></i> ${sub[k]}</span>`;
@@ -590,6 +590,10 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     },
 
     onEnteringState(stateName, args) {
+      if (args.args?.titleMessage) {
+        this.renderTitleMessage(args.args.titleMessage);
+      }
+
       if (stateName == "fly") {
         if (args.args.remain != null) {
           document.body.classList.add("no_time_limit");
@@ -616,6 +620,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           document.body.classList.remove("no_time_limit");
         }
         this.renderCountdown();
+        this.renderTitleMessage();
       } else if (stateName == "prepare" || stateName == "gameEnd") {
         this.stabilizerOff();
       }
@@ -1794,6 +1799,21 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       console.log(`❌ Delete possible moves`);
       document.querySelectorAll("#nbmap .move").forEach((el) => el.remove());
       document.querySelectorAll(".weather.node.hidespecial").forEach((el) => el.classList.remove("hidespecial"));
+    },
+
+    renderTitleMessage(msg) {
+      let msgEl = document.getElementById("nbmsg");
+      if (!msg) {
+        msgEl?.remove();
+        return;
+      }
+      const msgHtml = this.format_string_recursive(msg.log, msg);
+      if (!msgEl) {
+        const parentEl = document.getElementById("page-title");
+        parentEl.insertAdjacentHTML("beforeend", `<div id="nbmsg">${msgHtml}</div>`);
+      } else {
+        msgEl.innerHTML = msgHtml;
+      }
     },
 
     getGradient(alliances, context) {

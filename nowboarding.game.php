@@ -381,6 +381,7 @@ class NowBoarding extends Table
     {
         // Everybody stop snoozing
         $this->DbQuery("UPDATE `player` SET `snooze` = 0");
+        $this->setVar('vipWelcome', null);
 
         try {
             $hourInfo = $this->getHourInfo(true);
@@ -437,10 +438,15 @@ class NowBoarding extends Table
     public function argPrepare()
     {
         $hourInfo = $this->getHourInfo();
+        $titleMessage = null;
+        if ($hourInfo['hour'] == 'FINALE') {
+            $titleMessage = $this->getFinaleTitleMessage();
+        }
         return [
             'i18n' => ['hourDesc'],
             'hourDesc' => $hourInfo['hourDesc'],
             'round' => array_key_exists('round', $hourInfo) ? "({$hourInfo['round']}/{$hourInfo['total']})" : '',
+            'titleMessage' => $titleMessage,
         ];
     }
 
@@ -683,29 +689,16 @@ class NowBoarding extends Table
                     $x->vip = "LOYAL_$alliance";
                 } else if ($x->vip == 'MYSTERY') {
                     // VIP Mystery
-                    // Do not flip
+                    // Do not reveal
                     $x->status = 'SECRET';
                 }
                 $this->DbQuery("UPDATE `pax` SET `vip` = '{$x->vip}' WHERE `pax_id` = {$x->id}");
 
                 // Notification message
-                $msg = N_REF_MSG['vipWelcome'];
-                $vipInfo = $x->getVipInfo();
-                if ($vipInfo['args']) {
-                    $args['desc'] = [
-                        'log' => $vipInfo['desc'],
-                        'args' => $vipInfo['args'],
-                    ];
-                    $args['vip'] = [
-                        'log' => $vipInfo['name'],
-                        'args' => $vipInfo['args'],
-                    ];
-                } else {
-                    $args['desc'] = $vipInfo['desc'];
-                    $args['vip'] = $vipInfo['name'];
-                }
-                $args['location'] = $x->location;
-                $args['i18n'] = ['desc', 'vip'];
+                $this->setVar('vipWelcome', $x->id);
+                $args += $x->getVipTitleMessage();
+                $msg = $args['log'];
+                unset($args['log']);
             }
 
             $this->DbQuery("UPDATE `pax` SET `status` = '{$x->status}' WHERE `pax_id` = {$x->id}");
@@ -740,6 +733,13 @@ class NowBoarding extends Table
         $endTime = $this->getVarInt('endTime');
         if ($endTime) {
             $args['remain'] = max(0, $endTime - time());
+        }
+
+        $vipId = $this->getVarInt('vipWelcome');
+        if ($vipId) {
+            $args['titleMessage'] = $this->getPaxById($vipId)->getVipTitleMessage();
+        } else if ($this->getVar('hour') == 'FINALE') {
+            $args['titleMessage'] = $this->getFinaleTitleMessage();
         }
         return $args;
     }
@@ -1746,6 +1746,16 @@ class NowBoarding extends Table
         return $vipInfo;
     }
 
+    private function getFinaleTitleMessage(): array
+    {
+        return [
+            'log' => N_REF_MSG['hourFinale'],
+            'i18n' => ['hourDesc'],
+            'countToWin' => $this->getVarInt('countToWin'),
+            'hourDesc' => N_REF_HOUR['FINALE']['desc'],
+        ];
+    }
+
     private function advanceHour(array $hourInfo): array
     {
         $advance = $hourInfo['hour'] == 'PREFLIGHT' || $hourInfo['round'] > $hourInfo['total'];
@@ -1766,7 +1776,10 @@ class NowBoarding extends Table
         // Notify hour
         $hourInfo['i18n'] = ['hourDesc'];
         if ($finale) {
-            $hourInfo['count'] = $this->countPaxByStatus(['PORT', 'SEAT']);
+            $leftover = (2 - $this->countComplaint()) * 2 + 1;
+            $remain = $this->countPaxByStatus(['PORT', 'SEAT']);
+            $hourInfo['countToWin'] = max($remain - $leftover, 0);
+            $this->setVar('countToWin', $hourInfo['countToWin']);
             $this->notifyAllPlayers('hour', N_REF_MSG['hourFinale'], $hourInfo);
         } else {
             if ($advance) {

@@ -59,19 +59,49 @@ class NPax extends APP_GameClass implements JsonSerializable
 
     public function getVipInfo(): ?array
     {
-        $vip = null;
+        $vipInfo = null;
         if ($this->vip != null) {
             $parts = explode('_', $this->vip);
-            $vip = N_REF_VIP[$parts[0]];
-            $vip['key'] = $parts[0];
+            $vipInfo = [
+                'key' => $parts[0],
+                'name' => N_REF_VIP[$parts[0]]['name'],
+                'desc' => N_REF_VIP[$parts[0]]['desc'],
+            ];
             if (count($parts) > 1) {
                 unset($parts[0]);
-                $vip['args'] = $parts;
+                $vipInfo['args'] = $parts;
             } else {
-                $vip['args'] = null;
+                $vipInfo['args'] = null;
             }
         }
-        return $vip;
+        return $vipInfo;
+    }
+
+    public function getVipTitleMessage(): ?array
+    {
+        $args = null;
+        $vipInfo = $this->getVipInfo();
+        if ($vipInfo) {
+            $args = [
+                'i18n' => ['desc', 'vip'],
+                'log' => N_REF_MSG['vipWelcome'],
+                'location' => $this->origin,
+            ];
+            if ($vipInfo['args']) {
+                $args['desc'] = [
+                    'log' => $vipInfo['desc'],
+                    'args' => $vipInfo['args'],
+                ];
+                $args['vip'] = [
+                    'log' => $vipInfo['name'],
+                    'args' => $vipInfo['args'],
+                ];
+            } else {
+                $args['desc'] = $vipInfo['desc'];
+                $args['vip'] = $vipInfo['name'];
+            }
+        }
+        return $args;
     }
 
     public function resetAnger(): void

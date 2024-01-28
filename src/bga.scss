@@ -41,6 +41,19 @@ html,
   }
 }
 
+#nbmsg {
+  border-top: 1px solid $color-neutral-300;
+  font-size: 85%;
+  font-weight: normal;
+  line-height: 1.8em;
+  margin-top: 5px;
+  padding-top: 5px;
+
+  .nbtag {
+    font-weight: bold;
+  }
+}
+
 #nbwrap {
   display: flex;
   flex-wrap: wrap;
@@ -311,6 +324,11 @@ html,
 
   .ss {
     font-size: 90%;
+  }
+
+  .nbtag {
+    box-shadow: none;
+    margin-right: 5px;
   }
 }
 

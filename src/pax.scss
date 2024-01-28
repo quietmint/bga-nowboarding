@@ -243,7 +243,7 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' xml:space='preserve' viewBox='0 0 60.1 14.2'%3E%3Cpath d='M0 0v14.2h1V0zm3.7 0v14.2h2.1V0zm4.8 0v14.2h1.2V0zm2 0v14.2h1V0zm3.7 0v14.2h3V0zM18 0v14.2H20V0zm2.9 0v14.2h3V0zm3.8 0v14.2h1V0zm3.8 0v6.6l-.1 7.6h2.2V0zm2.9 0v14.2h1V0zm3.7 0v14.2h2.1V0zm3 0v14.2h1V0zm3.7 0v14.2h2.1V0zm4.8 0v14.2h1.2V0zm2 0v14.2h3V0zm3.8 0v14.2h2V0zM55 0v14.2h3.1V0zM59 0v14.2H60V0z' opacity='.1'/%3E%3C/svg%3E");
   border-color: inherit;
   border-style: solid;
-  border-width: 2px 2px 2px 0;
+  border-width: 0 0 2px 0;
   grid-area: ticket;
   height: 23px;
   line-height: 23px;
@@ -274,7 +274,7 @@
   color: white;
   font-weight: bold;
   grid-area: vip;
-  height: 13px;
+  height: 15px;
   overflow: hidden;
   padding: 0 16px 0 2px;
   text-overflow: ellipsis;
@@ -282,6 +282,10 @@
 
   .icon {
     font-size: 100%;
+  }
+
+  .nbtag {
+    box-shadow: none;
   }
 }
 

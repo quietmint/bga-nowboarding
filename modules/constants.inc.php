@@ -127,7 +127,7 @@ define('N_REF_MSG', [
     'flyDone' => clienttranslate('${player_name} ends their turn'),
     'flyTimer' => clienttranslate('Time is up!'),
     'hour' => clienttranslate('${hourDesc} round ${round} of ${total} begins'),
-    'hourFinale' => clienttranslate('${hourDesc} begins with ${count} undelivered passengers remaining'),
+    'hourFinale' => clienttranslate('${hourDesc}! Avoid new complaints and deliver ${countToWin} passengers to win'),
     'hourVip' => clienttranslate('VIP: ${count} VIPs must be accepted during ${hourDesc}'),
     'move' => clienttranslate('${player_name} flies ${fuel} moves'),
     'movePort' => clienttranslate('${player_name} flies ${fuel} moves to ${location}'),
@@ -142,7 +142,7 @@ define('N_REF_MSG', [
     'undo' => clienttranslate('${player_name} restarts their turn'),
     'vipAccept' => clienttranslate('${player_name} accepts a VIP passenger this round'),
     'vipDecline' => clienttranslate('${player_name} declines a VIP passenger this round'),
-    'vipWelcome' => clienttranslate('VIP: ${location} welcomes ${vip} (${desc})'),
+    'vipWelcome' => clienttranslate('VIP: ${vip} arrives at ${location}: ${desc}'),
     'weatherFAST' => clienttranslate('${hourDesc} weather forecast: Tailwinds speed travel between ${location}'),
     'weatherSLOW' => clienttranslate('${hourDesc} weather forecast: Storms slow travel between ${location}'),
 ]);
