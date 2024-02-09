@@ -389,6 +389,23 @@ html,
   font-size: 96px;
 }
 
+#nbprogress {
+  background: white;
+  border-bottom: 1px solid $color-neutral-200;
+  height: 5px;
+}
+
+#nbfill {
+  background: $color-neutral-700;
+  height: 100%;
+  transition: width 1s ease-out;
+  width: 0;
+
+  body.no-animation & {
+    transition: none !important;
+  }
+}
+
 /* Action bar (Firefox fix) */
 #page-title {
   box-sizing: border-box;

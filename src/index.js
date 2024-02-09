@@ -114,6 +114,9 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       });
 
       // Setup common
+      const titleEl = document.getElementById("page-title");
+      titleEl.insertAdjacentHTML("beforebegin", '<div id="nbprogress"><div id="nbfill"></div></div>');
+      this.fillEl = document.getElementById("nbfill");
       this.scaleEl = document.getElementById("nbscale");
       this.renderCommon();
       this.renderCountdown();
@@ -593,6 +596,11 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     onEnteringState(stateName, args) {
       if (args.args?.titleMessage) {
         this.renderTitleMessage(args.args.titleMessage);
+      }
+      console.log("onEnteringState", stateName, args);
+      if (args.updateGameProgression) {
+        console.warn("updateGameProgression", args.updateGameProgression);
+        this.fillEl.style.width = args.updateGameProgression + "%";
       }
 
       if (stateName == "fly") {
