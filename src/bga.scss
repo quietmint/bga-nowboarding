@@ -23,6 +23,11 @@ html,
   display: none;
 }
 
+.lockedInterface,
+.lockedInterface * {
+  cursor: progress !important;
+}
+
 #nbcountdown {
   color: $color-neutral-400;
   font-size: 24px;
@@ -392,7 +397,7 @@ html,
 #nbprogress {
   background: white;
   border-bottom: 1px solid $color-neutral-200;
-  height: 5px;
+  height: 6px;
 }
 
 #nbfill {

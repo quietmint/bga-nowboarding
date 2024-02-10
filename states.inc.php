@@ -190,6 +190,7 @@ $machinestates = [
         'description' => clienttranslate('End of game'),
         'type' => 'manager',
         'action' => 'stGameEnd',
-        'args' => 'argGameEnd'
+        'args' => 'argGameEnd',
+        'updateGameProgression' => true,
     ]
 ];

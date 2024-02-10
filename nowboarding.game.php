@@ -255,12 +255,8 @@ class NowBoarding extends Table
 
     public function getGameProgression(): int
     {
-        $paxTotal = $this->countPaxByStatus();
-        if ($paxTotal == 0) {
-            return 0;
-        }
-        $paxRemain = $this->countPaxByStatus(['MORNING', 'NOON', 'NIGHT']);
-        return ($paxTotal - $paxRemain) / $paxTotal * 100;
+        $playerCount = $this->getPlayersNumber();
+        return round($this->getVarInt('progression') / N_REF_PROGRESSION[$playerCount] * 100);
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -382,6 +378,7 @@ class NowBoarding extends Table
         // Everybody stop snoozing
         $this->DbQuery("UPDATE `player` SET `snooze` = 0");
         $this->setVar('vipWelcome', null);
+        $this->setVarInc('progression', 1);
 
         try {
             $hourInfo = $this->getHourInfo(true);
@@ -1667,6 +1664,11 @@ class NowBoarding extends Table
         }
     }
 
+    private function setVarInc(string $key, int $delta): void
+    {
+        $this->DbQuery("INSERT INTO `var` (`key`, `value`) VALUES ('$key', $delta) ON DUPLICATE KEY UPDATE `value` = `value` + $delta");
+    }
+
     private function enforceTimer(): bool
     {
         // We need to check BGA clock in case table switched to turn-based
@@ -2283,6 +2285,7 @@ class NowBoarding extends Table
         // Calculate final statistics
         $planes = $this->getPlanesByIds();
         $playerCount = count($planes);
+        $this->setVar('progression', N_REF_PROGRESSION[$playerCount]);
         $totalAlliances = 0;
         $totalSeat = 0;
         $totalSpeed = 0;
@@ -2442,26 +2445,7 @@ class NowBoarding extends Table
 
     public function upgradeTableDb($fromVersion)
     {
-        $changes = [
-            [2307141730, "ALTER TABLE `DBPREFIX_player` ADD COLUMN `snooze` TINYINT(1) NOT NULL DEFAULT '0'"],
-            [2307150617, "ALTER TABLE `DBPREFIX_pax` ADD COLUMN `moves` INT(3) NOT NULL DEFAULT '0'"],
-            [2307150617, "ALTER TABLE `DBPREFIX_pax_undo` ADD COLUMN `moves` INT(3) NOT NULL DEFAULT '0'"],
-            [2307150617, "ALTER TABLE `DBPREFIX_pax` ADD COLUMN `optimal` INT(3) NOT NULL DEFAULT '1'"],
-            [2307150617, "ALTER TABLE `DBPREFIX_pax_undo` ADD COLUMN `optimal` INT(3) NOT NULL DEFAULT '1'"],
-            [2307191554, "ALTER TABLE `DBPREFIX_plane` ADD COLUMN `speed_penalty` TINYINT(1) NOT NULL DEFAULT '0'"],
-            [2307191554, "ALTER TABLE `DBPREFIX_plane_undo` ADD COLUMN `speed_penalty` TINYINT(1) NOT NULL DEFAULT '0'"],
-            [2307191554, "DELETE FROM `DBPREFIX_weather`"],
-            [2307191554, "ALTER TABLE `DBPREFIX_weather` ADD COLUMN `hour` VARCHAR(50) NOT NULL"],
-            [2307222151, "ALTER TABLE `DBPREFIX_weather` DROP PRIMARY KEY, ADD PRIMARY KEY(`hour`, `location`)"],
-            [2307222151, "INSERT INTO `DBPREFIX_weather` (`hour`, `location`, `token`) SELECT 'FINALE', `location`, `token` FROM `DBPREFIX_weather` WHERE `hour` = 'NIGHT'"],
-            [2309031701, "DELETE FROM `DBPREFIX_pax` WHERE `pax_id` < 0"],
-            [2309031701, "DELETE FROM `DBPREFIX_pax_undo` WHERE `pax_id` < 0"],
-            [2309031701, "INSERT INTO `DBPREFIX_pax` (`pax_id`, `anger`, `cash`, `destination`, `location`, `moves`, `optimal`, `origin`, `player_id`, `status`, `vip`) SELECT `pax_id` * -1 AS `pax_id`, `anger`, 0 AS `cash`, `destination`, `location`, `moves`, `optimal`, `origin`, `player_id`, `status`, `vip` FROM `DBPREFIX_pax` WHERE `vip` = 'DOUBLE'"],
-            [2309031701, "INSERT INTO `DBPREFIX_pax_undo` (`pax_id`, `anger`, `cash`, `destination`, `location`, `moves`, `optimal`, `origin`, `player_id`, `status`, `vip`) SELECT `pax_id` * -1 AS `pax_id`, `anger`, 0 AS `cash`, `destination`, `location`, `moves`, `optimal`, `origin`, `player_id`, `status`, `vip` FROM `DBPREFIX_pax_undo` WHERE `vip` = 'DOUBLE'"],
-            [2309100719, "DELETE FROM `DBPREFIX_global` WHERE `global_id` = 101"],
-            [2309100719, "UPDATE `DBPREFIX_global` SET `global_id` = 101 WHERE `global_id` = 112"],
-        ];
-
+        $changes = [];
         foreach ($changes as [$version, $sql]) {
             if ($fromVersion <= $version) {
                 $this->warn("upgradeTableDb: fromVersion=$fromVersion, change=[ $version, $sql ]");
@@ -2469,35 +2453,24 @@ class NowBoarding extends Table
             }
         }
 
-        if ($fromVersion <= 2307191554) {
-            $this->warn("upgradeTableDb: fromVersion=$fromVersion, setupWeather");
-            $this->setupWeather($this->getPlayersNumber());
-        }
-
-        if ($fromVersion <= 2309161827) {
-            $this->warn("upgradeTableDb: fromVersion=$fromVersion, flip locations");
-            $flipLocations = [
-                'ATLMIA1' => 'MIAATL1',
-                'DENORD1' => 'ORDDEN2',
-                'DENORD2' => 'ORDDEN1',
-                'DENSFO1' => 'SFODEN2',
-                'DENSFO2' => 'SFODEN1',
-                'ORDSEA1' => 'SEAORD3',
-                'ORDSEA2' => 'SEAORD2',
-                'ORDSEA3' => 'SEAORD1',
-                'ORDSFO1' => 'SFOORD3',
-                'ORDSFO2' => 'SFOORD2',
-                'ORDSFO3' => 'SFOORD1',
-            ];
-            foreach ($flipLocations as $old => $new) {
-                $this->applyDbUpgradeToAllDB("UPDATE `DBPREFIX_pax` SET `location` = '$new' WHERE `location` = '$old'");
-                $this->applyDbUpgradeToAllDB("UPDATE `DBPREFIX_pax_undo` SET `location` = '$new' WHERE `location` = '$old'");
-                $this->applyDbUpgradeToAllDB("UPDATE `DBPREFIX_plane` SET `location` = '$new' WHERE `location` = '$old'");
-                $this->applyDbUpgradeToAllDB("UPDATE `DBPREFIX_plane_undo` SET `location` = '$new' WHERE `location` = '$old'");
-                $this->applyDbUpgradeToAllDB("UPDATE `DBPREFIX_plane` SET `origin` = '$new' WHERE `origin` = '$old'");
-                $this->applyDbUpgradeToAllDB("UPDATE `DBPREFIX_plane_undo` SET `origin` = '$new' WHERE `origin` = '$old'");
-                $this->applyDbUpgradeToAllDB("UPDATE `DBPREFIX_weather` SET `location` = '$new' WHERE `location` = '$old'");
+        if ($fromVersion <= 2402092246) {
+            $this->warn("upgradeTableDb: fromVersion=$fromVersion, calculate progression");
+            $playerCount = $this->getPlayersNumber();
+            $hourInfo = $this->getHourInfo();
+            $progression = 0;
+            if ($hourInfo['hour'] == 'NOON' || $hourInfo['hour'] == 'NIGHT' || $hourInfo['hour'] == 'FINALE') {
+                $progression += N_REF_HOUR_ROUND[$playerCount]['MORNING'];
             }
+            if ($hourInfo['hour'] == 'NIGHT' || $hourInfo['hour'] == 'FINALE') {
+                $progression += N_REF_HOUR_ROUND[$playerCount]['NOON'];
+            }
+            if ($hourInfo['hour'] == 'FINALE') {
+                $progression += N_REF_HOUR_ROUND[$playerCount]['NIGHT'] + 1;
+            }
+            if (array_key_exists('round', $hourInfo)) {
+                $progression += $hourInfo['round'];
+            }
+            $this->setVar('progression', $progression);
         }
 
         // Give extra time

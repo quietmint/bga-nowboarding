@@ -110,6 +110,13 @@ define('N_REF_HOUR_ROUND', [
     ],
 ]);
 
+define('N_REF_PROGRESSION', [
+    2 => 19,
+    3 => 18,
+    4 => 18,
+    5 => 15,
+]);
+
 define('N_REF_MSG', [
     'addPax' => clienttranslate('${count} passengers arrive at ${location}'),
     'alliance' => clienttranslate('${player_name} joins alliance ${alliance}'),
