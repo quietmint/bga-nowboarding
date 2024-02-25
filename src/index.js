@@ -115,7 +115,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
       // Setup flight plans (game over)
       if (gamedatas.plans) {
-        this.renderFlightPlans(gamedatas.plans);
+        this.renderFlightPlans();
       }
 
       // Setup chat
@@ -805,7 +805,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         }
         this.renderMapCounts();
       } else if (notif.type == "plans") {
-        this.renderFlightPlans(notif.args.plans);
+        this.gamedatas.plans = notif.args.plans;
+        this.renderFlightPlans();
       } else if (notif.type == "planes") {
         for (const plane of notif.args.planes) {
           this.gamedatas.planes[plane.id] = plane;
@@ -1866,15 +1867,16 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       return background;
     },
 
-    renderFlightPlans(plans) {
-      if (!plans || !plans.length) {
+    renderFlightPlans(sort) {
+      if (!this.gamedatas.plans?.length) {
         return;
       }
       const rows = [];
-      for (const plan of plans) {
+      for (const plan of this.gamedatas.plans) {
         const [destination, alliance, id, time, moves] = plan;
         const city = airportMap[destination];
-        let status,
+        let order,
+          status,
           statusClass = "";
         if (moves == 0) {
           status = _("On Time");
@@ -1885,7 +1887,16 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           status = _("Early");
           statusClass = "fast";
         }
-        const order = `${city}.${time}`;
+        if (sort == "time") {
+          order = `${time}.${city}`;
+        } else if (sort == "flight") {
+          order = `${alliance}.${String(id).padStart(3, "0")}`;
+        } else if (sort == "status") {
+          order = `${status}.${city}.${time}`;
+        } else {
+          order = `${city}.${time}`;
+        }
+
         const html = `<tr>
   <td>${city}</td>
   <td><span class="nbtag alliance-${alliance}"><i class="icon logo-${alliance}"></i> ${id}</span></td>
@@ -1903,9 +1914,9 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           `<table>
   <tr>
     <th>${_("Destination")}</th>
-    <th>${_("Flight")}</th>
-    <th>${_("Time")}</th>
-    <th>${_("Status")}</th>
+    <th data-sort="flight">${_("Flight")}</th>
+    <th data-sort="time">${_("Time")}</th>
+    <th data-sort="status">${_("Status")}</th>
   </tr>` +
             rows
               .slice(i, i + chunkSize)
@@ -1915,8 +1926,16 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         );
       }
 
-      const resultEl = document.getElementById("pagesection_gameresult");
-      resultEl.insertAdjacentHTML("afterbegin", `<div id='nbdepartures'>${_("Departures")}</div><div id='nbplans'>${tables.join("")}</div>`);
+      let plansEl = document.getElementById("nbplans");
+      if (!plansEl) {
+        const resultEl = document.getElementById("pagesection_gameresult"); 
+        resultEl.insertAdjacentHTML("afterbegin", `<div id='nbdepartures'>${_("Departures")}</div><div id='nbplans'></div>`);
+        plansEl = document.getElementById("nbplans");
+      }
+      plansEl.innerHTML = tables.join("");
+      document.querySelectorAll("#nbplans th").forEach((th) => {
+        th.addEventListener("click", () => this.renderFlightPlans(th.dataset.sort));
+      });
     },
   });
 });

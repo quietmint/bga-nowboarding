@@ -24,6 +24,8 @@ class NowBoarding extends Table
     public function test()
     {
         // insert into pax select player_id as pax_id, 0 as anger, 44 as cash, 'DEN' as destination, null as location, 0 as moves, 1 as optimal, 'DEN' as origin, player_id, 'CASH' as status, null as vip from player;
+
+        $this->notifyAllPlayers('plans', '', ['plans' => $this->getFlightPlans()]);
     }
 
     public function __construct()
@@ -2111,7 +2113,8 @@ class NowBoarding extends Table
         if (random_int(0, 2)) {
             $min = floor($min / 10) * 10;
         }
-        $this->DbQuery("INSERT INTO `plan` (`alliance`, `hr`, `min`, `origin`, `origin_move`) VALUES ('{$plane->alliances[0]}', $hr, $min, '$location', $move)");
+        $rand = random_int(0, 9);
+        $this->DbQuery("INSERT INTO `plan` (`alliance`, `hr`, `min`, `origin`, `origin_move`, `rand`) VALUES ('{$plane->alliances[0]}', $hr, $min, '$location', $move, $rand)");
     }
 
     private function getFlightPlans()
@@ -2122,9 +2125,10 @@ class NowBoarding extends Table
         }
 
         return array_map(function ($plan) {
+            $id = intval($plan['plan_id']) * 10 + intval($plan['rand']);
             $time = sprintf('%02d:%02d', $plan['hr'], $plan['min']);
             $moves = intval($plan['destination_move']) - intval($plan['origin_move']) - intval($plan['optimal']);
-            return [$plan['destination'], $plan['alliance'], intval($plan['plan_id']), $time, $moves];
+            return [$plan['destination'], $plan['alliance'], $id, $time, $moves];
         }, $this->getObjectListFromDB("SELECT * FROM `plan` WHERE `destination` IS NOT NULL"));
     }
 
@@ -2529,6 +2533,7 @@ class NowBoarding extends Table
     `origin_move` INT(3) NOT NULL,
     PRIMARY KEY (`plan_id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8"],
+            [2402251610, "ALTER TABLE `DBPREFIX_plan` ADD `rand` INT(2) NOT NULL DEFAULT '0'"],
         ];
         foreach ($changes as [$version, $sql]) {
             if ($fromVersion <= $version) {

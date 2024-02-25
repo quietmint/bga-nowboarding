@@ -48,6 +48,7 @@ CREATE TABLE `plan` (
     `optimal` INT(2),
     `origin` VARCHAR(3) NOT NULL,
     `origin_move` INT(3) NOT NULL,
+    `rand` INT(1) NOT NULL,
     PRIMARY KEY (`plan_id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
 
