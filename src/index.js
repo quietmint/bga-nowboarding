@@ -1867,6 +1867,9 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     },
 
     renderFlightPlans(plans) {
+      if (!plans || !plans.length) {
+        return;
+      }
       const rows = [];
       for (const plan of plans) {
         const [destination, alliance, id, time, moves] = plan;
@@ -1894,7 +1897,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       rows.sort((a, b) => (a.order > b.order ? 1 : -1));
 
       const tables = [];
-      const chunkSize = Math.ceil(rows.length / 3);
+      const chunkSize = Math.ceil(rows.length / 2);
       for (let i = 0; i < rows.length; i += chunkSize) {
         tables.push(
           `<table>
@@ -1912,8 +1915,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         );
       }
 
-      const rootEl = document.getElementById("nbroot");
-      rootEl.insertAdjacentHTML("beforebegin", `<div id='nbdepartures'>${_("Departures")}</div><div id='nbplans'>${tables.join("")}</div>`);
+      const resultEl = document.getElementById("pagesection_gameresult");
+      resultEl.insertAdjacentHTML("afterbegin", `<div id='nbdepartures'>${_("Departures")}</div><div id='nbplans'>${tables.join("")}</div>`);
     },
   });
 });

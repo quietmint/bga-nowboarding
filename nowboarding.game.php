@@ -2118,7 +2118,7 @@ class NowBoarding extends Table
     {
         // Check table exists
         if (!$this->getUniqueValueFromDB("SHOW TABLES LIKE 'plan'")) {
-            return;
+            return [];
         }
 
         return array_map(function ($plan) {
