@@ -82,6 +82,13 @@
       border-color: white;
     }
   }
+
+  &.is-empty {
+    .icon,
+    .nodecount {
+      display: none;
+    }
+  }
 }
 
 .spotlight.node {

@@ -6,6 +6,18 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
   let suppressSounds = [];
   const uniqJsError = {};
 
+  const airportMap = {
+    ATL: _("Atlanta"),
+    DEN: _("Denver"),
+    DFW: _("Dallas"),
+    JFK: _("New York"),
+    LAX: _("Los Angeles"),
+    MIA: _("Miami"),
+    ORD: _("Chicago"),
+    SEA: _("Seattle"),
+    SFO: _("San Francisco"),
+  };
+
   // Emoji
   const escapeRegExp = (txt) => txt.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
   const emojiMap = {
@@ -101,6 +113,11 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     setup(gamedatas) {
       console.log("🐣 Setup", gamedatas);
 
+      // Setup flight plans (game over)
+      if (gamedatas.plans) {
+        this.renderFlightPlans(gamedatas.plans);
+      }
+
       // Setup chat
       this.chatHeaderEl = document.getElementById("nbchatheader");
       this.chatHeaderEl.insertAdjacentText("beforeend", __("lang_mainsite", "Discuss at this table"));
@@ -189,6 +206,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       dojo.subscribe("hour", this, "onNotify");
       dojo.subscribe("move", this, "onNotify");
       dojo.subscribe("pax", this, "onNotify");
+      dojo.subscribe("plans", this, "onNotify");
       dojo.subscribe("planes", this, "onNotify");
       dojo.subscribe("sound", this, "onNotify");
       dojo.subscribe("vip", this, "onNotify");
@@ -786,6 +804,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           playSound("nowboarding_cash");
         }
         this.renderMapCounts();
+      } else if (notif.type == "plans") {
+        this.renderFlightPlans(notif.args.plans);
       } else if (notif.type == "planes") {
         for (const plane of notif.args.planes) {
           this.gamedatas.planes[plane.id] = plane;
@@ -1227,7 +1247,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
       // Update speed tag
       const speedEl = document.getElementById(`gauge-speed-${plane.id}`);
-      const speedRemain = Math.max(0, plane.speedRemain) + (plane.tempSpeed ? 1 : 0);
+      const speedRemain = Math.max(0, plane.speedRemain) + (plane.tempSpeed == 1 ? 1 : 0);
       speedEl.innerHTML = `<span class="${speedRemain > 0 ? "bb" : ""}">${speedRemain}</span>/${plane.speed}`;
 
       // Update plane speed
@@ -1251,20 +1271,28 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       }
       cashEl.innerHTML = cashHtml;
 
-      // Add/remove temp speed tag
-      const tempSpeedEl = document.getElementById(`gauge-temp-speed-${plane.id}`);
+      // Add/remove/ghost temp speed tag
+      let tempSpeedEl = document.getElementById(`gauge-temp-speed-${plane.id}`);
       if (plane.tempSpeed && !tempSpeedEl) {
         gaugesEl.insertAdjacentHTML("beforeend", `<div class="nbtag speed" id="gauge-temp-speed-${plane.id}" title="${_("Temporary Speed")}"><i class="icon speed"></i> <span class="ss">${_("Temp Speed")}</span></div>`);
+        tempSpeedEl = document.getElementById(`gauge-temp-speed-${plane.id}`);
       } else if (!plane.tempSpeed && tempSpeedEl) {
         tempSpeedEl.remove();
       }
+      if (tempSpeedEl) {
+        tempSpeedEl.classList.toggle("ghost", plane.tempSpeed == -1);
+      }
 
-      // Add/remove temp seat tag
-      const tempSeatEl = document.getElementById(`gauge-temp-seat-${plane.id}`);
-      if (plane.tempSeat == 1 && !tempSeatEl) {
+      // Add/remove/ghost temp seat tag
+      let tempSeatEl = document.getElementById(`gauge-temp-seat-${plane.id}`);
+      if (plane.tempSeat && !tempSeatEl) {
         gaugesEl.insertAdjacentHTML("beforeend", `<div class="nbtag seat" id="gauge-temp-seat-${plane.id}" title="${_("Temporary Seat")}"><i class="icon seat"></i> <span class="ss">${_("Temp Seat")}</span></div>`);
-      } else if (plane.tempSeat != 1 && tempSeatEl) {
+        tempSeatEl = document.getElementById(`gauge-temp-seat-${plane.id}`);
+      } else if (!plane.tempSeat && tempSeatEl) {
         tempSeatEl.remove();
+      }
+      if (tempSeatEl) {
+        tempSeatEl.classList.toggle("ghost", plane.tempSeat == -1);
       }
     },
 
@@ -1292,14 +1320,13 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       const listEl = document.getElementById(`paxlist-${plane.id}`);
 
       // Add empty seats
-      const emptyCount = Math.max(plane.seatRemain, 0) + (plane.tempSeat == 1 ? 1 : 0);
       const emptyEls = listEl.querySelectorAll(".paxslot.is-empty");
-      for (let i = emptyEls.length; i < emptyCount; i++) {
+      for (let i = emptyEls.length; i < plane.seatRemain; i++) {
         this.renderSlot(listEl);
       }
 
       // Remove empty seats
-      for (let i = emptyCount; i < emptyEls.length; i++) {
+      for (let i = plane.seatRemain; i < emptyEls.length; i++) {
         console.log(`❌ Delete empty seat for plane ${plane.id}`);
         emptyEls[i].remove();
       }
@@ -1352,9 +1379,9 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         // port
         this.mapEl.insertAdjacentHTML(
           "beforeend",
-          `<div id="node-${node}" class="port node node-${node}">
+          `<div id="node-${node}" class="port node node-${node} is-empty">
   <div id="leadline-${node}" class="leadline"></div>
-  <i class="icon people"></i><span id="nodecount-${node}">0</span>
+  <i class="icon people"></i><span id="nodecount-${node}" class="nodecount">0</span>
 </div>`
         );
         if (!isMobile) {
@@ -1375,14 +1402,13 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
     resizeMap() {
       if (this.scaleEl && this.mapEl) {
-        this.scaleEl.style.setProperty("--map-width", Math.max(this.mapEl.clientWidth, 875) + "px");
+        this.scaleEl.style.setProperty("--map-width", Math.max(875, this.mapEl.clientWidth) + "px");
         this.renderMapLeads();
       }
     },
 
     renderMapLeads() {
-      const airports = ["ATL", "DEN", "DFW", "JFK", "LAX", "MIA", "ORD", "SEA", "SFO"];
-      for (const airport of airports) {
+      for (const airport in airportMap) {
         const leadEl = document.getElementById(`leadline-${airport}`);
         const manifestEl = document.getElementById(`paxlist-${airport}`);
         const nodeEl = document.getElementById(`node-${airport}`);
@@ -1466,30 +1492,20 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     },
 
     renderMapCounts() {
-      const airports = {
-        ATL: _("Atlanta"),
-        DEN: _("Denver"),
-        DFW: _("Dallas"),
-        JFK: _("New York"),
-        LAX: _("Los Angeles"),
-        MIA: _("Miami"),
-        ORD: _("Chicago"),
-        SEA: _("Seattle"),
-        SFO: _("San Francisco"),
-      };
       const pax = Object.values(this.gamedatas.pax).filter((x) => x.status == "PORT" || x.status == "SECRET");
-      for (const airport in airports) {
+      for (const airport in airportMap) {
         const paxCount = pax.filter((x) => x.location == airport).length;
         const isAngry = pax.some((x) => x.location == airport && x.anger == 3);
         const manifestEl = document.getElementById(`manifest-${airport}`);
         if (manifestEl) {
           manifestEl.classList.toggle("is-anger", isAngry);
           const emptyEl = manifestEl.querySelector(".emptytxt");
-          emptyEl.textContent = paxCount == 0 ? this.format_string_recursive(_("No passengers in ${city}"), { city: airports[airport] }) : "";
+          emptyEl.textContent = paxCount == 0 ? this.format_string_recursive(_("No passengers in ${city}"), { city: airportMap[airport] }) : "";
         }
         const nodeEl = document.getElementById(`node-${airport}`);
         if (nodeEl) {
           nodeEl.classList.toggle("is-anger", isAngry);
+          nodeEl.classList.toggle("is-empty", paxCount == 0);
           nodeEl.classList.toggle("pinging-anger", isAngry);
           const countEl = document.getElementById(`nodecount-${airport}`);
           if (countEl) {
@@ -1848,6 +1864,56 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       }
       background += `), var(--alliance-${alliances[0]})`;
       return background;
+    },
+
+    renderFlightPlans(plans) {
+      const rows = [];
+      for (const plan of plans) {
+        const [destination, alliance, id, time, moves] = plan;
+        const city = airportMap[destination];
+        let status,
+          statusClass = "";
+        if (moves == 0) {
+          status = _("On Time");
+        } else if (moves > 0) {
+          status = _("Delayed");
+          statusClass = "slow";
+        } else {
+          status = _("Early");
+          statusClass = "fast";
+        }
+        const order = `${city}.${time}`;
+        const html = `<tr>
+  <td>${city}</td>
+  <td><span class="nbtag alliance-${alliance}"><i class="icon logo-${alliance}"></i> ${id}</span></td>
+  <td>${time}</td>
+  <td class="${statusClass}">${status}</td>
+</tr>`;
+        rows.push({ html, order });
+      }
+      rows.sort((a, b) => (a.order > b.order ? 1 : -1));
+
+      const tables = [];
+      const chunkSize = Math.ceil(rows.length / 3);
+      for (let i = 0; i < rows.length; i += chunkSize) {
+        tables.push(
+          `<table>
+  <tr>
+    <th>${_("Destination")}</th>
+    <th>${_("Flight")}</th>
+    <th>${_("Time")}</th>
+    <th>${_("Status")}</th>
+  </tr>` +
+            rows
+              .slice(i, i + chunkSize)
+              .map((row) => row.html)
+              .join("") +
+            "</table>"
+        );
+      }
+
+      const rootEl = document.getElementById("nbroot");
+      rootEl.insertAdjacentHTML("beforebegin", `<div id='nbdepartures'>${_("Departures")}</div><div id='nbplans'>${tables.join("")}</div>`);
     },
   });
 });

@@ -1,0 +1,50 @@
+@use "colors" as *;
+
+#nbdepartures {
+  color: white;
+  font: bold 20px/1 Consolas, monospace;
+  letter-spacing: 2px;
+  margin: 10px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+#nbplans {
+  align-items: flex-start;
+  border: 2px solid white;
+  display: flex;
+  margin-bottom: 10px;
+
+  table {
+    color: white;
+    flex: 1 0 auto;
+  }
+
+  table + table {
+    border-left: 2px solid white;
+  }
+
+  th {
+    font-weight: bold;
+    border-bottom: 2px solid white;
+  }
+
+  th,
+  td {
+    padding: 3px 6px;
+  }
+
+  .fast {
+    background: $color-lime-600;
+    font-weight: bold;
+  }
+
+  .slow {
+    background: $color-red-500;
+    font-weight: bold;
+  }
+
+  tr:nth-child(odd) {
+    background: $color-sky-800;
+  }
+}

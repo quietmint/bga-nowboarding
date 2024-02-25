@@ -237,14 +237,16 @@ class NowBoarding extends Table
 
     protected function getAllDatas(): array
     {
-        $players = $this->getCollectionFromDb("SELECT player_id id, player_score score FROM player");
         $bgaClock = $this->getGlobal(N_BGA_CLOCK);
+        $plans = $this->gamestate->state()['name'] == 'gameEnd' ? $this->getFlightPlans() : null;
+        $players = $this->getCollectionFromDb("SELECT player_id id, player_score score FROM player");
         return [
             'complaint' => $this->countComplaint(),
             'hour' => $this->getHourInfo(),
             'map' => $this->getMap(),
             'noTimeLimit' => in_array($bgaClock, N_REF_BGA_CLOCK_UNLIMITED),
             'pax' => $this->filterPax($this->getPaxByStatus(['SECRET', 'PORT', 'SEAT'])),
+            'plans' => $plans,
             'planes' => $this->getPlanesByIds(),
             'players' => $players,
             'timer' => (in_array($bgaClock, N_REF_BGA_CLOCK_REALTIME) ? $this->getGlobal(N_OPTION_TIMER) : 0) * (count($players) * 5 + 20),
@@ -454,8 +456,9 @@ class NowBoarding extends Table
         $this->gamestate->setAllPlayersMultiactive();
         $this->gamestate->initializePrivateStateForAllActivePlayers();
         $this->DbQuery("UPDATE `plane` SET `speed_remain` = `speed`");
-        // Truly use the temp seat
+        // Truly use temps
         $this->DbQuery("UPDATE `plane` SET `temp_seat` = 0 WHERE `temp_seat` = -1");
+        $this->DbQuery("UPDATE `plane` SET `temp_speed` = 0 WHERE `temp_speed` = -1");
         $this->createUndo();
         $planes = $this->getPlanesByIds();
         $this->notifyAllPlayers('planes', '', [
@@ -475,7 +478,7 @@ class NowBoarding extends Table
                 $this->incStat(1, 'tempSeatUnused');
                 $this->incStat(1, 'tempSeatUnused', $plane->id);
             }
-            if ($plane->tempSpeed) {
+            if ($plane->tempSpeed == 1) {
                 $this->notifyAllPlayers('message', N_REF_MSG['tempUnused'], [
                     'i18n' => ['temp'],
                     'preserve' => ['tempIcon'],
@@ -749,7 +752,7 @@ class NowBoarding extends Table
             'moves' => $map->getPossibleMoves($plane),
             'paxDrop' => [],
             'paxPickup' => [],
-            'speedRemain' => max(0, $plane->speedRemain) + ($plane->tempSpeed ? 1 : 0),
+            'speedRemain' => max(0, $plane->speedRemain) + ($plane->tempSpeed == 1 ? 1 : 0),
         ];
     }
 
@@ -896,7 +899,6 @@ class NowBoarding extends Table
 
         $plane->debt += $cost;
         $plane->seat++;
-        $plane->seatRemain++;
         $this->DbQuery("UPDATE `plane` SET `debt` = {$plane->debt}, `seat` = {$plane->seat} WHERE `player_id` = {$plane->id}");
         $this->addLedger($plane->id, 'SEAT', $plane->seat, $cost);
 
@@ -1011,8 +1013,8 @@ class NowBoarding extends Table
         }
 
         $plane->debt += $cost;
-        $plane->tempSpeed = true;
-        $this->DbQuery("UPDATE `plane` SET `debt` = {$plane->debt}, `temp_speed` = 1 WHERE `player_id` = {$plane->id}");
+        $plane->tempSpeed = 1;
+        $this->DbQuery("UPDATE `plane` SET `debt` = {$plane->debt}, `temp_speed` = {$plane->tempSpeed} WHERE `player_id` = {$plane->id}");
         $this->addLedger($plane->id, 'TEMP_SPEED', null, $cost);
 
         // Statistics
@@ -1208,7 +1210,7 @@ class NowBoarding extends Table
             // Truly use the temp seat
             $plane->tempSeat = 0;
         }
-        if ($plane->speedRemain == -1 && $plane->tempSpeed) {
+        if ($plane->speedRemain == -1 && $plane->tempSpeed == 1) {
             $this->useTempSpeed($plane);
         } else if ($plane->speedRemain < 0) {
             throw new BgaVisibleSystemException("move: $plane not enough fuel to reach $to with speedRemain={$plane->speedRemain}, tempSpeed={$plane->tempSpeed} [???]");
@@ -1219,32 +1221,39 @@ class NowBoarding extends Table
         $this->DbQuery("UPDATE `pax` SET `moves` = `moves` + $distance WHERE `status` = 'SEAT' AND `player_id` = {$plane->id}");
 
         // Statistics
-        $this->incStat($distance, 'moves');
-        $this->incStat($distance, 'moves', $playerId);
         $hasStorm = false;
         foreach ($move->path as $location) {
+            $weather = null;
+            if (array_key_exists($location, $map->weather)) {
+                $weather = $map->weather[$location];
+            }
+
+            if ($weather != 'FAST') {
+                $this->incStat(1, 'moves');
+                $this->incStat(1, 'moves', $playerId);
+            }
+
             if (strlen($location) == 3) {
                 // Airport visit
                 $this->incStat(1, $location, $playerId);
+                $this->addFlightPlan($plane, $location);
             } else {
                 // Route move
                 $alliance = $map->nodes[$location]->alliance ?? "Normal";
                 $this->incStat(1, "moves$alliance");
                 $this->incStat(1, "moves$alliance", $playerId);
-                if (array_key_exists($location, $map->weather)) {
-                    $type = $map->weather[$location];
-                    if ($type == 'SLOW') {
+                if ($weather) {
+                    if ($weather == 'SLOW') {
                         $hasStorm = true;
                     }
-                    $this->incStat(1, "moves$type");
-                    $this->incStat(1, "moves$type", $playerId);
+                    $this->incStat(1, "moves$weather");
+                    $this->incStat(1, "moves$weather", $playerId);
                 }
             }
         }
-        $seatFull = $plane->seat - max($plane->seatRemain, 0);
         for ($seat = 1; $seat <= $plane->seat; $seat++) {
             $this->incStat($distance, "seatEmpty$seat", $playerId);
-            if ($seat <= $seatFull) {
+            if ($seat <= $plane->pax) {
                 $this->incStat($distance, "seatFull$seat", $playerId);
             }
         }
@@ -1276,10 +1285,10 @@ class NowBoarding extends Table
         $this->gamestate->nextPrivateState($plane->id, 'flyPrivate');
     }
 
-    public function useTempSpeed(NPlane &$plane): void
+    public function useTempSpeed(NPlane &$plane, int $value = -1): void
     {
-        $plane->tempSpeed = false;
-        $this->DbQuery("UPDATE `plane` SET `temp_speed` = 0 WHERE `player_id` = {$plane->id}");
+        $plane->tempSpeed = $value;
+        $this->DbQuery("UPDATE `plane` SET `temp_speed` = $value WHERE `player_id` = {$plane->id}");
         $this->notifyAllPlayers('message', N_REF_MSG['tempUsed'], [
             'i18n' => ['temp'],
             'preserve' => ['tempIcon'],
@@ -1371,7 +1380,7 @@ class NowBoarding extends Table
             // Requires 1 speed
             if ($vipInfo && $vipInfo['key'] == 'LATE') {
                 $plane->speedRemain -= 1;
-                if ($plane->speedRemain == -1 && $plane->tempSpeed) {
+                if ($plane->speedRemain == -1 && $plane->tempSpeed == 1) {
                     $this->useTempSpeed($plane);
                 } else if ($plane->speedRemain < 0) {
                     $this->vipException($vipInfo);
@@ -1401,10 +1410,10 @@ class NowBoarding extends Table
             throw new BgaVisibleSystemException("board: $x status is invalid [???]");
         }
 
-        if ($plane->seatRemain <= 0) {
-            if ($plane->tempSeat != 1) {
-                $this->userException('noSeat');
-            }
+        $remain = $plane->getSeatRemain();
+        if ($remain == 0) {
+            $this->userException('noSeat');
+        } else if ($remain == 1 && $plane->tempSeat == 1) {
             $this->useTempSeat($plane);
         }
 
@@ -1431,8 +1440,9 @@ class NowBoarding extends Table
     public function useTempSeat(NPlane &$plane, int $value = -1): void
     {
         $msg = $value == 1 ? N_REF_MSG['tempUndo'] : N_REF_MSG['tempUsed'];
+        $plane->seatX += $value == 1 ? -1 : 1;
         $plane->tempSeat = $value;
-        $this->DbQuery("UPDATE `plane` SET `temp_seat` = {$plane->tempSeat} WHERE `player_id` = {$plane->id}");
+        $this->DbQuery("UPDATE `plane` SET `seat_x` = {$plane->seatX}, `temp_seat` = {$plane->tempSeat} WHERE `player_id` = {$plane->id}");
         $this->notifyAllPlayers('message', $msg, [
             'i18n' => ['temp'],
             'preserve' => ['tempIcon'],
@@ -1539,10 +1549,20 @@ class NowBoarding extends Table
         }
         $this->DbQuery("UPDATE `pax` SET `anger` = {$x->anger}, `location` = '{$x->location}', `player_id` = {$x->getPlayerIdSql()}, `status` = '{$x->status}' WHERE `pax_id` = {$x->id}");
 
-        // Notify UI (except for transfers and VIP Double)
+        // Notify UI about pax (except for transfers and VIP Double)
         if (!$transfer && $x->id > 0) {
             $msg = $deliver ? N_REF_MSG['deplaneDeliver'] : N_REF_MSG['deplane'];
             $this->notifyAllPlayers('pax', $msg, $args);
+        }
+
+        // Consume seat_x
+        if ($plane->seatX > 0) {
+            $plane->seatX--;
+            $this->DbQuery("UPDATE `plane` SET `seat_x` = {$plane->seatX} WHERE `player_id` = {$plane->id}");
+        }
+
+        // Notify UI about plane (except VIP Double)
+        if ($x->id > 0) {
             $planes = $this->getPlanesByIds([$plane->id]);
             $this->notifyAllPlayers('planes', '', [
                 'planes' => array_values($planes)
@@ -1938,7 +1958,7 @@ class NowBoarding extends Table
 
     private function getPlanesByIds($ids = []): array
     {
-        $sql = "SELECT p.*, p.seat + IF(p.temp_seat = -1, 1, 0) - ( SELECT COUNT(1) FROM `pax` x WHERE x.status = 'SEAT' AND x.player_id = p.player_id ) AS seat_remain, w.wallet, b.player_name FROM `plane` p JOIN `player` b ON (b.player_id = p.player_id) LEFT OUTER JOIN (SELECT `player_id`, GROUP_CONCAT(CONCAT(`pax_id`, '=', `cash`) ORDER BY `cash`, `pax_id`) AS `wallet` FROM `pax` WHERE `status` = 'CASH' AND `cash` > 0 GROUP BY `player_id`) w ON (w.player_id = p.player_id)";
+        $sql = "SELECT p.*, (SELECT COUNT(1) FROM `pax` x WHERE x.status = 'SEAT' AND x.player_id = p.player_id) AS pax, w.wallet, b.player_name FROM `plane` p JOIN `player` b ON (b.player_id = p.player_id) LEFT OUTER JOIN (SELECT `player_id`, GROUP_CONCAT(CONCAT(`pax_id`, '=', `cash`) ORDER BY `cash`, `pax_id`) AS `wallet` FROM `pax` WHERE `status` = 'CASH' AND `cash` > 0 GROUP BY `player_id`) w ON (w.player_id = p.player_id)";
         if (!empty($ids)) {
             $sql .= " WHERE p.player_id IN (" . join(',', $ids) . ")";
         }
@@ -2064,6 +2084,50 @@ class NowBoarding extends Table
         }
     }
 
+    private function addFlightPlan(NPlane $plane, string $location)
+    {
+        // Check table exists
+        if (!$this->getUniqueValueFromDB("SHOW TABLES LIKE 'plan'")) {
+            return;
+        }
+
+        $move = $this->getStat('moves', $plane->id);
+
+        // End current flight plan
+        $plan = $this->getObjectFromDB("SELECT * FROM `plan` WHERE `alliance` = '{$plane->alliances[0]}' AND `destination` IS NULL");
+        if ($plan != null) {
+            if ($plan['origin'] == $location) {
+                // return to same airport, continue current
+                return;
+            }
+            $optimal = intval($this->getUniqueValueFromDB("SELECT MIN(`optimal`) FROM `pax` WHERE `destination` = '$location' AND `origin` = '{$plan['origin']}'"));
+            $this->DbQuery("UPDATE `plan` SET `destination` = '$location', `destination_move` = $move, `optimal` = $optimal WHERE `plan_id` = {$plan['plan_id']}");
+        }
+
+        // Start new flight plan
+        $hr = round(7 + (16 * $this->getGameProgression() / 100));
+        $lower = intval($this->getUniqueValueFromDB("SELECT MAX(`min`) FROM `plan` WHERE `hr` = $hr"));
+        $min = random_int($lower, min($lower + 20, 59));
+        if (random_int(0, 2)) {
+            $min = floor($min / 10) * 10;
+        }
+        $this->DbQuery("INSERT INTO `plan` (`alliance`, `hr`, `min`, `origin`, `origin_move`) VALUES ('{$plane->alliances[0]}', $hr, $min, '$location', $move)");
+    }
+
+    private function getFlightPlans()
+    {
+        // Check table exists
+        if (!$this->getUniqueValueFromDB("SHOW TABLES LIKE 'plan'")) {
+            return;
+        }
+
+        return array_map(function ($plan) {
+            $time = sprintf('%02d:%02d', $plan['hr'], $plan['min']);
+            $moves = intval($plan['destination_move']) - intval($plan['origin_move']) - intval($plan['optimal']);
+            return [$plan['destination'], $plan['alliance'], intval($plan['plan_id']), $time, $moves];
+        }, $this->getObjectListFromDB("SELECT * FROM `plan` WHERE `destination` IS NOT NULL"));
+    }
+
     private function createPax(): void
     {
         $planes = $this->getPlanesByIds();
@@ -2102,8 +2166,10 @@ class NowBoarding extends Table
             'debt' => 0,
             'location' => '',
             'origin' => '',
+            'pax' => 0,
             'player_name' => '',
             'seat_remain' => 1,
+            'seat_x' => 0,
             'seat' => 1,
             'speed_remain' => 9,
             'speed' => 9,
@@ -2134,6 +2200,8 @@ class NowBoarding extends Table
                     break;
                 }
             }
+            // Create starting flight plan
+            $this->addFlightPlan($plane, $plane->alliances[0]);
         }
 
         // Create queued passengers in each hour
@@ -2337,6 +2405,9 @@ class NowBoarding extends Table
             $this->notifyAllPlayers('message', N_REF_MSG['endWin'], []);
         }
 
+        // Notify flight plans
+        $this->notifyAllPlayers('plans', '', ['plans' => $this->getFlightPlans()]);
+
         // Really end the game
         $this->gamestate->nextState('end');
     }
@@ -2426,10 +2497,8 @@ class NowBoarding extends Table
             $this->useTempSeat($plane, 0);
         }
         if ($plane->tempSpeed) {
-            $this->useTempSpeed($plane);
+            $this->useTempSpeed($plane, 0);
         }
-        $plane->tempSeat = 0;
-        $plane->tempSpeed = false;
         $this->notifyAllPlayers('planes', '', [
             'planes' => [$plane],
         ]);
@@ -2445,7 +2514,22 @@ class NowBoarding extends Table
 
     public function upgradeTableDb($fromVersion)
     {
-        $changes = [];
+        $changes = [
+            [2402101853, "ALTER TABLE `DBPREFIX_plane` ADD `seat_x` INT(2) NOT NULL DEFAULT '0'"],
+            [2402101853, "ALTER TABLE `DBPREFIX_plane_undo` ADD `seat_x` INT(2) NOT NULL DEFAULT '0'"],
+            [2402101853, "CREATE TABLE `plan` (
+    `plan_id` INT(3) NOT NULL AUTO_INCREMENT,
+    `alliance` VARCHAR(3) NOT NULL,
+    `destination` VARCHAR(3),
+    `destination_move` INT(3),
+    `hr` INT(2) NOT NULL,
+    `min` INT(2) NOT NULL,
+    `optimal` INT(3),
+    `origin` VARCHAR(3) NOT NULL,
+    `origin_move` INT(3) NOT NULL,
+    PRIMARY KEY (`plan_id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8"],
+        ];
         foreach ($changes as [$version, $sql]) {
             if ($fromVersion <= $version) {
                 $this->warn("upgradeTableDb: fromVersion=$fromVersion, change=[ $version, $sql ]");

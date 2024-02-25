@@ -9,13 +9,14 @@ class NPlane extends APP_GameClass implements JsonSerializable
     public ?string $location;
     public string $name;
     public ?string $origin;
+    public int $pax;
     public int $seat;
-    public int $moves;
     public int $seatRemain;
+    public int $seatX;
     public int $speed;
     public int $speedRemain;
     public int $tempSeat;
-    public bool $tempSpeed;
+    public int $tempSpeed;
     public array $wallet;
 
     public function __construct(array $dbrow)
@@ -26,12 +27,13 @@ class NPlane extends APP_GameClass implements JsonSerializable
         $this->location = $dbrow['location'];
         $this->name = $dbrow['player_name'];
         $this->origin = $dbrow['origin'];
+        $this->pax = intval($dbrow['pax']);
         $this->seat = intval($dbrow['seat']);
-        $this->seatRemain = intval($dbrow['seat_remain']);
+        $this->seatX = intval($dbrow['seat_x']);
         $this->speed = intval($dbrow['speed']);
         $this->speedRemain = intval($dbrow['speed_remain']);
         $this->tempSeat = intval($dbrow['temp_seat']);
-        $this->tempSpeed = boolval($dbrow['temp_speed']);
+        $this->tempSpeed = intval($dbrow['temp_speed']);
         $this->wallet = [];
         if (!empty($dbrow['wallet'])) {
             foreach (explode(',', $dbrow['wallet']) as $w) {
@@ -58,7 +60,7 @@ class NPlane extends APP_GameClass implements JsonSerializable
             'location' => $this->location,
             'origin' => $this->origin,
             'seat' => $this->seat,
-            'seatRemain' => $this->seatRemain,
+            'seatRemain' => $this->getSeatRemain(),
             'speed' => $this->speed,
             'speedRemain' => $this->speedRemain,
             'tempSeat' => $this->tempSeat,
@@ -75,5 +77,10 @@ class NPlane extends APP_GameClass implements JsonSerializable
     public function getCashRemain(): int
     {
         return $this->cash - $this->debt;
+    }
+
+    public function getSeatRemain(): int
+    {
+        return max(0, $this->seat + $this->seatX + ($this->tempSeat == 1 ? 1 : 0) - $this->pax);
     }
 }

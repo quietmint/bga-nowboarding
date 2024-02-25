@@ -304,8 +304,13 @@ html,
   display: inline-flex;
   line-height: 1;
   padding: 0 6px;
+  transition: opacity 200ms linear;
   vertical-align: middle;
   word-break: break-word;
+
+  body.no-animation & {
+    transition: none !important;
+  }
 
   &.complaint {
     background-color: $color-red-700;
@@ -314,6 +319,10 @@ html,
   &.cash {
     background-color: $color-lime-800;
     margin: 0 2px;
+  }
+
+  &.ghost {
+    opacity: 0.5;
   }
 
   .icon {

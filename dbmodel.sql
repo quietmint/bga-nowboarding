@@ -16,8 +16,8 @@ CREATE TABLE `pax` (
     `cash` INT(1) NOT NULL,
     `destination` VARCHAR(50) NOT NULL,
     `location` VARCHAR(50) DEFAULT NULL,
-    `moves` INT(3) NOT NULL DEFAULT '0',
-    `optimal` INT(3) NOT NULL,
+    `moves` INT(2) NOT NULL DEFAULT '0',
+    `optimal` INT(2) NOT NULL,
     `origin` VARCHAR(50) NOT NULL,
     `player_id` INT(10) DEFAULT NULL,
     `status` ENUM(
@@ -38,6 +38,19 @@ CREATE TABLE `pax` (
 
 CREATE TABLE `pax_undo` LIKE `pax`;
 
+CREATE TABLE `plan` (
+    `plan_id` INT(3) NOT NULL AUTO_INCREMENT,
+    `alliance` VARCHAR(3) NOT NULL,
+    `destination` VARCHAR(3),
+    `destination_move` INT(3),
+    `hr` INT(2) NOT NULL,
+    `min` INT(2) NOT NULL,
+    `optimal` INT(2),
+    `origin` VARCHAR(3) NOT NULL,
+    `origin_move` INT(3) NOT NULL,
+    PRIMARY KEY (`plan_id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8;
+
 CREATE TABLE `plane` (
     `player_id` INT(10) NOT NULL,
     `alliances` VARCHAR(50) NOT NULL DEFAULT '',
@@ -45,6 +58,7 @@ CREATE TABLE `plane` (
     `location` VARCHAR(50) DEFAULT NULL,
     `origin` VARCHAR(50) DEFAULT NULL,
     `seat` INT(2) NOT NULL DEFAULT '1',
+    `seat_x` INT(2) NOT NULL DEFAULT '0',
     `speed_remain` INT(2) NOT NULL DEFAULT '3',
     `speed` INT(2) NOT NULL DEFAULT '3',
     `temp_seat` TINYINT(1) NOT NULL DEFAULT '0',
