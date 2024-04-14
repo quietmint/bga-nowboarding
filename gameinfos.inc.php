@@ -11,23 +11,8 @@
  */
 
 $gameinfos = [
-
-    'custom_buy_button' => [
-        'url' => 'https://www.fowers.games/products/now-boarding',
-        'label' => 'Fowers Games',
-    ],
-
     // Name of the game in English (will serve as the basis for translation)
     'game_name' => "Now Boarding",
-
-    // Game designer (or game designers, separated by commas)
-    'designer' => 'Tim Fowers',
-
-    // Game artist (or game artists, separated by commas)
-    'artist' => 'Ryan Goldsberry',
-
-    // Year of FIRST publication of this game. Can be negative.
-    'year' => 2018,
 
     // Game publisher (use empty string if there is no publisher)
     'publisher' => 'Fowers Games',
@@ -90,18 +75,6 @@ $gameinfos = [
     // NB: the default will be the first language in this list spoken by the player, so you should list them by popularity/preference.
     'language_dependency' => false,
 
-    // Complexity of the game, from 0 (extremely simple) to 5 (extremely complex)
-    'complexity' => 3,
-
-    // Luck of the game, from 0 (absolutely no luck in this game) to 5 (totally luck driven)
-    'luck' => 2,
-
-    // Strategy of the game, from 0 (no strategy can be setup) to 5 (totally based on strategy)
-    'strategy' => 2,
-
-    // Diplomacy of the game, from 0 (no interaction in this game) to 5 (totally based on interaction and discussion between players)
-    'diplomacy' => 5,
-
     // Colors attributed to players
     'player_colors' => ["ff0000", "f07f16", "008000", "0000ff", "982fff"],
 
@@ -128,15 +101,6 @@ $gameinfos = [
         //  maximum possible value: unlimited
         //  minimum possible value: 740
         'max' => null
-    ],
-
-    // Game presentation
-    // Short game presentation text that will appear on the game description page, structured as an array of paragraphs.
-    // Each paragraph must be wrapped with totranslate() for translation and should not contain html (plain text without formatting).
-    // A good length for this text is between 100 and 150 words (about 6 to 9 lines on a standard display)
-    'presentation' => [
-        totranslate("Now Boarding is a co-operative, simultaneous-play game in which you work together to fly a fleet of airplanes. All players take actions at the same time in this chaotic and clever twist on pick-up-and-deliver."),
-        totranslate("Coordinate your efforts to transport passengers, improve your planes, and access new flight paths so you can deliver everyone to their destination by the end of the day. But watch out for stormy weather and flaring tempers! Will three passenger complaints will put your airline out of business, or will your team be a soaring success?"),
     ],
 
     //////// BGA SANDBOX ONLY PARAMETERS (DO NOT MODIFY)
