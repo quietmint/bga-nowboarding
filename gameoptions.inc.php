@@ -136,7 +136,6 @@ $game_options = [
         'values' => [
             0 => [
                 'name' => totranslate('Normal'),
-                'description' => totranslate('Choose to start with either 1 seat, 4 speed or 2 seats, 3 speed'),
             ],
             N_UPGRADE_SEAT => [
                 'name' => totranslate('Seat'),

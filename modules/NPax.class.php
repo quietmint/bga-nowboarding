@@ -103,7 +103,7 @@ class NPax extends APP_GameClass implements JsonSerializable
         return $args;
     }
 
-    public function resetAnger($optionAnger): void
+    public function resetAnger(?int $optionAnger): void
     {
         if ($this->vip == 'GRUMPY') {
             $this->anger = 1;
