@@ -158,6 +158,24 @@ $game_options = [
             ],
         ],
     ],
+
+    N_OPTION_ANGER => [
+        'level' => 'additional',
+        'name' => totranslate('Anger'),
+        'default' => 0,
+        'values' => [
+            0 => [
+                'name' => totranslate('Normal'),
+            ],
+            1 => [
+                'name' => totranslate('Increased'),
+                'description' => totranslate('Passengers start with 1 anger [unofficial, harder]'),
+                'tmdisplay' => totranslate('Anger Increased'),
+                'nobeginner' => true,
+                'beta' => true,
+            ],
+        ],
+    ]
 ];
 
 $game_preferences = [

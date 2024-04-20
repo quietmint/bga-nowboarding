@@ -39,6 +39,7 @@ define('N_OPTION_UPGRADE', 112);
 define('N_UPGRADE_SEAT', 2);
 define('N_UPGRADE_SPEED', 3);
 define('N_UPGRADE_BOTH', 4);
+define('N_OPTION_ANGER', 113);
 
 // Game preferences
 define('N_PREF_ANIMATION', 150);

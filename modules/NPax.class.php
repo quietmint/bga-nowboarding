@@ -4,7 +4,6 @@ require_once 'constants.inc.php';
 
 class NPax extends APP_GameClass implements JsonSerializable
 {
-
     public int $id;
     public int $anger;
     public int $cash;
@@ -104,12 +103,15 @@ class NPax extends APP_GameClass implements JsonSerializable
         return $args;
     }
 
-    public function resetAnger(): void
+    public function resetAnger($optionAnger): void
     {
         if ($this->vip == 'GRUMPY') {
             $this->anger = 1;
         } else if ($this->vip != 'IMPATIENT') {
             $this->anger = 0;
+        }
+        if ($optionAnger == 1) {
+            $this->anger++;
         }
     }
 }

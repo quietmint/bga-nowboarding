@@ -661,8 +661,8 @@ class NowBoarding extends Table
                     $this->DbQuery("INSERT INTO `pax` (`pax_id`, `cash`, `destination`, `location`, `optimal`, `origin`, `status`, `vip`) VALUES ($doubleId, 0, '{$x->destination}', '{$x->location}', {$x->optimal}, '{$x->origin}', '{$x->status}', '{$x->vip}')");
                 } else if ($x->vip == 'GRUMPY') {
                     // VIP Grumpy
-                    // Starts at 1 anger
-                    $x->anger = 1;
+                    // Starts with extra anger
+                    $x->anger++;
                     $this->DbQuery("UPDATE `pax` SET `anger` = {$x->anger} WHERE `pax_id` = {$x->id}");
                 } else if ($x->vip == 'CREW' || $x->vip == 'DISCOUNT' || $x->vip == 'RETURN') {
                     // VIP Crew/Discount/Return
@@ -1485,7 +1485,7 @@ class NowBoarding extends Table
 
         // Erase anger if deplaned at a new location
         if ($x->location != $plane->location) {
-            $x->resetAnger();
+            $x->resetAnger($this->getGlobal(N_OPTION_ANGER));
         }
         $x->location = $plane->location;
 
@@ -2192,12 +2192,13 @@ class NowBoarding extends Table
         }
 
         // Create starting passenger in each airport
+        $optionAnger = $this->getGlobal(N_OPTION_ANGER);
         foreach ($planes as $plane) {
             foreach ($pax as $k => $x) {
                 [$origin, $destination, $cash] = $x;
                 $opt = $optimal[$origin][$destination];
                 if ($origin == $plane->alliances[0]) {
-                    $sql = "INSERT INTO `pax` (`cash`, `destination`, `location`, `optimal`, `origin`, `status`) VALUES ($cash, '$destination', '$origin', $opt, '$origin', 'PORT')";
+                    $sql = "INSERT INTO `pax` (`anger`, `cash`, `destination`, `location`, `optimal`, `origin`, `status`) VALUES ($optionAnger, $cash, '$destination', '$origin', $opt, '$origin', 'PORT')";
                     $this->DbQuery($sql);
                     unset($pax[$k]);
                     $startingPax[] = $x;
@@ -2215,7 +2216,7 @@ class NowBoarding extends Table
             foreach ($hourPax as $x) {
                 [$origin, $destination, $cash] = $x;
                 $opt = $optimal[$origin][$destination];
-                $sql = "INSERT INTO `pax` (`cash`, `destination`, `optimal`, `origin`, `status`) VALUES ($cash, '$destination', $opt, '$origin', '$status')";
+                $sql = "INSERT INTO `pax` (`anger`, `cash`, `destination`, `optimal`, `origin`, `status`) VALUES ($optionAnger, $cash, '$destination', $opt, '$origin', '$status')";
                 $this->DbQuery($sql);
             }
         }
@@ -2478,7 +2479,7 @@ class NowBoarding extends Table
         $pax = $this->getPaxByStatus('SEAT', null, $playerId);
         if (!empty($pax)) {
             foreach ($pax as &$x) {
-                $x->resetAnger();
+                $x->resetAnger($this->getGlobal(N_OPTION_ANGER));
                 $x->playerId = null;
                 $x->status = 'PORT';
                 $this->DbQuery("UPDATE `pax` SET `anger` = {$x->anger}, `player_id` = NULL, `status` = '{$x->status}' WHERE `pax_id` = {$x->id}");
