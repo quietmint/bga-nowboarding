@@ -3,6 +3,10 @@
 #nbroot {
   display: flex;
 
+  @media (max-width: 1350px) {
+    flex-wrap: wrap;
+  }
+
   .mobile_version & {
     display: block;
   }
@@ -13,7 +17,7 @@
   border: 1px solid black;
   display: flex;
   flex-direction: column;
-  flex: 1 0 200px;
+  flex: 1 0 145px;
   font-size: 15px;
   overflow: hidden;
 
