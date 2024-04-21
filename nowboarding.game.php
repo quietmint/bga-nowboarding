@@ -1486,7 +1486,7 @@ class NowBoarding extends Table
 
         // Erase anger if deplaned at a new location
         if ($x->location != $plane->location) {
-            $x->resetAnger($this->getGlobal(N_OPTION_ANGER));
+            $x->resetAnger($this->getGlobal(N_OPTION_ANGER, 0));
         }
         $x->location = $plane->location;
 
@@ -2481,7 +2481,7 @@ class NowBoarding extends Table
         $pax = $this->getPaxByStatus('SEAT', null, $playerId);
         if (!empty($pax)) {
             foreach ($pax as &$x) {
-                $x->resetAnger($this->getGlobal(N_OPTION_ANGER));
+                $x->resetAnger($this->getGlobal(N_OPTION_ANGER, 0));
                 $x->playerId = null;
                 $x->status = 'PORT';
                 $this->DbQuery("UPDATE `pax` SET `anger` = {$x->anger}, `player_id` = NULL, `status` = '{$x->status}' WHERE `pax_id` = {$x->id}");
