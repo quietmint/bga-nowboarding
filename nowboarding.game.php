@@ -658,7 +658,7 @@ class NowBoarding extends Table
                     // VIP Double
                     // Create the fugitive
                     $doubleId = $x->id * -1;
-                    $optionAnger = $this->getGlobal(N_OPTION_ANGER) || 0;
+                    $optionAnger = $this->getGlobal(N_OPTION_ANGER, 0);
                     $this->DbQuery("INSERT INTO `pax` (`pax_id`, `anger`, `cash`, `destination`, `location`, `optimal`, `origin`, `status`, `vip`) VALUES ($doubleId, $optionAnger, 0, '{$x->destination}', '{$x->location}', {$x->optimal}, '{$x->origin}', '{$x->status}', '{$x->vip}')");
                 } else if ($x->vip == 'GRUMPY') {
                     // VIP Grumpy
@@ -1536,7 +1536,7 @@ class NowBoarding extends Table
             // VIP Return
             // Create the round trip
             if ($vipInfo && $vipInfo['key'] == 'RETURN' && $x->cash == 0) {
-                $optionAnger = $this->getGlobal(N_OPTION_ANGER) || 0;
+                $optionAnger = $this->getGlobal(N_OPTION_ANGER, 0);
                 $cash = N_REF_FARE[$x->destination][$x->origin] * 2;
                 $this->DbQuery("INSERT INTO `pax` (`anger`, `cash`, `destination`, `location`, `optimal`, `origin`, `status`, `vip`) VALUES ($optionAnger, $cash, '{$x->origin}', '{$x->location}', {$x->optimal}, '{$x->destination}', 'PORT', '{$x->vip}')");
                 $newPax = $this->getPaxById($this->DbGetLastId());
@@ -1630,10 +1630,10 @@ class NowBoarding extends Table
         return $slice;
     }
 
-    private function getGlobal(int $id): ?int
+    private function getGlobal(int $id, ?int $default = null): ?int
     {
         $value = @$this->gamestate->table_globals[$id];
-        return $value == null ? null : intval($value);
+        return $value == null ? $default : intval($value);
     }
 
     private function awakenSnoozers(int $playerId, bool $deadlock = false): void
@@ -2194,7 +2194,7 @@ class NowBoarding extends Table
         }
 
         // Create starting passenger in each airport
-        $optionAnger = $this->getGlobal(N_OPTION_ANGER) || 0;
+        $optionAnger = $this->getGlobal(N_OPTION_ANGER, 0);
         foreach ($planes as $plane) {
             foreach ($pax as $k => $x) {
                 [$origin, $destination, $cash] = $x;
