@@ -216,30 +216,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       this.notifqueue.setSynchronous("weather", 2000);
 
       // Setup preferences
-      this.setupPrefs();
-    },
-
-    setupPrefs() {
-      // Extract the ID and value from the UI control
-      const _this = this;
-      function onchange(e) {
-        const match = e.target.id.match(/^preference_[cf]ontrol_(\d+)$/);
-        if (!match) {
-          return;
-        }
-        const id = +match[1];
-        const value = +e.target.value;
-        _this.prefs[id].value = value;
-        _this.onPrefChange(id, value);
-      }
-
-      // Call onPrefChange() when any value changes
-      dojo.query(".preference_control").connect("onchange", onchange);
-
-      // Call onPrefChange() now
-      dojo.forEach(dojo.query("#ingame_menu_content .preference_control"), function (el) {
-        onchange({ target: el });
-      });
+      this.onGameUserPreferenceChanged(150, this.getGameUserPreference(150));
     },
 
     // ----------------------------------------------------------------------
@@ -809,7 +786,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       }
     },
 
-    onPrefChange(id, value) {
+    onGameUserPreferenceChanged(id, value) {
       console.log("Preference changed", id, value);
       if (id == 150) {
         document.body.classList.toggle("no-animation", value == 2);
