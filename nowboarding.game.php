@@ -1804,6 +1804,10 @@ class NowBoarding extends Table
         if ($finale) {
             $leftover = (2 - $this->countComplaint()) * 2 + 1;
             $remain = $this->countPaxByStatus(['PORT', 'SEAT']);
+            if ($remain == 0) {
+                // Skip the final round if no passengers remain
+                throw new NGameOverException();
+            }
             $hourInfo['countToWin'] = max($remain - $leftover, 0);
             $this->setVar('countToWin', $hourInfo['countToWin']);
             $this->notifyAllPlayers('hour', N_REF_MSG['hourFinale'], $hourInfo);
@@ -2605,6 +2609,5 @@ class NowBoarding extends Table
         foreach ($sql as $q) {
             $this->DbQuery($q);
         }
-        $this->reloadPlayersBasicInfos();
     }
 }
