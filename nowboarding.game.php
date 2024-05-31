@@ -2576,39 +2576,27 @@ class NowBoarding extends Table
     ////////// Production bug report handler
     //////////
 
-    public function loadBug($reportId): void
+    public function loadBugReportSQL(int $reportId, array $studioPlayers): void
     {
-        $db = explode('_', $this->getUniqueValueFromDB("SELECT SUBSTRING_INDEX(DATABASE(), '_', -2)"));
-        $game = $db[0];
-        $tableId = $db[1];
-        $this->notifyAllPlayers('loadBug', "Trying to load <a href='https://boardgamearena.com/bug?id=$reportId' target='_blank'>bug report $reportId</a>", [
-            'urls' => [
-                "https://studio.boardgamearena.com/admin/studio/getSavedGameStateFromProduction.html?game=$game&report_id=$reportId&table_id=$tableId",
-                "https://studio.boardgamearena.com/table/table/loadSaveState.html?table=$tableId&state=1",
-                "https://studio.boardgamearena.com/1/$game/$game/loadBugSQL.html?table=$tableId&report_id=$reportId",
-                "https://studio.boardgamearena.com/admin/studio/clearGameserverPhpCache.html?game=$game",
-            ]
-        ]);
-    }
-
-    public function loadBugSQL($reportId): void
-    {
-        $studioPlayer = $this->getCurrentPlayerId();
-        $playerIds = $this->getObjectListFromDb("SELECT player_id FROM player", true);
-
+        $prodPlayers = $this->getObjectListFromDb("SELECT `player_id` FROM `player`", true);
+        $prodCount = count($prodPlayers);
+        $studioCount = count($studioPlayers);
+        if ($prodCount != $studioCount) {
+            throw new BgaVisibleSystemException("Incorrect player count (bug report has $prodCount players, studio table has $studioCount players)");
+        }
         $sql = [
-            "UPDATE global SET global_value=2 WHERE global_id=1 AND global_value=99"
+            "UPDATE `global` SET `global_value` = 2 WHERE `global_id` = 1 AND `global_value` = 99"
         ];
-        foreach ($playerIds as $pId) {
-            $sql[] = "UPDATE global SET global_value=$studioPlayer WHERE global_value=$pId";
-            $sql[] = "UPDATE pax SET player_id=$studioPlayer WHERE player_id=$pId";
-            $sql[] = "UPDATE pax_undo SET player_id=$studioPlayer WHERE player_id=$pId";
-            $sql[] = "UPDATE plane SET player_id=$studioPlayer WHERE player_id=$pId";
-            $sql[] = "UPDATE plane_undo SET player_id=$studioPlayer WHERE player_id=$pId";
-            $sql[] = "UPDATE player SET player_id=$studioPlayer WHERE player_id=$pId";
-            $sql[] = "UPDATE stats SET stats_player_id=$studioPlayer WHERE stats_player_id=$pId";
-            $sql[] = "UPDATE stats_undo SET stats_player_id=$studioPlayer WHERE stats_player_id=$pId";
-            $studioPlayer++;
+        foreach ($prodPlayers as $index => $prodId) {
+            $studioId = $studioPlayers[$index];
+            $sql[] = "UPDATE `global` SET `global_value` = $studioId WHERE `global_value` = $prodId";
+            $sql[] = "UPDATE `player` SET `player_id` = $studioId WHERE `player_id` = $prodId";
+            $sql[] = "UPDATE `pax` SET `player_id` = $studioId WHERE `player_id` = $prodId";
+            $sql[] = "UPDATE `pax_undo` SET `player_id` = $studioId WHERE `player_id` = $prodId";
+            $sql[] = "UPDATE `plane` SET `player_id` = $studioId WHERE `player_id` = $prodId";
+            $sql[] = "UPDATE `plane_undo` SET `player_id` = $studioId WHERE `player_id` = $prodId";
+            $sql[] = "UPDATE `stats` SET `stats_player_id` = $studioId WHERE `stats_player_id` = $prodId";
+            $sql[] = "UPDATE `stats_undo` SET `stats_player_id` = $studioId WHERE `stats_player_id` = $prodId";
         }
         $msg = "<b>Loaded <a href='https://boardgamearena.com/bug?id=$reportId' target='_blank'>bug report $reportId</a></b><hr><ul><li>" . implode(';</li><li>', $sql) . ';</li></ul>';
         $this->warn($msg);

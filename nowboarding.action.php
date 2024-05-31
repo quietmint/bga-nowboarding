@@ -30,15 +30,6 @@ class action_nowboarding extends APP_GameAction
     $this->game->checkVersion($clientVersion);
   }
 
-  // Production bug report handler
-  public function loadBugSQL()
-  {
-    $this->setAjaxMode(false);
-    $reportId = (int) $this->getArg('report_id', AT_int, true);
-    $this->game->loadBugSQL($reportId);
-    $this->ajaxResponse();
-  }
-
   public function jsError()
   {
     $this->setAjaxMode(false);

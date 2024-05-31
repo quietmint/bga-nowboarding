@@ -217,28 +217,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
       // Setup preferences
       this.setupPrefs();
-
-      // Production bug report handler
-      dojo.subscribe("loadBug", this, function loadBug(n) {
-        function fetchNextUrl() {
-          const url = n.args.urls.shift();
-          console.log("Fetching URL", url);
-          dojo.xhrGet({
-            url: url + "&request_token=" + bgaConfig.requestToken,
-            load(success) {
-              console.log("Success for URL", url, success);
-              if (n.args.urls.length > 0) {
-                fetchNextUrl();
-              } else {
-                console.log("Done, reloading page");
-                window.location.reload();
-              }
-            },
-          });
-        }
-        console.log("Notif: load bug", n.args);
-        fetchNextUrl();
-      });
     },
 
     setupPrefs() {
