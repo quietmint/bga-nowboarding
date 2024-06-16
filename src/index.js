@@ -247,7 +247,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
           // Format argument with HTML
           if (k == "1" || k == "alliance") {
-            sub[k] = `<span class="nbtag alliance-${sub[k]}"><i class="icon logo-${sub[k]}"></i> ${sub[k]}</span>`;
+            sub[k] = `<span class="nbtag alliance alliance-${sub[k]}"><i class="icon logo logo-${sub[k]}"></i> ${sub[k]}</span>`;
           } else if (k == "cash") {
             sub[k] = `<span class="nbtag cash"><i class="icon cash"></i> ${sub[k]}</span>`;
           } else if (k == "complaint") {
@@ -362,7 +362,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       isMobile = document.body.clientWidth < 1180;
       document.body.classList.toggle("desktop_version", !isMobile);
       document.body.classList.toggle("mobile_version", isMobile);
-      console.info("📱 isMobile", isMobile, "clientWidth", document.body.clientWidth, "screenWidth", window.screen.width);
+      console.log("📱 isMobile", isMobile, "clientWidth", document.body.clientWidth, "screenWidth", window.screen.width);
     },
 
     updateViewport(chatVisible) {
@@ -420,7 +420,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
             time: notif.time * 1000,
           });
         } else {
-          console.warn("ignore by next_log_id", JSON.stringify(notif, undefined, 2));
+          console.log("Chat ignored by next_log_id", JSON.stringify(notif, undefined, 2));
         }
       }
       return result;
@@ -572,7 +572,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       }
       console.log("onEnteringState", stateName, args);
       if (args.updateGameProgression) {
-        console.warn("updateGameProgression", args.updateGameProgression);
         this.fillEl.style.width = args.updateGameProgression + "%";
       }
 
@@ -1116,7 +1115,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       let specialHtml = "";
       if (alliance) {
         const specialTxt = this.format_string_recursive(_("Special Route: Restricted to alliance ${specialRoute}"), { specialRoute: alliance });
-        specialHtml = `<div class="specialtag alliance-${alliance}" title="${specialTxt}"><i class="icon logo-${alliance}"></i></div>`;
+        specialHtml = `<div class="specialtag alliance-${alliance}" title="${specialTxt}"><i class="icon logo logo-${alliance}"></i></div>`;
       }
       this.mapEl.insertAdjacentHTML("beforeend", `<div id="weather-${location}" class="weather node node-${location}" title="${txt}" style="opacity: 0"><i class="icon weather-${token}"></i>${specialHtml}</div>`);
       const el = document.getElementById(`weather-${location}`);
@@ -1191,7 +1190,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       if (alliancesEl.childNodes.length != plane.alliances.length) {
         alliancesEl.textContent = "";
         for (const alliance of plane.alliances) {
-          alliancesEl.insertAdjacentHTML("beforeend", `<div class="nbtag alliance alliance-${alliance}" data-alliance="${alliance}"><i class="icon logo-${alliance}"></i> ${alliance}</div>`);
+          alliancesEl.insertAdjacentHTML("beforeend", `<div class="nbtag alliance alliance-${alliance}" data-alliance="${alliance}"><i class="icon logo logo-${alliance}"></i> ${alliance}</div>`);
         }
         const panelEl = document.getElementById(`overall_player_board_${plane.id}`);
         panelEl.style.background = this.getGradient(plane.alliances, "panel");
@@ -1596,7 +1595,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       console.log(`❌ Delete passenger ${pax.id} (${pax.status})`);
       const paxEl = document.getElementById(`pax-${pax.id}`);
       if (!paxEl) {
-        console.warn("Delete a passenger which did not exist???");
         return;
       }
       paxEl.parentElement.classList.add("is-empty");
@@ -1645,8 +1643,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         let icon = "";
         let txt = "";
         if (buy.type == "ALLIANCE") {
-          cssClass = `alliance-${buy.alliance}`;
-          icon = `<div class="icon alliance logo-${buy.alliance}"></div>`;
+          cssClass = `alliance alliance-${buy.alliance}`;
+          icon = `<div class="icon logo logo-${buy.alliance}"></div>`;
           txt = buy.alliance;
         } else if (buy.type == "SEAT") {
           icon = '<div class="icon seat"></div>';
@@ -1762,7 +1760,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         let specialHtml = "";
         if (move.alliance) {
           const specialTxt = this.format_string_recursive(_("Special Route: Restricted to alliance ${specialRoute}"), { specialRoute: move.alliance });
-          specialHtml = `<div class="specialtag alliance-${move.alliance}" title="${specialTxt}"><i class="icon logo-${move.alliance}"></i></div>`;
+          specialHtml = `<div class="specialtag alliance-${move.alliance}" title="${specialTxt}"><i class="icon logo logo-${move.alliance}"></i></div>`;
           const weatherEl = document.getElementById(`weather-${move.location}`);
           if (weatherEl) {
             weatherEl.classList.add("hidespecial");
@@ -1854,7 +1852,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
         const html = `<tr>
   <td>${city}</td>
-  <td><span class="nbtag alliance-${alliance}"><i class="icon logo-${alliance}"></i> ${id}</span></td>
+  <td><span class="nbtag alliance alliance-${alliance}"><i class="icon logo logo-${alliance}"></i> ${id}</span></td>
   <td>${time}</td>
   <td class="${statusClass}">${status}</td>
 </tr>`;
