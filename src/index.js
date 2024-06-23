@@ -1165,7 +1165,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       let boardEl = document.getElementById(`board-${plane.id}`);
       if (boardEl == null) {
         const scoreEl = document.getElementById(`player_score_${plane.id}`);
-        scoreEl.insertAdjacentHTML("beforebegin", `<i id="gps-${plane.id}" class="icon gps" title="${_("Current Position")}"></i>`);
+        scoreEl.insertAdjacentHTML("beforebegin", `<span id="gps-${plane.id}" class="gps" title="${_("Current Position")}"><i class="icon gps"></i> <span id="gps-text-${plane.id}" class="gps-text">${plane.gps || ""}</span></span>`);
         const gpsEl = document.getElementById(`gps-${plane.id}`);
         gpsEl.addEventListener("click", (ev) => this.onEnterGps(plane.id));
 
@@ -1249,6 +1249,10 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       if (tempSeatEl) {
         tempSeatEl.classList.toggle("ghost", plane.tempSeat == -1);
       }
+
+      // Update GPS
+      const gpsTextEl = document.getElementById(`gps-text-${plane.id}`);
+      gpsTextEl.textContent = plane.gps || "";
     },
 
     onEnterGps(planeId) {
@@ -1881,7 +1885,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
       let plansEl = document.getElementById("nbplans");
       if (!plansEl) {
-        const resultEl = document.getElementById("pagesection_gameresult"); 
+        const resultEl = document.getElementById("pagesection_gameresult");
         resultEl.insertAdjacentHTML("afterbegin", `<div id='nbdepartures'>${_("Departures")}</div><div id='nbplans'></div>`);
         plansEl = document.getElementById("nbplans");
       }

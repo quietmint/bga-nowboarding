@@ -204,6 +204,11 @@ html,
 
   .gps {
     cursor: pointer;
+    text-shadow: 1px 1px black;
+  }
+
+  .gps-text {
+    font-size: 85%;
   }
 
   .timeToThink {

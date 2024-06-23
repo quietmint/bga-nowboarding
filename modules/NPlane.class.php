@@ -57,6 +57,7 @@ class NPlane extends APP_GameClass implements JsonSerializable
             'cash' => $this->cash,
             'cashRemain' => $this->getCashRemain(),
             'debt' => $this->debt,
+            'gps' => $this->getGps(),
             'location' => $this->location,
             'origin' => $this->origin,
             'seat' => $this->seat,
@@ -77,6 +78,21 @@ class NPlane extends APP_GameClass implements JsonSerializable
     public function getCashRemain(): int
     {
         return $this->cash - $this->debt;
+    }
+
+    public function getGps(): ?string
+    {
+        $len = strlen($this->location);
+        if ($len == 3) {
+            return $this->location;
+        } else if ($len >= 6) {
+            $a = substr($this->location, 0, 3);
+            $b = substr($this->location, 3, 3);
+            $from = min($a, $b);
+            $to = max($a, $b);
+            return "$from-$to";
+        }
+        return null;
     }
 
     public function getSeatRemain(): int
