@@ -1,4 +1,4 @@
-@use "colors" as *;
+@use "material-colors" as *;
 
 #nbroot {
   display: flex;
@@ -45,7 +45,7 @@
 
   .chatbarbelowinput {
     align-items: center;
-    background: $color-neutral-300;
+    background: $color-grey-300;
     display: flex;
     justify-content: space-around;
     padding: 5px;
@@ -74,7 +74,7 @@
 }
 
 #spectatorbox {
-  background: $color-neutral-700;
+  background: $color-blue-grey-800;
   border-radius: 0;
   box-shadow: none;
   margin: 0;
@@ -82,7 +82,7 @@
 }
 
 #nbchatscroll {
-  background: $color-slate-600;
+  background: $color-blue-grey-700;
   color: white;
   display: flex;
   flex-direction: column;
@@ -110,7 +110,7 @@
 }
 
 .nbchatmsg {
-  background: $color-neutral-700;
+  background: $color-blue-grey-800;
   border-radius: 4px;
   display: inline-block;
   padding: 4px 8px;

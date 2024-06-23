@@ -1,4 +1,4 @@
-@use "colors" as *;
+@use "material-colors" as *;
 
 #nbdepartures {
   color: white;
@@ -37,16 +37,16 @@
   }
 
   .fast {
-    background: $color-lime-600;
+    background: $color-light-green-600;
     font-weight: bold;
   }
 
   .slow {
-    background: $color-red-500;
+    background: $color-red-600;
     font-weight: bold;
   }
 
   tr:nth-child(odd) {
-    background: $color-sky-800;
+    background: $color-light-blue-900;
   }
 }

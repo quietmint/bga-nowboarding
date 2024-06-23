@@ -46,11 +46,11 @@ define('N_PREF_ANIMATION', 150);
 
 // Reference lookups
 define('N_REF_ALLIANCE_COLOR', [
-    'ATL' => '16a34a', // green
-    'DFW' => '7e22ce', // purple
-    'LAX' => 'd97706', // orange
-    'ORD' => 'b91c1c', // red
-    'SEA' => '1d4ed8', // blue
+    'ATL' => '43a047', // green-600
+    'DFW' => '8e24aa', // purple-600
+    'LAX' => 'f9a825', // yellow-800
+    'ORD' => 'd32f2f', // red-700
+    'SEA' => '1976d2', // blue-700
 ]);
 
 define('N_REF_HOUR', [

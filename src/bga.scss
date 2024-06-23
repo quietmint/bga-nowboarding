@@ -1,4 +1,4 @@
-@use "colors" as *;
+@use "material-colors" as *;
 
 html {
   text-size-adjust: none;
@@ -29,7 +29,7 @@ html,
 }
 
 #nbcountdown {
-  color: $color-neutral-400;
+  color: $color-grey-500;
   font-size: 24px;
   left: 5px;
   line-height: 32px;
@@ -47,7 +47,7 @@ html,
 }
 
 #nbmsg {
-  border-top: 1px solid $color-neutral-300;
+  border-top: 1px solid $color-grey-400;
   font-size: 85%;
   font-weight: normal;
   line-height: 1.8em;
@@ -87,7 +87,7 @@ html,
 }
 
 .buybutton {
-  background-color: $color-neutral-700;
+  background-color: $color-grey-800;
   color: white !important;
   max-width: 6.5em;
   white-space: normal;
@@ -100,7 +100,7 @@ html,
 }
 
 .paybutton {
-  background-color: $color-lime-800;
+  background-color: $color-light-green-900;
   color: white !important;
 
   &.ghostbutton {
@@ -110,8 +110,8 @@ html,
 
 #nbledger {
   --mask: conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top/16px 51% repeat-x, conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom/16px 51% repeat-x;
-  background-color: $color-neutral-200;
-  color: $color-neutral-700;
+  background-color: $color-grey-300;
+  color: $color-grey-800;
   font: 14px/1.25 Consolas, monospace;
   margin: 10px;
   mask: var(--mask);
@@ -132,7 +132,7 @@ html,
   }
 
   .lsubtotal {
-    border-top: 3px double $color-neutral-600;
+    border-top: 3px double $color-grey-700;
     font-weight: bold;
   }
 
@@ -186,7 +186,7 @@ html,
 }
 
 .player-board {
-  background-color: $color-neutral-600;
+  background-color: $color-grey-700;
   color: white;
 
   .player-name a {
@@ -223,7 +223,7 @@ html,
 .roundedbox .roundedbox_bottomleft,
 .roundedbox .roundedbox_bottommain,
 .roundedbox .roundedbox_bottomright {
-  background-color: $color-neutral-600;
+  background-color: $color-grey-700;
 }
 
 .mobile_version {
@@ -302,7 +302,7 @@ html,
 
 .nbtag {
   align-items: center;
-  background-color: $color-neutral-700;
+  background-color: $color-grey-800;
   border-radius: 4px;
   box-shadow: 2px 2px rgb(0 0 0 / 0.5);
   color: white;
@@ -322,7 +322,7 @@ html,
   }
 
   &.cash {
-    background-color: $color-lime-800;
+    background-color: $color-light-green-900;
     margin: 0 2px;
   }
 
@@ -372,7 +372,7 @@ html,
 #nbcommon {
   align-content: space-evenly;
   align-items: flex-end;
-  background-color: $color-neutral-600;
+  background-color: $color-grey-700;
   border-radius: 8px 0 0 8px;
   color: white;
   display: flex;
@@ -410,12 +410,12 @@ html,
 
 #nbprogress {
   background: white;
-  border-bottom: 1px solid $color-neutral-200;
+  border-bottom: 1px solid $color-grey-300;
   height: 6px;
 }
 
 #nbfill {
-  background: $color-neutral-700;
+  background: $color-grey-800;
   height: 100%;
   transition: width 1s ease-out;
   width: 0;
@@ -455,17 +455,24 @@ html,
   text-shadow: 1px 1px black !important;
 
   .playername {
-    color: white !important;
+    color: inherit !important;
   }
 
   .msgtime {
-    color: $color-neutral-300 !important;
+    color: inherit !important;
+    opacity: 0.8;
   }
 
   a {
     color: inherit !important;
     text-decoration: underline;
   }
+}
+
+.nbchatmsg.alliance-LAX,
+.roundedboxinner.alliance-LAX {
+  color: $color-brown-900 !important;
+  text-shadow: 1px 1px $color-yellow-a700 !important;
 }
 
 /* Wiki */

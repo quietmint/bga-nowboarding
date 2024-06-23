@@ -1,9 +1,9 @@
-@use "colors" as *;
+@use "material-colors" as *;
 
 html {
   --alliance-ATL: #{$color-green-600};
-  --alliance-DFW: #{$color-purple-700};
-  --alliance-LAX: #{$color-amber-500};
+  --alliance-DFW: #{$color-purple-600};
+  --alliance-LAX: #{$color-yellow-800};
   --alliance-ORD: #{$color-red-700};
   --alliance-SEA: #{$color-blue-700};
 }
@@ -13,71 +13,71 @@ html {
 }
 
 .alliance-ATL {
-  background-color: $color-green-600 !important;
+  background-color: var(--alliance-ATL) !important;
   color: white !important;
 }
 
 .alliance-DFW {
-  background-color: $color-purple-700 !important;
+  background-color: var(--alliance-DFW) !important;
   color: white !important;
 }
 
 .alliance-LAX {
-  background-color: $color-amber-500 !important;
+  background-color: var(--alliance-LAX) !important;
   color: white !important;
 }
 
 .alliance-ORD {
-  background-color: $color-red-700 !important;
+  background-color: var(--alliance-ORD) !important;
   color: white !important;
 }
 
 .alliance-SEA {
-  background-color: $color-blue-700 !important;
+  background-color: var(--alliance-SEA) !important;
   color: white !important;
 }
 
 .gradient-ATL {
-  background: linear-gradient(-30deg, $color-green-800, $color-green-600);
+  background: linear-gradient(-30deg, $color-green-900, var(--alliance-ATL));
   color: white;
 }
 
 .gradient-DFW {
-  background: linear-gradient(-30deg, $color-purple-900, $color-purple-700);
+  background: linear-gradient(-30deg, $color-purple-900, var(--alliance-DFW));
   color: white;
 }
 
 .gradient-LAX {
-  background: linear-gradient(-30deg, $color-amber-600, $color-amber-400);
+  background: linear-gradient(-30deg, $color-yellow-900, var(--alliance-LAX));
   color: white;
 }
 
 .gradient-ORD {
-  background: linear-gradient(-30deg, $color-red-900, $color-red-700);
+  background: linear-gradient(-30deg, $color-red-900, var(--alliance-ORD));
   color: white;
 }
 
 .gradient-SEA {
-  background: linear-gradient(-30deg, $color-blue-900, $color-blue-700);
+  background: linear-gradient(-30deg, $color-blue-900, var(--alliance-SEA));
   color: white;
 }
 
 .panel-ATL {
-  background-color: $color-green-600;
+  background-color: var(--alliance-ATL);
 }
 
 .panel-DFW {
-  background-color: $color-purple-700;
+  background-color: var(--alliance-DFW);
 }
 
 .panel-LAX {
-  background-color: $color-amber-500;
+  background-color: var(--alliance-LAX);
 }
 
 .panel-ORD {
-  background-color: $color-red-700;
+  background-color: var(--alliance-ORD);
 }
 
 .panel-SEA {
-  background-color: $color-blue-700;
+  background-color: var(--alliance-SEA);
 }

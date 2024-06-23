@@ -1,4 +1,4 @@
-@use "colors" as *;
+@use "material-colors" as *;
 @use "sass:color";
 
 .manifests {
@@ -182,8 +182,8 @@
 }
 
 .pax {
-  border-color: $color-neutral-700;
-  color: $color-neutral-700;
+  border-color: $color-grey-800;
+  color: $color-grey-800;
   cursor: pointer;
   display: grid;
   font: 13px/1 Consolas, monospace;
@@ -204,7 +204,7 @@
 }
 
 .pax .anger {
-  background: $color-neutral-700;
+  background: $color-grey-800;
   border-color: inherit;
   border-style: solid;
   border-width: 2px;
@@ -220,17 +220,17 @@
 
 .pax .anger.anger-1,
 .nbtag.anger-1 {
-  background-color: $color-lime-600;
+  background-color: $color-light-green-600;
 }
 
 .pax .anger.anger-2,
 .nbtag.anger-2 {
-  background-color: $color-amber-500;
+  background-color: $color-amber-600;
 }
 
 .pax .anger.anger-3,
 .nbtag.anger-3 {
-  background-color: $color-red-500;
+  background-color: $color-red-600;
 }
 
 .pax .anger .icon {
@@ -261,7 +261,7 @@
 }
 
 .pax .cash {
-  background: $color-neutral-700;
+  background: $color-grey-800;
   color: white;
   float: right;
   font-size: 16px;
@@ -271,7 +271,7 @@
 }
 
 .pax .vip {
-  background: linear-gradient(45deg, $color-neutral-700 87%, transparent 87%);
+  background: linear-gradient(45deg, $color-grey-800 87%, transparent 87%);
   color: white;
   font-weight: bold;
   grid-area: vip;
@@ -298,7 +298,7 @@
   }
 
   .ticket {
-    background-color: $color-neutral-700;
+    background-color: $color-grey-800;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' xml:space='preserve' viewBox='0 0 60.1 14.2'%3E%3Cpath d='M0 0v14.2h1V0zm3.7 0v14.2h2.1V0zm4.8 0v14.2h1.2V0zm2 0v14.2h1V0zm3.7 0v14.2h3V0zM18 0v14.2H20V0zm2.9 0v14.2h3V0zm3.8 0v14.2h1V0zm3.8 0v6.6l-.1 7.6h2.2V0zm2.9 0v14.2h1V0zm3.7 0v14.2h2.1V0zm3 0v14.2h1V0zm3.7 0v14.2h2.1V0zm4.8 0v14.2h1.2V0zm2 0v14.2h3V0zm3.8 0v14.2h2V0zM55 0v14.2h3.1V0zM59 0v14.2H60V0z'/%3E%3C/svg%3E");
   }
 

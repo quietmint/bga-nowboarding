@@ -21,11 +21,20 @@ require_once 'modules/NPlane.class.php';
 
 class NowBoarding extends Table
 {
+
+    public function debug_reloadPlayersBasicInfos()
+    {
+        $this->reloadPlayersBasicInfos();
+    }
+
+    public function debug_plans()
+    {
+        $this->notifyAllPlayers('plans', '', ['plans' => $this->getFlightPlans()]);
+    }
+
     public function test()
     {
         // insert into pax select player_id as pax_id, 0 as anger, 44 as cash, 'DEN' as destination, null as location, 0 as moves, 1 as optimal, 'DEN' as origin, player_id, 'CASH' as status, null as vip from player;
-
-        $this->notifyAllPlayers('plans', '', ['plans' => $this->getFlightPlans()]);
     }
 
     public function __construct()
