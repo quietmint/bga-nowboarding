@@ -393,6 +393,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
             this.appendNbChatMessage({
               alliance,
               playerId: notif.args.player_id,
+              playerName: notif.args.player_name,
               time: Date.now(),
               writing: notif.args.player_name,
             });
@@ -412,11 +413,17 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           } else {
             message = this.format_string_recursive(notif.log, notif.args);
           }
+          let tempEl = document.createElement("div");
+          tempEl.innerHTML = message;
+          const messagePlain = tempEl.textContent;
+          tempEl.innerHTML = notif.args.player_name;
+          const playerName = tempEl.textContent;
           this.appendNbChatMessage({
             alliance,
             message,
+            messagePlain,
             playerId: notif.args.player_id,
-            playerNameHtml: notif.args.player_name,
+            playerName,
             time: notif.time * 1000,
           });
         } else {
@@ -432,18 +439,22 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         args.message = '<i class="icon typing"></i>';
       }
       if (!self && !args.alliance) {
-        args.message = (args.playerNameHtml || "<b>" + args.writing + "</b>") + ": " + args.message;
+        args.message = `<b>${args.playerName}</b>: ${args.message}`;
       }
       let avatarHtml = "";
       if (!self) {
         const avatarUrl = document.getElementById(`avatar_${args.playerId}`)?.src || "https://x.boardgamearena.net/data/avatar/default_32.jpg";
-        avatarHtml = `<img class="avatar emblem" src="${avatarUrl}">`;
+        avatarHtml = `<a target="_blank" href="/player?playerId=${args.playerId}" title="${args.playerName}"><img class="avatar emblem" src="${avatarUrl}"></a>`;
+      }
+      let translateHtml = "";
+      if (args.messagePlain) {
+        translateHtml = ` &mdash; <a class="nbtranslate" target="_blank" href="https://translate.google.com/?sl=auto&text=${encodeURIComponent(args.messagePlain)}"><i class="icon translate"></i> ${_("Translate")}</a>`;
       }
       const time = new Date(args.time).toLocaleString([], { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
       const order = Math.floor(args.time / 1000) - 1701388800; // 2023-12-01
       const logHtml = `<div class="nbchatlog">
   <div class="nbchatmsg alliance-${args.alliance}">${args.message}</div>
-  <div class="nbchattime">${time}</div>
+  <div class="nbchattime">${time}${translateHtml}</div>
 </div>`;
 
       let wrapHtml = "";
