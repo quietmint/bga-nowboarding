@@ -171,7 +171,6 @@ $game_options = [
                 'description' => totranslate('Passengers start with 1 anger [unofficial, harder]'),
                 'tmdisplay' => totranslate('Anger Increased'),
                 'nobeginner' => true,
-                'beta' => true,
             ],
         ],
     ]
