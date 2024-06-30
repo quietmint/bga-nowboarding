@@ -448,7 +448,15 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       }
       let translateHtml = "";
       if (args.messagePlain) {
-        translateHtml = ` &mdash; <a class="nbtranslate" target="_blank" href="https://translate.google.com/?sl=auto&text=${encodeURIComponent(args.messagePlain)}"><i class="icon translate"></i> ${_("Translate")}</a>`;
+        let lang = dojoConfig.locale;
+        if (lang == "zh") {
+          lang = "zh-TW";
+        } else if (lang == "zh-cn") {
+          lang = "zh-CN";
+        } else if (lang == "he") {
+          lang = "iw";
+        }
+        translateHtml = ` &mdash; <a class="nbtranslate" target="_blank" href="https://translate.google.com/?sl=auto&tl=${lang}&text=${encodeURIComponent(args.messagePlain)}&op=translate"><i class="icon translate"></i> ${_("Translate")}</a>`;
       }
       const time = new Date(args.time).toLocaleString([], { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
       const order = Math.floor(args.time / 1000) - 1701388800; // 2023-12-01
