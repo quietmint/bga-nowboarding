@@ -86,8 +86,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
   const debounce = (callback, ctx, wait) => {
     let timeout;
     return (...args) => {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => callback.apply(ctx, args), wait);
+      window.clearTimeout(timeout);
+      timeout = window.setTimeout(() => callback.apply(ctx, args), wait);
     };
   };
 
@@ -117,6 +117,9 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       if (gamedatas.plans) {
         this.renderFlightPlans();
       }
+      document.getElementById("pageheader_gameview").addEventListener("click", (ev) => {
+        window.setTimeout(() => this.resizeMap(), 0);
+      });
 
       // Setup chat
       this.chatHeaderEl = document.getElementById("nbchatheader");
@@ -980,10 +983,10 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
     transitionElement(el, startFn) {
       return new Promise((resolve) => {
-        const fallback = setTimeout(resolve, 1100);
+        const fallback = window.setTimeout(resolve, 1100);
         el.addEventListener("transitionend", () => {
           resolve();
-          clearTimeout(fallback);
+          window.clearTimeout(fallback);
         });
         el.offsetHeight; // repaint
         startFn(el);
