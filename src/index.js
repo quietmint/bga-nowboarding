@@ -1497,7 +1497,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         if (manifestEl) {
           manifestEl.classList.toggle("is-anger", isAngry);
           const emptyEl = manifestEl.querySelector(".emptytxt");
-          emptyEl.textContent = paxCount == 0 ? this.format_string_recursive(_("No passengers in ${city}"), { city: airportMap[airport] }) : "";
+          emptyEl.textContent = paxCount == 0 ? this.format_string_recursive(_("No passengers in ${city}"), { city: _(airportMap[airport]) }) : "";
         }
         const nodeEl = document.getElementById(`node-${airport}`);
         if (nodeEl) {
@@ -1869,7 +1869,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       const rows = [];
       for (const plan of this.gamedatas.plans) {
         const [destination, alliance, id, time, moves] = plan;
-        const city = airportMap[destination];
+        const city = _(airportMap[destination]);
         let order,
           status,
           statusClass = "";
