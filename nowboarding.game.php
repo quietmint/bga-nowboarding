@@ -253,6 +253,7 @@ class NowBoarding extends Table
         $players = $this->getCollectionFromDb("SELECT player_id id, player_score score FROM player");
         return [
             'complaint' => $this->countComplaint(),
+            'countToWin' => $this->getVar('countToWin') ?? '??',
             'hour' => $this->getHourInfo(),
             'map' => $this->getMap(),
             'noTimeLimit' => in_array($bgaClock, N_REF_BGA_CLOCK_UNLIMITED),
@@ -402,6 +403,7 @@ class NowBoarding extends Table
                 $pax = $this->getPaxByStatus('PORT');
                 $this->notifyAllPlayers('pax', N_REF_MSG['addPax'], [
                     'count' => count($pax),
+                    'countToWin' => $this->countToWin(),
                     'pax' => array_values($pax),
                     'location' => $this->getPaxLocations($pax),
                 ]);
@@ -669,6 +671,7 @@ class NowBoarding extends Table
                     $doubleId = $x->id * -1;
                     $optionAnger = $this->getGlobal(N_OPTION_ANGER, 0);
                     $this->DbQuery("INSERT INTO `pax` (`pax_id`, `anger`, `cash`, `destination`, `location`, `optimal`, `origin`, `status`, `vip`) VALUES ($doubleId, $optionAnger, 0, '{$x->destination}', '{$x->location}', {$x->optimal}, '{$x->origin}', '{$x->status}', '{$x->vip}')");
+                    $args['countToWin'] = $this->countToWin();
                 } else if ($x->vip == 'GRUMPY') {
                     // VIP Grumpy
                     // Starts with extra anger
@@ -1534,6 +1537,7 @@ class NowBoarding extends Table
             'player_name' => $plane->name,
             'route' => $x->origin . "-" . $x->destination,
         ];
+        $countToWin = false;
         if ($deliver) {
             $x->status = 'CASH';
             $args['cash'] = $x->cash;
@@ -1550,6 +1554,8 @@ class NowBoarding extends Table
                 $this->DbQuery("INSERT INTO `pax` (`anger`, `cash`, `destination`, `location`, `optimal`, `origin`, `status`, `vip`) VALUES ($optionAnger, $cash, '{$x->origin}', '{$x->location}', {$x->optimal}, '{$x->destination}', 'PORT', '{$x->vip}')");
                 $newPax = $this->getPaxById($this->DbGetLastId());
                 $args['pax'][] = $newPax;
+            } else {
+                $countToWin = true;
             }
         } else {
             $x->playerId = null;
@@ -1561,7 +1567,9 @@ class NowBoarding extends Table
             }
         }
         $this->DbQuery("UPDATE `pax` SET `anger` = {$x->anger}, `location` = '{$x->location}', `player_id` = {$x->getPlayerIdSql()}, `status` = '{$x->status}' WHERE `pax_id` = {$x->id}");
-
+        if ($countToWin) {
+            $args['countToWin'] = $this->countToWin();
+        }
         // Notify UI about pax (except for transfers and VIP Double)
         if (!$transfer && $x->id > 0) {
             $msg = $deliver ? N_REF_MSG['deplaneDeliver'] : N_REF_MSG['deplane'];
@@ -1687,7 +1695,7 @@ class NowBoarding extends Table
 
     private function setVar(string $key, $value): void
     {
-        if ($value == null) {
+        if ($value === null) {
             $this->DbQuery("DELETE FROM `var` WHERE `key` = '$key'");
         } else {
             if (is_array($value)) {
@@ -1811,15 +1819,13 @@ class NowBoarding extends Table
         // Notify hour
         $hourInfo['i18n'] = ['hourDesc'];
         if ($finale) {
-            $leftover = (2 - $this->countComplaint()) * 2 + 1;
             $remain = $this->countPaxByStatus(['PORT', 'SEAT']);
             if ($remain == 0) {
                 // Skip the final round if no passengers remain
                 throw new NGameOverException();
             }
-            $hourInfo['countToWin'] = max($remain - $leftover, 0);
-            $this->setVar('countToWin', $hourInfo['countToWin']);
-            $this->notifyAllPlayers('hour', N_REF_MSG['hourFinale'], $hourInfo);
+            $hourInfo['countToWin'] = $this->getVarInt('countToWin');
+             $this->notifyAllPlayers('hour', N_REF_MSG['hourFinale'], $hourInfo);
         } else {
             if ($advance) {
                 // Notify weather
@@ -2052,6 +2058,15 @@ class NowBoarding extends Table
     private function countComplaint(): int
     {
         return $this->countPaxByStatus('COMPLAINT') + $this->getStat('complaintFinale') + $this->getStat('complaintVip');
+    }
+
+    private function countToWin(): int
+    {
+        $leftover = (2 - $this->countComplaint()) * 2 + 1;
+        $remain = $this->countPaxByStatus(['MORNING', 'NOON', 'NIGHT', 'SECRET', 'PORT', 'SEAT']);
+        $countToWin = max($remain - $leftover, 0);
+        $this->setVar('countToWin', $countToWin);
+        return $countToWin;
     }
 
     private function exceptionMsg(string $msgExKey, ...$args): string
@@ -2331,6 +2346,7 @@ class NowBoarding extends Table
                 $total = $this->countComplaint();
                 $this->notifyAllPlayers('complaint', N_REF_MSG['complaintPort'], [
                     'complaint' => $count,
+                    'countToWin' => $this->countToWin(),
                     'location' => $this->getPaxLocations($complaintPax),
                     'total' => $total,
                 ]);
@@ -2359,6 +2375,7 @@ class NowBoarding extends Table
             $this->notifyAllPlayers('complaint', N_REF_MSG['complaintVip'], [
                 'i18n' => ['hourDesc'],
                 'complaint' => $count,
+                'countToWin' => $this->countToWin(),
                 'hourDesc' => N_REF_HOUR[$hour]['desc'],
                 'total' => $total,
             ]);
@@ -2577,6 +2594,11 @@ class NowBoarding extends Table
                 $progression += $hourInfo['round'];
             }
             $this->setVar('progression', $progression);
+        }
+
+        if ($fromVersion <= 2407071822) {
+            $this->warn("upgradeTableDb: fromVersion=$fromVersion, calculate countToWin");
+            $this->countToWin();
         }
 
         // Give extra time

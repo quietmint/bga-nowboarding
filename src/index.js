@@ -732,6 +732,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         suppressSounds = ["yourturn"];
         playSound("nowboarding_complaint" + getRandomInt(1, 4));
         this.gamedatas.complaint = notif.args.total;
+        this.gamedatas.countToWin = notif.args.countToWin;
         this.renderCommon();
       } else if (notif.type == "flyTimer") {
         suppressSounds = ["yourturn"];
@@ -775,6 +776,10 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
             this.gamedatas.pax[double.id] = double;
             this.renderPax(double);
           }
+        }
+        if (notif.args.countToWin != null) {
+          this.gamedatas.countToWin = notif.args.countToWin;
+          this.renderCommon();
         }
         if (sound) {
           playSound("nowboarding_cash");
@@ -1038,18 +1043,22 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           : "";
         const commonHtml = `<div id="nbcommon">
   <div class="nbsection">
-    <div class="nblabel">${_("Complaints")}</div>
-    <div class="nbtag"><i class="icon complaint"></i> <span id="nbcommon-complaint"></span></div>
-  </div>
-  <div class="nbsection">
     <div class="nblabel">${_("Round")}</div>
     <div class="nbtag hour"><i class="icon"></i> <span></span></div>
   </div>
-  ${vipHtml}
   <div class="nbsection">
     <div class="nblabel">${_("Map Size")}</div>
     <div class="nbtag"><input type="range" id="nbrange" min="40" max="100" step="2" value="60"></div>
   </div>
+  <div class="nbsection">
+    <div class="nblabel">${_("Complaints")}</div>
+    <div class="nbtag"><i class="icon complaint"></i> <span id="nbcommon-complaint"></span></div>
+  </div>
+  <div class="nbsection">
+    <div class="nblabel">${_("To Win")}</div>
+    <div class="nbtag"><i class="icon towin"></i> <span id="nbcommon-towin"></span></div>
+  </div>
+  ${vipHtml}
 </div>`;
         const parentEl = document.getElementById("player_boards");
         parentEl.insertAdjacentHTML("beforebegin", commonHtml);
@@ -1071,6 +1080,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
       const complaintTextEl = document.getElementById("nbcommon-complaint");
       complaintTextEl.innerHTML = `<span class="${this.gamedatas.complaint > 0 ? "bb" : ""}">${this.gamedatas.complaint}</span>/3`;
+      const winTextEl = document.getElementById("nbcommon-towin");
+      winTextEl.textContent = this.gamedatas.countToWin;
       const hourEl = commonEl.querySelector(".hour");
       const hourIconEl = hourEl.querySelector(".icon");
       const hourTextEl = hourEl.querySelector("span");
