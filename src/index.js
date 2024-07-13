@@ -273,7 +273,12 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         }
 
         // Finally apply string substitution
-        return dojo.string.substitute(log, sub);
+        try {
+          return dojo.string.substitute(log, sub);
+        } catch (e) {
+          console.error("string.substitute error", e);
+          return log;
+        }
       }
       return "";
     },
