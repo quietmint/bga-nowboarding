@@ -68,16 +68,3 @@ CREATE TABLE `plane` (
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
 
 CREATE TABLE `plane_undo` LIKE `plane`;
-
-CREATE TABLE `var` (
-    `key` VARCHAR(50) NOT NULL,
-    `value` VARCHAR(50),
-    PRIMARY KEY (`key`)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8;
-
-CREATE TABLE `weather` (
-    `hour` VARCHAR(50) NOT NULL,
-    `location` VARCHAR(50) NOT NULL,
-    `token` ENUM('FAST', 'SLOW') NOT NULL,
-    PRIMARY KEY (`hour`, `location`)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8;
