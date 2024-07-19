@@ -2591,12 +2591,9 @@ class NowBoarding extends Table
             $sql[] = "UPDATE `stats` SET `stats_player_id` = $studioId WHERE `stats_player_id` = $prodId";
             $sql[] = "UPDATE `stats_undo` SET `stats_player_id` = $studioId WHERE `stats_player_id` = $prodId";
         }
-        $msg = "<b>Loaded <a href='https://boardgamearena.com/bug?id=$reportId' target='_blank'>bug report $reportId</a></b><hr><ul><li>" . implode(';</li><li>', $sql) . ';</li></ul>';
-        $this->warn($msg);
-        $this->notifyAllPlayers('message', $msg, []);
-
         foreach ($sql as $q) {
             $this->DbQuery($q);
         }
+        $this->reloadPlayersBasicInfos();
     }
 }
