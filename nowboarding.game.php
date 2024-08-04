@@ -2389,8 +2389,8 @@ class NowBoarding extends Table
                 'complaint' => $complaint,
             ]);
         } else {
-            // 2p = 14, 3p = 18, 4p = 24, 5p = 30
-            $score = ceil(pow($playerCount, 1.86)) + 10;
+            // 2p = 14, 3p = 16, 4p = 20, 5p = 24
+            $score = ceil(pow($playerCount, 1.6)) + 10;
             if ($this->getOption(N_OPTION_TIMER) != 1) {
                 // Half score with double/unlimited timer
                 $score = ceil($score / 2);
