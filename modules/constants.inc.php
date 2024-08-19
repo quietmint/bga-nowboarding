@@ -404,6 +404,13 @@ define('N_REF_VIP', [
         'hours' => ['MORNING', 'NOON'],
         'set' => N_VIP_BGA,
     ],
+    'WIND' => [
+        'name' => clienttranslate('Speeder'),
+        'desc' => clienttranslate('Must fly through a tailwind (a storm does not count)'),
+        'count' => 1,
+        'hours' => ['MORNING', 'NOON'],
+        'set' => N_VIP_BGA,
+    ],
 ]);
 
 define('N_REF_WEATHER_SPEED', [

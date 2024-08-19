@@ -192,7 +192,7 @@ class NowBoarding extends Table
         // Populate possible VIPs, respecting hours and max counts
         // Double the number only if needed
         $possibleRepeat = 1;
-        if ($optionVip == N_VIP_FOWERS && $vipCount > 9 || $optionVip == N_VIP_BGA && $vipCount > 11) {
+        if ($optionVip == N_VIP_FOWERS && $vipCount > 9 || $optionVip == N_VIP_BGA && $vipCount > 12) {
             $possibleRepeat = 2;
         }
         $possibleByHour = [
@@ -1258,7 +1258,7 @@ class NowBoarding extends Table
         $this->DbQuery("UPDATE `pax` SET `moves` = `moves` + $distance WHERE `status` = 'SEAT' AND `player_id` = {$plane->id}");
 
         // Statistics
-        $hasStorm = false;
+        $hasWeather = [];
         foreach ($move->path as $location) {
             $weather = null;
             if (array_key_exists($location, $map->weather)) {
@@ -1280,9 +1280,7 @@ class NowBoarding extends Table
                 $this->incStat(1, "moves$alliance");
                 $this->incStat(1, "moves$alliance", $playerId);
                 if ($weather) {
-                    if ($weather == 'SLOW') {
-                        $hasStorm = true;
-                    }
+                    $hasWeather[$weather] = true;
                     $this->incStat(1, "moves$weather");
                     $this->incStat(1, "moves$weather", $playerId);
                 }
@@ -1297,11 +1295,24 @@ class NowBoarding extends Table
 
         // VIP Storm
         // Remove the VIP condition after flying through a storm
-        if ($hasStorm) {
+        if (array_key_exists('SLOW', $hasWeather)) {
             $stormIds = array_map('intval', $this->getObjectListFromDB("SELECT `pax_id` FROM `pax` WHERE `status` = 'SEAT' AND `player_id` = {$plane->id} AND `vip` = 'STORM'", true));
             if (!empty($stormIds)) {
                 $this->DbQuery("UPDATE `pax` SET `vip` = NULL WHERE `pax_id` IN (" . join(',', $stormIds) . ")");
                 $pax = $this->getPaxByIds($stormIds);
+                $this->notifyAllPlayers('pax', '', [
+                    'pax' => array_values($pax),
+                ]);
+            }
+        }
+
+        // VIP Wind
+        // Remove the VIP condition after flying through a tailwind
+        if (array_key_exists('FAST', $hasWeather)) {
+            $windIds = array_map('intval', $this->getObjectListFromDB("SELECT `pax_id` FROM `pax` WHERE `status` = 'SEAT' AND `player_id` = {$plane->id} AND `vip` = 'WIND'", true));
+            if (!empty($windIds)) {
+                $this->DbQuery("UPDATE `pax` SET `vip` = NULL WHERE `pax_id` IN (" . join(',', $windIds) . ")");
+                $pax = $this->getPaxByIds($windIds);
                 $this->notifyAllPlayers('pax', '', [
                     'pax' => array_values($pax),
                 ]);
@@ -1540,9 +1551,9 @@ class NowBoarding extends Table
                 $this->vipException($vipInfo);
             }
 
-            // VIP Storm
+            // VIP Storm/Wind
             // Never deliver (condition is removed when met)
-            if ($vipInfo['key'] == 'STORM') {
+            if ($vipInfo['key'] == 'STORM' || $vipInfo['key'] == 'WIND') {
                 $deliver = false;
             }
         }
