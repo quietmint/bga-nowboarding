@@ -84,7 +84,7 @@ class NPax extends APP_GameClass implements JsonSerializable
             $args = [
                 'i18n' => ['desc', 'vip'],
                 'log' => N_REF_MSG['vipWelcome'],
-                'location' => $this->origin,
+                'location' => $this->vip == 'CONVENTION' ? $this->destination : $this->origin,
             ];
             if ($vipInfo['args']) {
                 $args['desc'] = [

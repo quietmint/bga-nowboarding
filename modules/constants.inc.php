@@ -341,6 +341,13 @@ define('N_REF_VIP', [
     ],
 
     // BGA Community VIPs
+    'CONVENTION' => [
+        'name' => clienttranslate('Convention'),
+        'desc' => clienttranslate('All new passengers have the same destination'),
+        'count' => 1,
+        'hours' => ['NIGHT'],
+        'set' => N_VIP_BGA,
+    ],
     'CREW' => [
         'name' => clienttranslate('Crewmember'),
         'desc' => clienttranslate('Pays nothing but never gains anger'),

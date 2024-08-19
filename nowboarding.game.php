@@ -192,7 +192,7 @@ class NowBoarding extends Table
         // Populate possible VIPs, respecting hours and max counts
         // Double the number only if needed
         $possibleRepeat = 1;
-        if ($optionVip == N_VIP_FOWERS && $vipCount > 9 || $optionVip == N_VIP_BGA && $vipCount > 10) {
+        if ($optionVip == N_VIP_FOWERS && $vipCount > 9 || $optionVip == N_VIP_BGA && $vipCount > 11) {
             $possibleRepeat = 2;
         }
         $possibleByHour = [
@@ -657,8 +657,7 @@ class NowBoarding extends Table
                 // Make them a VIP
                 $vipNew = false;
                 $this->globals->set('vipNew', false);
-                $hour = $this->globals->get('hour');
-                $vips = $this->globals->get('vips');
+                extract($this->globals->getAll('hour', 'vips'));
                 $nextVip = array_pop($vips[$hour]);
                 if (!$nextVip) {
                     throw new BgaVisibleSystemException("stReveal: No VIP exists [???]");
@@ -670,7 +669,34 @@ class NowBoarding extends Table
                 $x->vip = $nextVip;
 
                 // Apply starting conditions
-                if ($x->vip == 'DOUBLE') {
+                if ($x->vip == 'CONVENTION') {
+                    // VIP Convention
+                    // Choose a destination
+                    $map = $this->getMap(false);
+                    $optimal = $map->getOptimalMoves();
+                    $origins = $this->getObjectListFromDB("SELECT DISTINCT `origin` FROM `pax` WHERE `status` = 'SECRET' AND `vip` IS NULL", true);
+                    $possibleDestinations = array_diff($map->airports, $origins);
+                    if (empty($possibleDestinations)) {
+                        throw new BgaVisibleSystemException("stReveal: No destination for VIP = CONVENTION");
+                    }
+                    $x->destination = $possibleDestinations[array_rand($possibleDestinations)];
+                    // Update everyone with new destination and fare
+                    foreach ($pax as $convention) {
+                        if ($convention->vip == 'MYSTERY') {
+                            continue;
+                        }
+                        $convention->cash = N_REF_FARE[$convention->origin][$x->destination];
+                        $convention->destination = $x->destination;
+                        $convention->optimal = $optimal[$convention->origin][$x->destination];
+                        $convention->vip = $x->vip;
+                        $this->DbQuery("UPDATE `pax` SET `cash` = {$convention->cash}, `destination` = '{$x->destination}', `optimal` = {$convention->optimal}, `vip` = '{$convention->vip}' WHERE `pax_id` = {$convention->id}");
+                    }
+                } else if ($x->vip == 'CREW' || $x->vip == 'DISCOUNT' || $x->vip == 'RETURN') {
+                    // VIP Crew/Discount/Return
+                    // Reduce the fare
+                    $x->cash = $x->vip == 'DISCOUNT' ? floor($x->cash / 2) : 0;
+                    $this->DbQuery("UPDATE `pax` SET `cash` = {$x->cash} WHERE `pax_id` = {$x->id}");
+                } else if ($x->vip == 'DOUBLE') {
                     // VIP Double
                     // Create the fugitive
                     $doubleId = $x->id * -1;
@@ -682,11 +708,6 @@ class NowBoarding extends Table
                     // Starts with extra anger
                     $x->anger++;
                     $this->DbQuery("UPDATE `pax` SET `anger` = {$x->anger} WHERE `pax_id` = {$x->id}");
-                } else if ($x->vip == 'CREW' || $x->vip == 'DISCOUNT' || $x->vip == 'RETURN') {
-                    // VIP Crew/Discount/Return
-                    // Reduce the fare
-                    $x->cash = $x->vip == 'DISCOUNT' ? floor($x->cash / 2) : 0;
-                    $this->DbQuery("UPDATE `pax` SET `cash` = {$x->cash} WHERE `pax_id` = {$x->id}");
                 } else if ($x->vip == 'LOYAL') {
                     // VIP Loyal
                     // Choose an alliance
@@ -749,15 +770,13 @@ class NowBoarding extends Table
     public function argFly(): array
     {
         $args = [];
-        $endTime = $this->globals->get('endTime', 0);
-        if ($endTime) {
+        extract($this->globals->getAll('endTime', 'hour', 'vipWelcome'));
+        if (!empty($endTime)) {
             $args['remain'] = max(0, $endTime - time());
         }
-
-        $vipId = $this->globals->get('vipWelcome');
-        if ($vipId) {
-            $args['titleMessage'] = $this->getPaxById($vipId)->getVipTitleMessage();
-        } else if ($this->globals->get('hour') == 'FINALE') {
+        if (!empty($vipWelcome)) {
+            $args['titleMessage'] = $this->getPaxById($vipWelcome)->getVipTitleMessage();
+        } else if ($hour == 'FINALE') {
             $args['titleMessage'] = $this->getFinaleTitleMessage();
         }
         return $args;
@@ -1920,8 +1939,7 @@ class NowBoarding extends Table
         $playerCount = $this->getPlayersNumber();
         $currentWeather = [];
         if ($withWeather) {
-            $hour = $this->globals->get('hour');
-            $weather = $this->globals->get('weather');
+            extract($this->globals->getAll('hour', 'weather'));
             if (array_key_exists($hour, $weather)) {
                 $currentWeather = $weather[$hour];
             }
@@ -2120,68 +2138,27 @@ class NowBoarding extends Table
     private function createPax(): void
     {
         $planes = $this->getPlanesByIds();
-        $playerCount = count($planes);
-        $optionMap = $this->getOption(N_OPTION_MAP);
-        $airports = ['ATL', 'DEN', 'DFW', 'LAX', 'MIA', 'ORD', 'SFO'];
-        if ($playerCount >= 3 || $optionMap == N_MAP_JFK || $optionMap == N_MAP_SEA) {
-            // Include JFK with 3+ players
-            $airports[] = 'JFK';
-        }
-        if ($playerCount >= 4 || $optionMap == N_MAP_SEA) {
-            // Include SEA with 4+ players
-            $airports[] = 'SEA';
-        }
+        $map = $this->getMap(false);
+        $optimal = $map->getOptimalMoves();
 
         // Create possible passengers
         $pax = [];
         foreach (N_REF_FARE as $origin => $destinations) {
-            if (in_array($origin, $airports)) {
+            if (in_array($origin, $map->airports)) {
                 foreach ($destinations as $destination => $cash) {
-                    if (in_array($destination, $airports)) {
-                        $pax[] = [$origin, $destination, $cash];
+                    if (in_array($destination, $map->airports)) {
+                        $pax[] = [$origin, $destination, $cash, $optimal[$origin][$destination]];
                     }
                 }
             }
         }
         shuffle($pax);
 
-        // Compute optimal moves between each airport
-        $optimal = [];
-        $map = $this->getMap(false);
-        $fakePlane = new NPlane([
-            'player_id' => 0,
-            'alliances' => 'ATL,DFW,LAX,ORD,SEA',
-            'cash' => 0,
-            'debt' => 0,
-            'location' => '',
-            'origin' => '',
-            'pax' => 0,
-            'player_name' => '',
-            'seat_remain' => 1,
-            'seat_x' => 0,
-            'seat' => 1,
-            'speed_remain' => 9,
-            'speed' => 9,
-            'temp_seat' => 0,
-            'temp_speed' => 0,
-            'wallet' => '',
-        ]);
-        foreach ($airports as $airport) {
-            $fakePlane->location = $airport;
-            $moves = $map->getPossibleMoves($fakePlane);
-            foreach ($moves as $move) {
-                if (strlen($move->location) == 3) {
-                    $optimal[$airport][$move->location] = $move->fuel;
-                }
-            }
-        }
-
         // Create starting passenger in each airport
         $optionAnger = $this->getOption(N_OPTION_ANGER, 0);
         foreach ($planes as $plane) {
             foreach ($pax as $k => $x) {
-                [$origin, $destination, $cash] = $x;
-                $opt = $optimal[$origin][$destination];
+                [$origin, $destination, $cash, $opt] = $x;
                 if ($origin == $plane->alliances[0]) {
                     $sql = "INSERT INTO `pax` (`anger`, `cash`, `destination`, `location`, `optimal`, `origin`, `status`) VALUES ($optionAnger, $cash, '$destination', '$origin', $opt, '$origin', 'PORT')";
                     $this->DbQuery($sql);
@@ -2195,12 +2172,12 @@ class NowBoarding extends Table
         }
 
         // Create queued passengers in each hour
+        $playerCount = count($planes);
         $paxCounts = N_REF_HOUR_PAX[$playerCount];
         foreach ($paxCounts as $status => $count) {
             $hourPax = array_splice($pax, $count * -1);
             foreach ($hourPax as $x) {
-                [$origin, $destination, $cash] = $x;
-                $opt = $optimal[$origin][$destination];
+                [$origin, $destination, $cash, $opt] = $x;
                 $sql = "INSERT INTO `pax` (`anger`, `cash`, `destination`, `optimal`, `origin`, `status`) VALUES ($optionAnger, $cash, '$destination', $opt, '$origin', '$status')";
                 $this->DbQuery($sql);
             }
@@ -2467,7 +2444,7 @@ class NowBoarding extends Table
         // Surrender passengers
         $pax = $this->getPaxByStatus('SEAT', null, $playerId);
         if (!empty($pax)) {
-            foreach ($pax as &$x) {
+            foreach ($pax as $x) {
                 $x->resetAnger($this->getOption(N_OPTION_ANGER, 0));
                 $x->playerId = null;
                 $x->status = 'PORT';

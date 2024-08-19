@@ -2,6 +2,7 @@
 
 class NMap extends APP_GameClass implements JsonSerializable
 {
+    public array $airports = ['ATL', 'DEN', 'DFW', 'LAX', 'MIA', 'ORD', 'SFO'];
     public string $name;
     public array $nodes = [];
     public array $routes = [];
@@ -9,6 +10,14 @@ class NMap extends APP_GameClass implements JsonSerializable
 
     public function __construct(int $playerCount, ?int $optionMap, array $weather)
     {
+        // Determine airports
+        if ($playerCount >= 3 || $optionMap == N_MAP_JFK || $optionMap == N_MAP_SEA) {
+            $this->airports[] = 'JFK';
+        }
+        if ($playerCount >= 4 || $optionMap == N_MAP_SEA) {
+            $this->airports[] = 'SEA';
+        }
+
         // Build the map
         $this->addRoute('ATL', 'DEN', 3, null);
         $this->addRoute('ATL', 'DFW', 2, 'ATL');
@@ -24,7 +33,6 @@ class NMap extends APP_GameClass implements JsonSerializable
         $this->addRoute('JFK', 'ORD', 2, null);
         $this->addRoute('LAX', 'MIA', 4, 'LAX');
         $this->addRoute('LAX', 'SFO', 1, null);
-
 
         if ($playerCount >= 4 || $optionMap == N_MAP_SEA) {
             // 4-5 player map with Seattle
@@ -116,6 +124,38 @@ class NMap extends APP_GameClass implements JsonSerializable
     }
 
     // ----------------------------------------------------------------------
+
+    public function getOptimalMoves(): array
+    {
+        $optimal = [];
+        $fakePlane = new NPlane([
+            'player_id' => 0,
+            'alliances' => 'ATL,DFW,LAX,ORD,SEA',
+            'debt' => 0,
+            'location' => '',
+            'origin' => '',
+            'pax' => 0,
+            'player_name' => '',
+            'seat_remain' => 1,
+            'seat_x' => 0,
+            'seat' => 1,
+            'speed_remain' => 9,
+            'speed' => 9,
+            'temp_seat' => 0,
+            'temp_speed' => 0,
+            'wallet' => '',
+        ]);
+        foreach ($this->airports as $airport) {
+            $fakePlane->location = $airport;
+            $moves = $this->getPossibleMoves($fakePlane);
+            foreach ($moves as $move) {
+                if (strlen($move->location) == 3) {
+                    $optimal[$airport][$move->location] = $move->fuel;
+                }
+            }
+        }
+        return $optimal;
+    }
 
     public function getPossibleMoves(NPlane $plane): array
     {
