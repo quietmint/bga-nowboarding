@@ -1420,7 +1420,7 @@ class NowBoarding extends Table
 
             // VIP Last
             // If this pax is last, the airport must be empty
-            if ($vipInfo && $vipInfo['key'] == 'LAST' && intval($this->getUniqueValueFromDB("SELECT COUNT(1) FROM `pax` WHERE `location` = '{$x->location}' AND `status` = 'PORT' AND COALESCE(`vip`, 'X') != 'LAST'")) > 0) {
+            if ($vipInfo && $vipInfo['key'] == 'LAST' && intval($this->getUniqueValueFromDB("SELECT COUNT(1) FROM `pax` WHERE `location` = '{$x->location}' AND (`status` = 'PORT' OR (`status` = 'SECRET' AND `vip` = 'MYSTERY')) AND COALESCE(`vip`, 'X') != 'LAST'")) > 0) {
                 $this->vipException($vipInfo);
             }
 
