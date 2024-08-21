@@ -645,12 +645,9 @@ class NowBoarding extends Table
         // Reveal passengers
         $msg = '';
         $args = [];
-        $pax = $this->getPaxByStatus('SECRET');
+        $pax = $this->getPaxByStatus('SECRET', null, null, true);
         $vipNew = $this->globals->get('vipNew', false);
         foreach ($pax as $x) {
-            if ($x->vip == 'MYSTERY') {
-                continue;
-            }
             $x->status = 'PORT';
 
             if ($vipNew) {
@@ -675,21 +672,14 @@ class NowBoarding extends Table
                     $map = $this->getMap(false);
                     $optimal = $map->getOptimalMoves();
                     $origins = $this->getObjectListFromDB("SELECT DISTINCT `origin` FROM `pax` WHERE `status` = 'SECRET' AND `vip` IS NULL", true);
-                    $possibleDestinations = array_diff($map->airports, $origins);
-                    if (empty($possibleDestinations)) {
-                        throw new BgaVisibleSystemException("stReveal: No destination for VIP = CONVENTION");
-                    }
-                    $x->destination = $possibleDestinations[array_rand($possibleDestinations)];
+                    $x->destination = $this->getRandomValue(array_diff($map->airports, $origins));
                     // Update everyone with new destination and fare
                     foreach ($pax as $convention) {
-                        if ($convention->vip == 'MYSTERY') {
-                            continue;
-                        }
                         $convention->cash = N_REF_FARE[$convention->origin][$x->destination];
                         $convention->destination = $x->destination;
                         $convention->optimal = $optimal[$convention->origin][$x->destination];
                         $convention->vip = $x->vip;
-                        $this->DbQuery("UPDATE `pax` SET `cash` = {$convention->cash}, `destination` = '{$x->destination}', `optimal` = {$convention->optimal}, `vip` = '{$convention->vip}' WHERE `pax_id` = {$convention->id}");
+                        $this->DbQuery("UPDATE `pax` SET `cash` = {$convention->cash}, `destination` = '{$convention->destination}', `optimal` = {$convention->optimal}, `vip` = '{$convention->vip}' WHERE `pax_id` = {$convention->id}");
                     }
                 } else if ($x->vip == 'CREW' || $x->vip == 'DISCOUNT' || $x->vip == 'RETURN') {
                     // VIP Crew/Discount/Return
@@ -726,7 +716,7 @@ class NowBoarding extends Table
                             $possibleAlliances[] = 'SEA';
                         }
                     }
-                    $alliance = $possibleAlliances[array_rand($possibleAlliances)];
+                    $alliance = $this->getRandomValue($possibleAlliances);
                     $x->vip = "LOYAL_$alliance";
                 } else if ($x->vip == 'MYSTERY') {
                     // VIP Mystery
@@ -1628,7 +1618,16 @@ class NowBoarding extends Table
     //////////// Helpers
     ////////////
 
-    private function getRandomKey(array &$array)
+    private function getFirstValue(array $array)
+    {
+        if (empty($array)) {
+            trigger_error("getFirstValue(): Array is empty", E_USER_WARNING);
+            return null;
+        }
+        return $array[array_key_first($array)];
+    }
+
+    private function getRandomKey(array $array)
     {
         $size = count($array);
         if ($size == 0) {
@@ -1642,7 +1641,7 @@ class NowBoarding extends Table
         }
     }
 
-    private function getRandomValue(array &$array)
+    private function getRandomValue(array $array)
     {
         $size = count($array);
         if ($size == 0) {
@@ -1656,7 +1655,7 @@ class NowBoarding extends Table
         }
     }
 
-    private function getRandomSlice(array &$array, int $count)
+    private function getRandomSlice(array $array, int $count)
     {
         $size = count($array);
         if ($size == 0) {
@@ -2003,7 +2002,7 @@ class NowBoarding extends Table
         }, $this->getCollectionFromDb($sql));
     }
 
-    private function getPaxByStatus($status, ?int $limit = null, ?int $playerId = null): array
+    private function getPaxByStatus($status, ?int $limit = null, ?int $playerId = null, bool $stReveal = false): array
     {
         if (is_array($status)) {
             $status = join("', '", $status);
@@ -2011,6 +2010,9 @@ class NowBoarding extends Table
         $sql = "SELECT * FROM `pax` WHERE `status` IN ('$status')";
         if ($playerId != null) {
             $sql .= " AND `player_id` = $playerId";
+        }
+        if ($stReveal) {
+            $sql .= " AND `vip` IS NULL";
         }
         $sql .= " ORDER BY `pax_id`";
         if ($limit != null) {
@@ -2174,7 +2176,6 @@ class NowBoarding extends Table
                     $sql = "INSERT INTO `pax` (`anger`, `cash`, `destination`, `location`, `optimal`, `origin`, `status`) VALUES ($optionAnger, $cash, '$destination', '$origin', $opt, '$origin', 'PORT')";
                     $this->DbQuery($sql);
                     unset($pax[$k]);
-                    $startingPax[] = $x;
                     break;
                 }
             }
