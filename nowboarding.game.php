@@ -22,14 +22,27 @@ require_once 'modules/NPlane.class.php';
 class NowBoarding extends Table
 {
 
-    public function debug_reloadPlayersBasicInfos()
+    public function debug_setupVips()
     {
-        $this->reloadPlayersBasicInfos();
+        $optionVip = $this->getOption(N_OPTION_VIP);
+        $playerCount = $this->getPlayersNumber();
+        $this->setupVips($optionVip, $playerCount);
+        $vips = $this->globals->get('vips');
+        $this->notifyAllPlayers('vip', 'Morning: ' . join(', ', $vips['MORNING']), [
+            'overall' => $this->getVipOverall($vips)
+        ]);
+        $this->notifyAllPlayers('message', 'Afternoon: ' . join(', ', $vips['NOON']), []);
+        $this->notifyAllPlayers('message', 'Evening: ' . join(', ', $vips['NIGHT']), []);
     }
 
     public function debug_plans()
     {
         $this->notifyAllPlayers('plans', '', ['plans' => $this->getFlightPlans()]);
+    }
+
+    public function debug_reloadPlayersBasicInfos()
+    {
+        $this->reloadPlayersBasicInfos();
     }
 
     public function test()
@@ -189,53 +202,22 @@ class NowBoarding extends Table
             $vipCount = min($vipCount * 2, $vipMax);
         }
 
-        // Populate possible VIPs, respecting hours and max counts
-        // Double the number only if needed
-        $possibleRepeat = 1;
-        if ($optionVip == N_VIP_FOWERS && $vipCount > 9 || $optionVip == N_VIP_BGA && $vipCount > 12) {
-            $possibleRepeat = 2;
-        }
-        $possibleByHour = [
-            'MORNING' => [],
-            'NOON' => [],
-            'NIGHT' => [],
-        ];
-        for ($i = 0; $i < $possibleRepeat; $i++) {
-            foreach (N_REF_VIP as $key => $vip) {
-                if ($optionVip == N_VIP_ALL || $optionVip == $vip['set']) {
-                    $vipHours = $vip['hours'];
-                    shuffle($vipHours);
-                    if (count($vipHours) > $vip['count']) {
-                        array_splice($vipHours, $vip['count']);
-                    }
-                    foreach ($vipHours as $hour) {
-                        $possibleByHour[$hour][] = $key;
-                    }
-                }
-            }
-        }
-        foreach ($possibleByHour as $hour => &$keys) {
-            shuffle($keys);
-            $rounds = N_REF_HOUR_ROUND[$playerCount][$hour];
-            if (count($keys) > $rounds) {
-                array_splice($keys, $rounds);
-            }
-        }
-        unset($keys);
-
-        // Select the desired number of VIPs
         $vips = [
             'MORNING' => [],
             'NOON' => [],
             'NIGHT' => [],
         ];
-        for ($i = 0; $i < $vipCount; $i++) {
-            $hour = $this->getRandomKey($possibleByHour);
-            $key = array_pop($possibleByHour[$hour]);
-            if (empty($possibleByHour[$hour])) {
-                unset($possibleByHour[$hour]);
+        $vipAdded = 0;
+        $possible = null;
+        while ($vipAdded < $vipCount) {
+            if (empty($possible)) {
+                $possible = $this->getPossibleVips($optionVip);
             }
-            $vips[$hour][] = $key;
+            list($key, $hour) = array_pop($possible);
+            if (count($vips[$hour]) < N_REF_HOUR_ROUND[$playerCount][$hour]) {
+                $vips[$hour][] = $key;
+                $vipAdded++;
+            }
         }
 
         // Save the results
@@ -243,6 +225,22 @@ class NowBoarding extends Table
         foreach ($vips as $hour => $keys) {
             $this->setStat(count($keys), "vip$hour");
         }
+    }
+
+    private function getPossibleVips(int $optionVip): array
+    {
+        $possible = [];
+        foreach (N_REF_VIP as $key => $vip) {
+            if ($optionVip == N_VIP_ALL || $optionVip == $vip['set']) {
+                $vipHours = $vip['hours'];
+                shuffle($vipHours);
+                for ($i = 0; $i < $vip['count']; $i++) {
+                    $possible[] = [$key, array_pop($vipHours)];
+                }
+            }
+        }
+        shuffle($possible);
+        return $possible;
     }
 
     public function checkVersion(int $clientVersion): void
@@ -671,8 +669,8 @@ class NowBoarding extends Table
                     // Choose a destination
                     $map = $this->getMap(false);
                     $optimal = $map->getOptimalMoves();
-                    $origins = $this->getObjectListFromDB("SELECT DISTINCT `origin` FROM `pax` WHERE `status` = 'SECRET' AND `vip` IS NULL", true);
-                    $x->destination = $this->getRandomValue(array_diff($map->airports, $origins));
+                    $invalid = $this->getObjectListFromDB("SELECT DISTINCT `origin` FROM `pax` WHERE `status` = 'SECRET' AND `vip` IS NULL", true);
+                    $x->destination = $this->getRandomValue(array_diff($map->airports, $invalid));
                     // Update everyone with new destination and fare
                     foreach ($pax as $convention) {
                         $convention->cash = N_REF_FARE[$convention->origin][$x->destination];
@@ -728,8 +726,9 @@ class NowBoarding extends Table
                     $y = $this->getFirstValue(array_slice($pax, 1, 1));
                     $map = $this->getMap(false);
                     $optimal = $map->getOptimalMoves();
-                    $origins = [$x->origin, $y->origin];
-                    $x->destination = $this->getRandomValue(array_diff($map->airports, $origins));
+                    $invalid = [$x->origin, $y->origin];
+                    $otherReunions = $this->getObjectListFromDB("SELECT DISTINCT `destination` FROM `pax` WHERE `vip` = 'REUNION'", true);
+                    $x->destination = $this->getRandomValue(array_diff($map->airports, $invalid, $otherReunions));
                     // Update both with new destination and fare
                     foreach ([$x, $y] as $reunion) {
                         $reunion->cash = N_REF_FARE[$reunion->origin][$x->destination];
