@@ -722,6 +722,22 @@ class NowBoarding extends Table
                     // VIP Mystery
                     // Do not reveal
                     $x->status = 'SECRET';
+                } else if ($x->vip == 'REUNION') {
+                    // VIP Reunion
+                    // Choose a destination
+                    $y = $this->getFirstValue(array_slice($pax, 1, 1));
+                    $map = $this->getMap(false);
+                    $optimal = $map->getOptimalMoves();
+                    $origins = [$x->origin, $y->origin];
+                    $x->destination = $this->getRandomValue(array_diff($map->airports, $origins));
+                    // Update both with new destination and fare
+                    foreach ([$x, $y] as $reunion) {
+                        $reunion->cash = N_REF_FARE[$reunion->origin][$x->destination];
+                        $reunion->destination = $x->destination;
+                        $reunion->optimal = $optimal[$reunion->origin][$x->destination];
+                        $reunion->vip = $x->vip;
+                        $this->DbQuery("UPDATE `pax` SET `cash` = {$reunion->cash}, `destination` = '{$reunion->destination}', `optimal` = {$reunion->optimal}, `vip` = '{$reunion->vip}' WHERE `pax_id` = {$reunion->id}");
+                    }
                 }
                 $this->DbQuery("UPDATE `pax` SET `vip` = '{$x->vip}' WHERE `pax_id` = {$x->id}");
 
@@ -1525,6 +1541,14 @@ class NowBoarding extends Table
         }
         $x->location = $plane->location;
 
+        $args = [
+            'location' => $x->location,
+            'pax' => [$x],
+            'player_id' => $plane->id,
+            'player_name' => $plane->name,
+            'route' => $x->origin . "-" . $x->destination,
+        ];
+
         // Is this the final destination?
         $deliver = $x->location == $x->destination;
         $vipInfo = $x->getVipInfo();
@@ -1541,6 +1565,32 @@ class NowBoarding extends Table
                 $this->vipException($vipInfo);
             }
 
+            // VIP Reunion
+            if ($vipInfo['key'] == 'REUNION') {
+                $reunion = $this->getPaxById(intval($this->getUniqueValueFromDB("SELECT `pax_id` FROM `pax` WHERE `vip` = 'REUNION' AND `destination` = '{$x->destination}' AND `pax_id` != {$x->id}")));
+                if ($reunion->status == 'PORT' && $reunion->location == $x->location) {
+                    // Deliver companion
+                    $reunion->playerId = $plane->id;
+                    $reunion->status = 'CASH';
+                    $args['pax'][] = $reunion;
+                    $this->DbQuery("UPDATE `pax` SET `player_id` = {$reunion->getPlayerIdSql()}, `status` = '{$reunion->status}' WHERE `pax_id` = {$reunion->id}");
+                    $this->incStat(1, 'pax');
+                    $this->incStat(1, 'pax', $plane->id);
+                    $this->incStat($reunion->cash, 'cash', $plane->id);
+                    $this->notifyAllPlayers('message', N_REF_MSG['deplaneDeliver'], [
+                        'location' => $reunion->location,
+                        'player_id' => $plane->id,
+                        'player_name' => $plane->name,
+                        'route' => $reunion->origin . "-" . $reunion->destination,
+                        'cash' => $reunion->cash,
+                        'moves' => $reunion->moves,
+                    ]);
+                } else {
+                    // Wait for companion
+                    $deliver = false;
+                }
+            }
+
             // VIP Storm/Wind
             // Never deliver (condition is removed when met)
             if ($vipInfo['key'] == 'STORM' || $vipInfo['key'] == 'WIND') {
@@ -1553,13 +1603,6 @@ class NowBoarding extends Table
             $this->userException('boardDeliver', $plane->name);
         }
 
-        $args = [
-            'location' => $x->location,
-            'pax' => [$x],
-            'player_id' => $plane->id,
-            'player_name' => $plane->name,
-            'route' => $x->origin . "-" . $x->destination,
-        ];
         $countToWin = false;
         if ($deliver) {
             $x->status = 'CASH';

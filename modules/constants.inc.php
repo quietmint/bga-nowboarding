@@ -386,15 +386,22 @@ define('N_REF_VIP', [
     'MYSTERY' => [
         'name' => clienttranslate('Mystery Shopper'),
         'desc' => clienttranslate('Destination remains secret until boarding'),
-        'count' => 2,
-        'hours' => ['MORNING', 'NOON', 'NIGHT'],
+        'count' => 1,
+        'hours' => ['NIGHT'],
         'set' => N_VIP_BGA,
     ],
     'RETURN' => [
         'name' => clienttranslate('Round-Trip Ticket'),
         'desc' => clienttranslate('Pays nothing for the first leg, then reappears for the reverse leg and pays double'),
         'count' => 1,
-        'hours' => ['MORNING', 'NOON'],
+        'hours' => ['NOON'],
+        'set' => N_VIP_BGA,
+    ],
+    'REUNION' => [
+        'name' => clienttranslate('Reunion'),
+        'desc' => clienttranslate('Two passengers must meet at their destination'),
+        'count' => 1,
+        'hours' => ['NOON'],
         'set' => N_VIP_BGA,
     ],
     'STORM' => [
