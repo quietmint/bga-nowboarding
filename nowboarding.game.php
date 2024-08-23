@@ -1567,7 +1567,7 @@ class NowBoarding extends Table
             // VIP Reunion
             if ($vipInfo['key'] == 'REUNION') {
                 $reunion = $this->getPaxById(intval($this->getUniqueValueFromDB("SELECT `pax_id` FROM `pax` WHERE `vip` = 'REUNION' AND `destination` = '{$x->destination}' AND `pax_id` != {$x->id}")));
-                if ($reunion->status == 'PORT' && $reunion->location == $x->location) {
+                if ($deliver && $reunion->status == 'PORT' && $reunion->location == $x->location) {
                     // Deliver companion
                     $reunion->playerId = $plane->id;
                     $reunion->status = 'CASH';
