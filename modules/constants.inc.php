@@ -359,7 +359,7 @@ define('N_REF_VIP', [
         'name' => clienttranslate('Discount Ticket'),
         'desc' => clienttranslate('Pays a reduced fare'),
         'count' => 1,
-        'hours' => ['MORNING', 'NOON'],
+        'hours' => ['NIGHT'],
         'set' => N_VIP_BGA,
     ],
     'LATE' => [
@@ -387,14 +387,14 @@ define('N_REF_VIP', [
         'name' => clienttranslate('Mystery Shopper'),
         'desc' => clienttranslate('Destination remains secret until boarding'),
         'count' => 1,
-        'hours' => ['NIGHT'],
+        'hours' => ['MORNING', 'NIGHT'],
         'set' => N_VIP_BGA,
     ],
     'RETURN' => [
         'name' => clienttranslate('Round-Trip Ticket'),
         'desc' => clienttranslate('Pays nothing for the first leg, then reappears for the reverse leg and pays double'),
-        'count' => 1,
-        'hours' => ['NOON'],
+        'count' => 2,
+        'hours' => ['MORNING', 'NOON'],
         'set' => N_VIP_BGA,
     ],
     'REUNION' => [
@@ -408,14 +408,14 @@ define('N_REF_VIP', [
         'name' => clienttranslate('Storm Chaser'),
         'desc' => clienttranslate('Must fly through a storm (a tailwind does not count)'),
         'count' => 1,
-        'hours' => ['MORNING'],
+        'hours' => ['NOON'],
         'set' => N_VIP_BGA,
     ],
     'WIND' => [
         'name' => clienttranslate('Wind Glider'),
         'desc' => clienttranslate('Must fly through a tailwind (a storm does not count)'),
         'count' => 1,
-        'hours' => ['MORNING'],
+        'hours' => ['NOON'],
         'set' => N_VIP_BGA,
     ],
 ]);
