@@ -376,5 +376,12 @@ $stats_type = [
             'type' => 'int',
             'display' => 'limited',
         ],
+
+        'payCustom' => [
+            'id' => 9001,
+            'name' => totranslate('Cash overpaid'),
+            'type' => 'int',
+            'display' => 'limited',
+        ],
     ]
 ];

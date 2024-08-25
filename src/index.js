@@ -579,7 +579,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
     /* @Override */
     onScriptError(msg) {
-      if (!uniqJsError[msg]) {
+      const bgaKnownError = msg.includes("During notification resultsAvailable") && msg.includes("switchToGameResults");
+      if (!bgaKnownError && !uniqJsError[msg]) {
         uniqJsError[msg] = true;
         console.error("⛔ Reporting JavaScript error", msg);
         this.takeAction("jsError", { msg, userAgent: navigator.userAgent });
