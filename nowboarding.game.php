@@ -1099,6 +1099,13 @@ class NowBoarding extends Table
         $playerId = $this->getCurrentPlayerId();
         $plane = $this->getPlaneById($playerId);
 
+        // Compare with suggestion
+        $suggestion = $this->_argPreparePay($plane)['suggestion'];
+        sort($suggestion);
+        sort($paid);
+        $strSuggestion = join(', ', $suggestion);
+        $strPaid = join(', ', $paid);
+
         // Validate
         $total = 0;
         $validIds = [];
@@ -1118,15 +1125,9 @@ class NowBoarding extends Table
             $this->userException('pay', "\${$plane->debt}");
         }
 
-        // Compare with suggestion
-        $suggestion = $this->_argPreparePay($plane)['suggestion'];
-        sort($suggestion);
-        sort($paid);
-        $strSuggestion = join(', ', $suggestion);
-        $strPaid = join(', ', $paid);
         if ($strSuggestion != $strPaid) {
             $this->warn("Pay custom amount for debt={$plane->debt}! Player paid: $strPaid (= total $total), suggestion: $strSuggestion // ");
-            $this->incStat(1, 'payCustom', $plane->id);
+            // $this->incStat(1, 'payCustom', $plane->id);
         }
 
         // Payment
