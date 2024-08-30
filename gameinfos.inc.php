@@ -89,6 +89,7 @@ $gameinfos = [
     // Game interface width range (pixels)
     // Note: game interface = space on the left side, without the column on the right
     'game_interface_width' => [
+        'autoscale' => 'viewport',
 
         // Minimum width
         //  default: 740
