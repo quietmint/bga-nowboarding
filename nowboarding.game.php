@@ -260,11 +260,12 @@ class NowBoarding extends Table
             'complaint' => $this->countComplaint(),
             'countToWin' => $this->globals->get('countToWin') ?? '??',
             'hour' => $this->getHourInfo(),
+            'hourTiming' => $this->globals->get('hourTiming'),
             'map' => $this->getMap(),
             'noTimeLimit' => in_array($bgaClock, N_REF_BGA_CLOCK_UNLIMITED),
             'pax' => $this->filterPax($this->getPaxByStatus(['SECRET', 'PORT', 'SEAT'])),
-            'plans' => $plans,
             'planes' => $this->getPlanesByIds(),
+            'plans' => $plans,
             'players' => $players,
             'timer' => (in_array($bgaClock, N_REF_BGA_CLOCK_REALTIME) ? $this->getOption(N_OPTION_TIMER) : 0) * (count($players) * 5 + 20),
             'version' => $this->getOption(N_BGA_VERSION),
@@ -1855,6 +1856,20 @@ class NowBoarding extends Table
         if ($advance && $vip && $prevHour) {
             $this->angerVips($prevHour);
         }
+
+        // Timing
+        $newTiming = [
+            'time' => time(),
+            'hourDesc' => $hourInfo['hourDesc'],
+        ];
+        if (!$finale) {
+            $newTiming['round'] = $hourInfo['round'];
+            $newTiming['total'] = $hourInfo['total'];
+        }
+        $hourTiming = $this->globals->get('hourTiming') ?? [];
+        $hourTiming[] = $newTiming;
+        $this->globals->set('hourTiming', $hourTiming);
+        $hourInfo['hourTiming'] = $newTiming;
 
         // Notify hour
         $hourInfo['i18n'] = ['hourDesc'];

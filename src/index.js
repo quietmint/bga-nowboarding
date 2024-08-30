@@ -132,6 +132,11 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         this.resizeMap();
         this.updateViewport(false);
       });
+      if (gamedatas.hourTiming) {
+        for (const hourTiming of gamedatas.hourTiming) {
+          this.appendNbChatHourTiming(hourTiming);
+        }
+      }
 
       // Setup common
       const titleEl = document.getElementById("page-title");
@@ -479,22 +484,34 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       } else {
         wrapHtml = `<div class="nbchatwrap ${self}" data-order="${order}">${avatarHtml}${logHtml}</div>`;
       }
+      this.appendNbChat(wrapHtml, order, !args.writing);
+    },
 
-      // Insert at the proper position
+    appendNbChatHourTiming(args) {
+      let msg = _(args.hourDesc);
+      if (args.round) {
+        msg += ` (${args.round}/${args.total})`;
+      }
+      const order = Math.floor(args.time) - 1701388800; // 2023-12-01
+      let html = `<div class="nbchatwrap hour" data-order="${order}">&mdash; ${msg} &mdash;</div>`;
+      this.appendNbChat(html, order, true);
+    },
+
+    appendNbChat(html, order, scroll) {
       const scrollEl = document.getElementById("nbchatscroll");
       let inserted = false;
       for (const child of scrollEl.children) {
         const childOrder = +child.dataset.order;
         if (order >= childOrder) {
-          child.insertAdjacentHTML("beforebegin", wrapHtml);
+          child.insertAdjacentHTML("beforebegin", html);
           inserted = true;
           break;
         }
       }
       if (!inserted) {
-        scrollEl.insertAdjacentHTML("beforeend", wrapHtml);
+        scrollEl.insertAdjacentHTML("beforeend", html);
       }
-      if (!args.writing) {
+      if (scroll) {
         scrollEl.scrollTop = scrollEl.scrollHeight * -1;
       }
     },
@@ -759,6 +776,9 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         if ((this.gamedatas.hour.vipNew || this.gamedatas.hour.vipRemain) && this.gamedatas.gamestate.private_state?.name == "prepareBuy") {
           document.getElementById("button_vipAccept")?.classList.toggle("disabled", this.gamedatas.hour.vipNew);
           document.getElementById("button_vipDecline")?.classList.toggle("disabled", !this.gamedatas.hour.vipNew);
+        }
+        if (this.gamedatas.hour.hourTiming) {
+          this.appendNbChatHourTiming(this.gamedatas.hour.hourTiming);
         }
         this.renderCommon();
       } else if (notif.type == "move") {
