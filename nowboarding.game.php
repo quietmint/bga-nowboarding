@@ -1860,6 +1860,7 @@ class NowBoarding extends Table
         // Timing
         $newTiming = [
             'time' => time(),
+            'hour' => $hourInfo['hour'],
             'hourDesc' => $hourInfo['hourDesc'],
         ];
         if (!$finale) {

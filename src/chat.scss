@@ -106,10 +106,13 @@
   }
 
   &.hour {
-    font-style: italic;
     justify-content: center;
     opacity: 0.5;
     text-align: center;
+
+    .icon {
+      margin: 0 8px;
+    }
   }
 
   .avatar {

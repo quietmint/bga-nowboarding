@@ -495,7 +495,11 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         msg += ` (${args.round}/${args.total})`;
       }
       const order = Math.floor(args.time) - 1701388800; // 2023-12-01
-      let html = `<div class="nbchatwrap hour" data-order="${order}">&mdash; ${msg} &mdash;</div>`;
+      let icon = '';
+      if (args.hour) {
+        icon = `<i class="icon hour-${args.hour}"></i>`;
+      }
+      let html = `<div class="nbchatwrap hour" data-order="${order}">— ${icon} ${msg} ${icon} —</div>`;
       this.appendNbChat(html, order, true);
     },
 
