@@ -244,13 +244,13 @@ html,
     float: none;
     order: 1;
     position: static;
-    width: 900px;
+    width: 850px;
   }
 
   #left-side-wrapper {
     float: none;
     order: 2;
-    width: 900px;
+    width: 850px;
   }
 
   #player_boards {
@@ -262,7 +262,8 @@ html,
 
   .player-board {
     float: none;
-    width: 289px;
+    margin: 1px;
+    width: 275px;
 
     &.spectator-mode {
       width: 100%;
@@ -271,12 +272,18 @@ html,
 
   /* Wiki */
   .pagesection {
-    max-width: 900px;
+    max-width: 850px;
     overflow: auto;
   }
 
   .wikicontent {
     font-size: 24px;
+
+    img {
+      height: auto;
+      max-width: 825px;
+      object-fit: contain;
+    }
   }
 }
 
@@ -440,6 +447,23 @@ html,
 }
 
 /* BGA chat */
+body.mobile_version {
+  --mobile-scale: 1;
+
+  &.chatbar_ontop {
+    overflow: hidden;
+  }
+
+  #chatbardock {
+    transform: scale(var(--mobile-scale));
+    transform-origin: bottom right;
+  }
+
+  &.chatbar_ontop #chatbardock {
+    transform: none;
+  }
+}
+
 .msgtime {
   position: static;
   font-size: 75%;

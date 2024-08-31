@@ -375,7 +375,9 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       isMobile = document.body.clientWidth < 1180;
       document.body.classList.toggle("desktop_version", !isMobile);
       document.body.classList.toggle("mobile_version", isMobile);
-      console.log("📱 isMobile", isMobile, "clientWidth", document.body.clientWidth, "screenWidth", window.screen.width);
+      const scale = Math.min(1.5, Math.max(1, document.body.clientWidth / window.screen.width));
+      document.body.style.setProperty("--mobile-scale", scale);
+      console.log("📱 isMobile", isMobile, "clientWidth", document.body.clientWidth, "screenWidth", window.screen.width, "scale", scale);
     },
 
     updateViewport(chatVisible) {
@@ -389,7 +391,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         }
       }
       // Force device-width during chat
-      viewportEl.content = `width=${chatVisible ? "device-width" : "900"},interactive-widget=resizes-content`;
+      viewportEl.content = `width=${chatVisible ? "device-width" : "850"},interactive-widget=resizes-content`;
     },
 
     /* @Override */
@@ -1420,7 +1422,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
     resizeMap() {
       if (this.scaleEl && this.mapEl) {
-        this.scaleEl.style.setProperty("--map-width", Math.max(875, this.mapEl.clientWidth) + "px");
+        this.scaleEl.style.setProperty("--map-width", Math.max(825, this.mapEl.clientWidth) + "px");
         this.renderMapLeads();
       }
     },
