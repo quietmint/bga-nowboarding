@@ -1100,8 +1100,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           }
         };
         nbrange.addEventListener("input", adjustScale);
-        const initialScale = getStorage("scale") || 60;
-        nbrange.value = initialScale;
+        nbrange.value = getStorage("scale") || 60;
         adjustScale(null, false);
       }
 
