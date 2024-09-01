@@ -1,7 +1,7 @@
 define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], function (dojo, declare) {
   let endTime = null;
   let flyTimer = null;
-  let isMobile = false;
+  const isTouch = navigator?.maxTouchPoints > 0;
   let spotlightPlane = null;
   let suppressSounds = [];
   const uniqJsError = {};
@@ -94,12 +94,11 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
   return declare("bgagame.nowboarding", ebg.core.gamegui, {
     constructor() {
       dojo.place("loader_mask", "overall-content", "before");
-      this.updateMobile();
+      this.updateViewport();
       this.onGameUiWidthChange = debounce(
         () => {
-          this.updateMobile();
           this.updateViewport();
-          const logMode = !isMobile && document.body.clientWidth > 1640 ? document.getElementById("preference_global_control_logsSecondColumn")?.value : "0";
+          const logMode = document.body.clientWidth > 1400 ? document.getElementById("preference_global_control_logsSecondColumn")?.value : "0";
           this.switchLogModeTo(logMode);
           this.adaptChatbarDock();
           this.adaptStatusBar();
@@ -125,13 +124,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       this.chatHeaderEl = document.getElementById("nbchatheader");
       this.chatHeaderEl.insertAdjacentText("beforeend", __("lang_mainsite", "Discuss at this table"));
       this.chatHeaderEl.insertAdjacentElement("afterend", document.getElementById("spectatorbox"));
-      document.getElementById("nbchathide").addEventListener("click", (ev) => {
-        // move table chat to BGA popup
-        this.moveChatElements(false);
-        document.getElementById("nbchat").style.display = "none";
-        this.resizeMap();
-        this.updateViewport(false);
-      });
       if (gamedatas.hourTiming) {
         for (const hourTiming of gamedatas.hourTiming) {
           this.appendNbChatHourTiming(hourTiming);
@@ -371,27 +363,30 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       }
     },
 
-    updateMobile() {
-      isMobile = document.body.clientWidth < 1180;
-      document.body.classList.toggle("desktop_version", !isMobile);
-      document.body.classList.toggle("mobile_version", isMobile);
-      const scale = Math.min(1.5, Math.max(1, document.body.clientWidth / window.screen.width));
-      document.body.style.setProperty("--mobile-scale", scale);
-      console.log("📱 isMobile", isMobile, "clientWidth", document.body.clientWidth, "screenWidth", window.screen.width, "scale", scale);
-    },
-
     updateViewport(chatVisible) {
-      if (chatVisible === undefined) {
-        chatVisible = false;
-        for (const w in this.chatbarWindows) {
-          if (this.chatbarWindows[w].status == "expanded") {
-            chatVisible = true;
-            break;
+      let width;
+      if (window.screen.orientation?.type.startsWith("landscape")) {
+        width = 1400;
+      } else {
+        if (chatVisible === undefined) {
+          chatVisible = false;
+          for (const w in this.chatbarWindows) {
+            if (this.chatbarWindows[w].status == "expanded") {
+              chatVisible = true;
+              break;
+            }
           }
         }
+        width = chatVisible ? "device-width" : 850;
       }
-      // Force device-width during chat
-      viewportEl.content = `width=${chatVisible ? "device-width" : "850"},interactive-widget=resizes-content`;
+      viewportEl.content = `width=${width},interactive-widget=resizes-content`;
+
+      const isMobile = document.body.clientWidth < 1135;
+      const scale = isMobile ? Math.max(1, (document.body.clientWidth / window.screen.width) * 0.75) : 1;
+      document.body.classList.toggle("desktop_version", !isMobile);
+      document.body.classList.toggle("mobile_version", isMobile);
+      document.body.style.setProperty("--nb-mobile-scale", scale);
+      console.info(`UI: ${isMobile ? "📱 Mobile" : "🖥️ Desktop"}, Screen: ${window.screen.width}x${window.screen.height}, Client: ${document.body.clientWidth}x${document.body.clientHeight}, Scale: ${scale}`);
     },
 
     /* @Override */
@@ -495,7 +490,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         msg += ` (${args.round}/${args.total})`;
       }
       const order = Math.floor(args.time) - 1701388800; // 2023-12-01
-      let icon = '';
+      let icon = "";
       if (args.hour) {
         icon = `<i class="icon hour-${args.hour}"></i>`;
       }
@@ -1366,7 +1361,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
   <div id="paxlist-${manifestId}" class="paxlist is-map"></div>
 </div>`
       );
-      if (!isMobile) {
+      if (!isTouch) {
         const manifestEl = document.getElementById(`manifest-${manifestId}`);
         manifestEl.addEventListener("mouseenter", (ev) => this.onEnterMapManifest(manifestId));
         manifestEl.addEventListener("mouseleave", (ev) => this.onLeaveMapManifest(manifestId));
@@ -1408,7 +1403,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
   <i class="icon people"></i><span id="nodecount-${node}" class="nodecount">0</span>
 </div>`
         );
-        if (!isMobile) {
+        if (!isTouch) {
           const nodeEl = document.getElementById(`node-${node}`);
           nodeEl.addEventListener("mouseenter", (ev) => this.onEnterMapManifest(node));
           nodeEl.addEventListener("mouseleave", (ev) => this.onLeaveMapManifest(node));
@@ -1426,7 +1421,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
     resizeMap() {
       if (this.scaleEl && this.mapEl) {
-        this.scaleEl.style.setProperty("--map-width", Math.max(825, this.mapEl.clientWidth) + "px");
+        this.scaleEl.style.setProperty("--nb-map-width", Math.max(825, this.mapEl.clientWidth) + "px");
         this.renderMapLeads();
       }
     },
@@ -1744,7 +1739,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         if (buy.enabled && buy.ownerId == null) {
           buyEl.addEventListener("click", (ev) => this.takeAction("buy", buy));
         }
-        if (buy.type == "ALLIANCE" && !isMobile) {
+        if (buy.type == "ALLIANCE" && !isTouch) {
           buyEl.addEventListener("mouseenter", (ev) => this.onEnterMapManifest(buy.alliance));
           buyEl.addEventListener("mouseleave", (ev) => this.onLeaveMapManifest(buy.alliance));
         }

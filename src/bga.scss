@@ -448,14 +448,14 @@ html,
 
 /* BGA chat */
 body.mobile_version {
-  --mobile-scale: 1;
+  --nb-mobile-scale: 1;
 
   &.chatbar_ontop {
     overflow: hidden;
   }
 
   #chatbardock {
-    transform: scale(var(--mobile-scale));
+    transform: scale(var(--nb-mobile-scale));
     transform-origin: bottom right;
   }
 

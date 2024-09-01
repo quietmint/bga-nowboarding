@@ -84,7 +84,7 @@
 
 #manifest-spacer {
   order: 99;
-  width: calc((var(--map-width) - 850px) * 0.25);
+  width: calc((var(--nb-map-width) - 850px) * 0.25);
 }
 
 .manifest {
