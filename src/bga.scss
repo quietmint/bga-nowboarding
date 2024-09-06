@@ -152,13 +152,7 @@ html,
 
 /* Player panels */
 
-#left-side {
-  margin-right: 285px;
-}
-
 #right-side {
-  margin-left: -280px;
-  position: relative;
   width: 280px;
 }
 
@@ -168,21 +162,13 @@ html,
     border-radius: 8px;
   }
 
-  #left-side {
-    margin-right: 540px;
-  }
-
   #right-side {
-    margin-left: -530px;
+    grid-template-columns: 280px 240px;
     width: 530px;
   }
 
   #right-side-first-part {
     width: 280px;
-  }
-
-  #right-side-second-part {
-    float: right;
   }
 
   #logs {
@@ -256,13 +242,12 @@ html,
   #player_boards {
     display: flex;
     flex-wrap: wrap;
+    gap: 3px;
     justify-content: center;
     margin: 0;
   }
 
   .player-board {
-    float: none;
-    margin: 1px;
     width: 275px;
 
     &.spectator-mode {
@@ -423,7 +408,7 @@ html,
 #nbprogress {
   background: white;
   border-bottom: 1px solid $color-grey-300;
-  height: 6px;
+  height: 8px;
 }
 
 #nbfill {
