@@ -56,26 +56,31 @@ define('N_REF_ALLIANCE_COLOR', [
 define('N_REF_HOUR', [
     'PREFLIGHT' => [
         'desc' => clienttranslate('Preflight'),
+        '_desc' => totranslate('Preflight'), // https://studio.boardgamearena.com/bug?id=154
         'next' => 'MORNING',
         'prev' => null,
     ],
     'MORNING' => [
         'desc' => clienttranslate('Morning'),
+        '_desc' => totranslate('Morning'), // https://studio.boardgamearena.com/bug?id=154
         'next' => 'NOON',
         'prev' => null,
     ],
     'NOON' => [
         'desc' => clienttranslate('Afternoon'),
+        '_desc' => totranslate('Afternoon'), // https://studio.boardgamearena.com/bug?id=154
         'next' => 'NIGHT',
         'prev' => 'MORNING',
     ],
     'NIGHT' => [
         'desc' => clienttranslate('Evening'),
+        '_desc' => totranslate('Evening'), // https://studio.boardgamearena.com/bug?id=154
         'next' => 'FINALE',
         'prev' => 'NOON',
     ],
     'FINALE' => [
         'desc' => clienttranslate('Final Round'),
+        '_desc' => totranslate('Final Round'), // https://studio.boardgamearena.com/bug?id=154
         'next' => null,
         'prev' => 'NIGHT',
     ],
@@ -285,56 +290,72 @@ define('N_REF_VIP', [
     // Fowers VIPs
     'BABY' => [
         'name' => clienttranslate('Crying Baby'),
+        '_name' => totranslate('Crying Baby'), // https://studio.boardgamearena.com/bug?id=154
         'desc' => clienttranslate('Other passengers at their airport gain 2 anger per turn'),
+        '_desc' => totranslate('Other passengers at their airport gain 2 anger per turn'), // https://studio.boardgamearena.com/bug?id=154
         'count' => 2,
         'hours' => ['MORNING', 'NOON'],
         'set' => N_VIP_FOWERS,
     ],
     'CELEBRITY' => [
         'name' => clienttranslate('Celebrity'),
+        '_name' => totranslate('Celebrity'), // https://studio.boardgamearena.com/bug?id=154
         'desc' => clienttranslate('Must fly alone'),
+        '_desc' => totranslate('Must fly alone'), // https://studio.boardgamearena.com/bug?id=154
         'count' => 1,
         'hours' => ['NIGHT'],
         'set' => N_VIP_FOWERS,
     ],
     'DIRECT' => [
         'name' => clienttranslate('Direct Flight'),
+        '_name' => totranslate('Direct Flight'), // https://studio.boardgamearena.com/bug?id=154
         'desc' => clienttranslate('Only deplanes at their destination'),
+        '_desc' => totranslate('Only deplanes at their destination'), // https://studio.boardgamearena.com/bug?id=154
         'count' => 1,
         'hours' => ['NIGHT'],
         'set' => N_VIP_FOWERS,
     ],
     'DOUBLE' => [
         'name' => clienttranslate('Captured Fugitive'),
+        '_name' => totranslate('Captured Fugitive'), // https://studio.boardgamearena.com/bug?id=154
         'desc' => clienttranslate('Requires 2 seats'),
+        '_desc' => totranslate('Requires 2 seats'), // https://studio.boardgamearena.com/bug?id=154
         'count' => 1,
         'hours' => ['NOON'],
         'set' => N_VIP_FOWERS,
     ],
     'FIRST' => [
         'name' => clienttranslate('First In Line'),
+        '_name' => totranslate('First In Line'), // https://studio.boardgamearena.com/bug?id=154
         'desc' => clienttranslate('Must board before other passengers at their airport'),
+        '_desc' => totranslate('Must board before other passengers at their airport'), // https://studio.boardgamearena.com/bug?id=154
         'count' => 1,
         'hours' => ['NOON'],
         'set' => N_VIP_FOWERS,
     ],
     'GRUMPY' => [
         'name' => clienttranslate('Grumpy'),
+        '_name' => totranslate('Grumpy'), // https://studio.boardgamearena.com/bug?id=154
         'desc' => clienttranslate('Starts at 1 anger'),
+        '_desc' => totranslate('Starts at 1 anger'), // https://studio.boardgamearena.com/bug?id=154
         'count' => 1,
         'hours' => ['NIGHT'],
         'set' => N_VIP_FOWERS,
     ],
     'IMPATIENT' => [
         'name' => clienttranslate('Impatient'),
+        '_name' => totranslate('Impatient'), // https://studio.boardgamearena.com/bug?id=154
         'desc' => clienttranslate('Anger never resets'),
+        '_desc' => totranslate('Anger never resets'), // https://studio.boardgamearena.com/bug?id=154
         'count' => 1,
         'hours' => ['MORNING'],
         'set' => N_VIP_FOWERS,
     ],
     'NERVOUS' => [
         'name' => clienttranslate('Nervous'),
+        '_name' => totranslate('Nervous'), // https://studio.boardgamearena.com/bug?id=154
         'desc' => clienttranslate('Cannot fly through storms or tailwinds'),
+        '_desc' => totranslate('Cannot fly through storms or tailwinds'), // https://studio.boardgamearena.com/bug?id=154
         'count' => 1,
         'hours' => ['MORNING'],
         'set' => N_VIP_FOWERS,
@@ -343,77 +364,99 @@ define('N_REF_VIP', [
     // BGA Community VIPs
     'CONVENTION' => [
         'name' => clienttranslate('Convention'),
+        '_name' => totranslate('Convention'), // https://studio.boardgamearena.com/bug?id=154
         'desc' => clienttranslate('All new passengers have the same destination'),
+        '_desc' => totranslate('All new passengers have the same destination'), // https://studio.boardgamearena.com/bug?id=154
         'count' => 1,
         'hours' => ['NIGHT'],
         'set' => N_VIP_BGA,
     ],
     'CREW' => [
         'name' => clienttranslate('Crewmember'),
+        '_name' => totranslate('Crewmember'), // https://studio.boardgamearena.com/bug?id=154
         'desc' => clienttranslate('Pays nothing but never gains anger'),
+        '_desc' => totranslate('Pays nothing but never gains anger'), // https://studio.boardgamearena.com/bug?id=154
         'count' => 1,
         'hours' => ['NOON', 'NIGHT'],
         'set' => N_VIP_BGA,
     ],
     'DISCOUNT' => [
         'name' => clienttranslate('Discount Ticket'),
+        '_name' => totranslate('Discount Ticket'), // https://studio.boardgamearena.com/bug?id=154
         'desc' => clienttranslate('Pays a reduced fare'),
+        '_desc' => totranslate('Pays a reduced fare'), // https://studio.boardgamearena.com/bug?id=154
         'count' => 1,
         'hours' => ['NIGHT'],
         'set' => N_VIP_BGA,
     ],
     'LATE' => [
         'name' => clienttranslate('Late Connection'),
+        '_name' => totranslate('Late Connection'), // https://studio.boardgamearena.com/bug?id=154
         'desc' => clienttranslate('Boarding consumes 1 speed'),
+        '_desc' => totranslate('Boarding consumes 1 speed'), // https://studio.boardgamearena.com/bug?id=154
         'count' => 1,
         'hours' => ['MORNING', 'NOON'],
         'set' => N_VIP_BGA,
     ],
     'LAST' => [
         'name' => clienttranslate('Last In Line'),
+        '_name' => totranslate('Last In Line'), // https://studio.boardgamearena.com/bug?id=154
         'desc' => clienttranslate('Must board after other passengers at their airport'),
+        '_desc' => totranslate('Must board after other passengers at their airport'), // https://studio.boardgamearena.com/bug?id=154
         'count' => 1,
         'hours' => ['NOON'],
         'set' => N_VIP_BGA,
     ],
     'LOYAL' => [
         'name' => clienttranslate('${1} Loyalist'),
+        '_name' => totranslate('${1} Loyalist'), // https://studio.boardgamearena.com/bug?id=154
         'desc' => clienttranslate('Only flies on planes in the ${1} alliance'),
+        '_desc' => totranslate('Only flies on planes in the ${1} alliance'), // https://studio.boardgamearena.com/bug?id=154
         'count' => 2,
         'hours' => ['NOON', 'NIGHT'],
         'set' => N_VIP_BGA,
     ],
     'MYSTERY' => [
         'name' => clienttranslate('Mystery Shopper'),
+        '_name' => totranslate('Mystery Shopper'), // https://studio.boardgamearena.com/bug?id=154
         'desc' => clienttranslate('Destination remains secret until boarding'),
+        '_desc' => totranslate('Destination remains secret until boarding'), // https://studio.boardgamearena.com/bug?id=154
         'count' => 1,
         'hours' => ['MORNING', 'NIGHT'],
         'set' => N_VIP_BGA,
     ],
     'RETURN' => [
         'name' => clienttranslate('Round-Trip Ticket'),
+        '_name' => totranslate('Round-Trip Ticket'), // https://studio.boardgamearena.com/bug?id=154
         'desc' => clienttranslate('Pays nothing for the first leg, then reappears for the reverse leg and pays double'),
+        '_desc' => totranslate('Pays nothing for the first leg, then reappears for the reverse leg and pays double'), // https://studio.boardgamearena.com/bug?id=154
         'count' => 2,
         'hours' => ['MORNING', 'NOON'],
         'set' => N_VIP_BGA,
     ],
     'REUNION' => [
         'name' => clienttranslate('Reunion'),
+        '_name' => totranslate('Reunion'), // https://studio.boardgamearena.com/bug?id=154
         'desc' => clienttranslate('Two passengers must meet at their destination'),
+        '_desc' => totranslate('Two passengers must meet at their destination'), // https://studio.boardgamearena.com/bug?id=154
         'count' => 1,
         'hours' => ['NOON'],
         'set' => N_VIP_BGA,
     ],
     'STORM' => [
         'name' => clienttranslate('Storm Chaser'),
+        '_name' => totranslate('Storm Chaser'), // https://studio.boardgamearena.com/bug?id=154
         'desc' => clienttranslate('Must fly through a storm (a tailwind does not count)'),
+        '_desc' => totranslate('Must fly through a storm (a tailwind does not count)'), // https://studio.boardgamearena.com/bug?id=154
         'count' => 1,
         'hours' => ['NOON'],
         'set' => N_VIP_BGA,
     ],
     'WIND' => [
         'name' => clienttranslate('Wind Glider'),
+        '_name' => totranslate('Wind Glider'), // https://studio.boardgamearena.com/bug?id=154
         'desc' => clienttranslate('Must fly through a tailwind (a storm does not count)'),
+        '_desc' => totranslate('Must fly through a tailwind (a storm does not count)'), // https://studio.boardgamearena.com/bug?id=154
         'count' => 1,
         'hours' => ['NOON'],
         'set' => N_VIP_BGA,
