@@ -196,6 +196,14 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
       // Setup sounds
       window.playSound = this.playSound.bind(this);
+      this.sounds.load("cash");
+      this.sounds.load("chime");
+      this.sounds.load("complaint1");
+      this.sounds.load("complaint2");
+      this.sounds.load("complaint3");
+      this.sounds.load("complaint4");
+      this.sounds.load("plane");
+      this.sounds.load("walkway");
 
       // Setup notifications
       dojo.subscribe("buildPrimary", this, "onNotify");
@@ -567,8 +575,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       this.inherited(arguments);
       if (this.gamedatas.gamestate.name == "fly" && endTime) {
         const seconds = (endTime - Date.now()) / 1000;
-        if (!this.gamedatas.gamestate.args.sound && seconds <= 8) {
-          // Play the clock sound only once, at 8 seconds
+        if (!this.gamedatas.gamestate.args.sound && seconds <= 9) {
+          // Play the clock sound only once, at 9 seconds
           playSoundSuper("time_alarm");
           this.gamedatas.gamestate.args.sound = true;
         }
@@ -742,13 +750,13 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         }
       } else if (notif.type == "complaint") {
         suppressSounds = ["yourturn"];
-        playSound("nowboarding_complaint" + getRandomInt(1, 4));
+        this.sounds.play("complaint" + getRandomInt(1, 4));
         this.gamedatas.complaint = notif.args.total;
         this.gamedatas.countToWin = notif.args.countToWin;
         this.renderCommon();
       } else if (notif.type == "flyTimer") {
         suppressSounds = ["yourturn"];
-        playSound("nowboarding_chime");
+        this.sounds.play("chime");
         if (flyTimer) {
           window.clearTimeout(flyTimer);
           flyTimer = null;
@@ -760,7 +768,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         this.gamedatas.hour = notif.args;
         if (this.gamedatas.hour.hour == "FINALE") {
           suppressSounds = ["yourturn"];
-          playSound("nowboarding_walkway");
+          this.sounds.play("walkway");
         }
         if ((this.gamedatas.hour.vipNew || this.gamedatas.hour.vipRemain) && this.gamedatas.gamestate.private_state?.name == "prepareBuy") {
           document.getElementById("button_vipAccept")?.classList.toggle("disabled", this.gamedatas.hour.vipNew);
@@ -797,7 +805,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           this.renderCommon();
         }
         if (sound) {
-          playSound("nowboarding_cash");
+          this.disableNextMoveSound();
+          this.sounds.play("cash");
         }
         this.renderMapCounts();
       } else if (notif.type == "plans") {
@@ -812,7 +821,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         }
       } else if (notif.type == "sound") {
         suppressSounds = notif.args.suppress;
-        playSound(`nowboarding_${notif.args.sound}`);
+        this.sounds.play(notif.args.sound);
       } else if (notif.type == "vip") {
         this.gamedatas.vip = notif.args.overall;
         const vipEl = document.getElementById("nbcommon-vip");
@@ -821,7 +830,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         }
       } else if (notif.type == "weather") {
         suppressSounds = ["yourturn"];
-        playSound("nowboarding_plane");
+        this.sounds.play("plane");
         this.gamedatas.map.weather = notif.args.weather;
         this.renderWeather();
       }
