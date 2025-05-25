@@ -805,11 +805,6 @@ class NowBoarding extends Table
     //////////// Actions (ajax)
     ////////////
 
-    public function jsError($userAgent, $msg): void
-    {
-        $this->error("JavaScript error from User-Agent: $userAgent\n$msg // ");
-    }
-
     public function undo(): void
     {
         $this->gamestate->checkPossibleAction('undo');

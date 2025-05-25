@@ -4,7 +4,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
   const isTouch = navigator?.maxTouchPoints > 0;
   let spotlightPlane = null;
   let suppressSounds = [];
-  const uniqJsError = {};
 
   const airportMap = {
     ATL: _("Atlanta"),
@@ -595,17 +594,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       playSoundSuper(sound);
     },
 
-    /* @Override */
-    onScriptError(msg) {
-      const bgaKnownError = msg.includes("During notification resultsAvailable") && msg.includes("switchToGameResults");
-      if (!bgaKnownError && !uniqJsError[msg]) {
-        uniqJsError[msg] = true;
-        console.error("⛔ Reporting JavaScript error", msg);
-        this.takeAction("jsError", { msg, userAgent: navigator.userAgent });
-      }
-      this.inherited(arguments);
-    },
-
     // ----------------------------------------------------------------------
 
     isReadOnly() {
@@ -877,7 +865,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         }
 
         // Web call
-        const method = action == "jsError" ? "post" : undefined;
         const start = Date.now();
         console.log(`👆 Take action ${action}`, data);
         this.ajaxcall(
@@ -906,8 +893,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
               console.log(`Take action ${action} done in ${duration}ms`);
               resolve();
             }
-          },
-          method
+          }
         );
       });
     },

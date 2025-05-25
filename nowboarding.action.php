@@ -30,13 +30,6 @@ class action_nowboarding extends APP_GameAction
     $this->game->checkVersion($clientVersion);
   }
 
-  public function jsError()
-  {
-    $this->setAjaxMode(false);
-    $this->game->jsError($_POST['userAgent'], $_POST['msg']);
-    $this->ajaxResponse();
-  }
-
   function undo()
   {
     $this->setAjaxMode();
