@@ -29,7 +29,7 @@ $machinestates = [
         'descriptionmyturn' => '',
         'initialprivate' => N_STATE_BUILD_ALLIANCE,
         'possibleactions' => [
-            'undo',
+            'actUndo',
         ],
         'transitions' => [
             'maintenance' => N_STATE_MAINTENANCE,
@@ -42,7 +42,7 @@ $machinestates = [
         'args' => 'argBuildAlliance',
         'descriptionmyturn' => clienttranslate('Choose a starting airport and alliance'),
         'possibleactions' => [
-            'buy',
+            'actBuy',
         ],
         'transitions' => [
             'buildAlliance2' => N_STATE_BUILD_ALLIANCE2,
@@ -56,8 +56,8 @@ $machinestates = [
         'args' => 'argBuildAlliance2',
         'descriptionmyturn' => clienttranslate('Choose an additional alliance'),
         'possibleactions' => [
-            'buy',
-            'undo',
+            'actBuy',
+            'actUndo',
         ],
         'transitions' => [
             'buildAlliance' => N_STATE_BUILD_ALLIANCE,
@@ -71,8 +71,8 @@ $machinestates = [
         'args' => 'argBuildUpgrade',
         'descriptionmyturn' => clienttranslate('Choose a starting upgrade'),
         'possibleactions' => [
-            'buy',
-            'undo',
+            'actBuy',
+            'actUndo',
         ],
         'transitions' => [
             'buildAlliance' => N_STATE_BUILD_ALLIANCE,
@@ -100,7 +100,7 @@ $machinestates = [
         'descriptionmyturn' => '',
         'initialprivate' => N_STATE_PREPARE_BUY,
         'possibleactions' => [
-            'undo',
+            'actUndo',
         ],
         'transitions' => [
             'reveal' => N_STATE_REVEAL,
@@ -114,10 +114,10 @@ $machinestates = [
         'args' => 'argPrepareBuy',
         'descriptionmyturn' => clienttranslate('Prepare for ${hourDesc} ${round}'),
         'possibleactions' => [
-            'buy',
-            'prepareDone',
-            'undo',
-            'vip',
+            'actBuy',
+            'actPrepareDone',
+            'actUndo',
+            'actVip',
         ],
         'transitions' => [
             'prepareBuy' => N_STATE_PREPARE_BUY,
@@ -131,8 +131,8 @@ $machinestates = [
         'args' => 'argPreparePay',
         'descriptionmyturn' => clienttranslate('Choose how to pay $${debt}'),
         'possibleactions' => [
-            'buyAgain',
-            'pay',
+            'actBuyAgain',
+            'actPay',
         ],
         'transitions' => [
             'prepareBuy' => N_STATE_PREPARE_BUY,
@@ -158,8 +158,8 @@ $machinestates = [
         'descriptionmyturn' => '',
         'initialprivate' => N_STATE_FLY_PRIVATE,
         'possibleactions' => [
-            'flyAgain',
-            'flyTimer',
+            'actFlyAgain',
+            'actFlyTimer',
         ],
         'transitions' => [
             'maintenance' => N_STATE_MAINTENANCE,
@@ -172,11 +172,11 @@ $machinestates = [
         'args' => 'argFlyPrivate',
         'descriptionmyturn' => clienttranslate('Go!'),
         'possibleactions' => [
-            'board',
-            'deplane',
-            'flyDone',
-            'flyTimer',
-            'move',
+            'actBoard',
+            'actDeplane',
+            'actFlyDone',
+            'actFlyTimer',
+            'actMove',
         ],
         'transitions' => [
             'flyPrivate' => N_STATE_FLY_PRIVATE,

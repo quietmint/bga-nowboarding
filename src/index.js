@@ -628,7 +628,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
             const millis = Math.max(0, args.args.remain) * 1000;
             const timerMillis = millis + Math.random() * 1500;
             console.log("⌚ Timer start", timerMillis);
-            flyTimer = window.setTimeout(() => this.takeAction("flyTimer", { lock: false }), timerMillis);
+            flyTimer = window.setTimeout(() => this.takeAction("actFlyTimer", { lock: false }), timerMillis);
             endTime = Date.now() + millis;
           }
         }
@@ -655,10 +655,10 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       if (!this.isSpectator) {
         // Inactive players can undo or go back
         if (stateName == "build" || stateName == "buildAlliance2" || stateName == "buildUpgrade" || stateName == "prepare") {
-          this.addActionButton("button_undo", _("Start Over"), () => this.takeAction("undo"), null, false, "gray");
+          this.addActionButton("button_undo", _("Start Over"), () => this.takeAction("actUndo"), null, false, "gray");
         }
         if (stateName == "fly") {
-          this.addActionButton("button_flyAgain", _("Go Back"), () => this.takeAction("flyAgain"), null, false, "gray");
+          this.addActionButton("button_flyAgain", _("Go Back"), () => this.takeAction("actFlyAgain"), null, false, "gray");
         }
 
         // Inactive players clear moves
@@ -684,19 +684,19 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
               }
               const dialogPromise = dialog ? this.confirmationDialogPromise(dialog) : Promise.resolve();
               dialogPromise.then(
-                () => this.takeAction("prepareDone"),
+                () => this.takeAction("actPrepareDone"),
                 () => {}
               );
             });
             if (this.gamedatas.hour.vipRemain) {
               const acceptTxt = this.format_string_recursive(_("Accept VIP (${vipRemain} remaining)"), { vipRemain: this.gamedatas.hour.vipRemain });
-              this.addActionButton("button_vipAccept", acceptTxt, () => this.takeAction("vip", { accept: true }), null, false, this.gamedatas.hour.vipNeed ? "red" : "blue");
-              this.addActionButton("button_vipDecline", _("Decline VIP"), () => this.takeAction("vip", { accept: false }));
+              this.addActionButton("button_vipAccept", acceptTxt, () => this.takeAction("actVip", { accept: true }), null, false, this.gamedatas.hour.vipNeed ? "red" : "blue");
+              this.addActionButton("button_vipDecline", _("Decline VIP"), () => this.takeAction("actVip", { accept: false }));
               const disabled = this.gamedatas.hour.vipNew ? "button_vipAccept" : "button_vipDecline";
               document.getElementById(disabled).classList.add("disabled");
             }
             if (args.ledger?.length > 0) {
-              this.addActionButton("button_undo", _("Start Over"), () => this.takeAction("undo"), null, false, "gray");
+              this.addActionButton("button_undo", _("Start Over"), () => this.takeAction("actUndo"), null, false, "gray");
             }
             this.buys = args.buys;
             this.renderBuys();
@@ -705,19 +705,19 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
             this.addActionButton("button_pay", _("Pay"), () => {
               const paid = [];
               document.querySelectorAll("#nbbuys .paybutton:not(.ghostbutton)").forEach((el) => paid.push(el.dataset.cash));
-              this.takeAction("pay", { paid });
+              this.takeAction("actPay", { paid });
             });
-            this.addActionButton("button_buyAgain", _("Go Back"), () => this.takeAction("buyAgain"), null, false, "gray");
+            this.addActionButton("button_buyAgain", _("Go Back"), () => this.takeAction("actBuyAgain"), null, false, "gray");
             this.renderWalletPay(args.wallet, args.suggestion);
           } else if (stateName == "flyPrivate") {
             if (!this.bRealtime) {
-              this.addActionButton("button_flyDoneSnooze", _("Snooze Until Next Move"), () => this.takeAction("flyDone", { snooze: true }).then(() => this.stabilizerOff()), null, false, "gray");
+              this.addActionButton("button_flyDoneSnooze", _("Snooze Until Next Move"), () => this.takeAction("actFlyDone", { snooze: true }).then(() => this.stabilizerOff()), null, false, "gray");
             }
             if (args.speedRemain > 0) {
               const txt = this.format_string_recursive(_("End Round Early (${speedRemain} speed remaining)"), { speedRemain: args.speedRemain });
-              this.addActionButton("button_flyDone", txt, () => this.takeAction("flyDone").then(() => this.stabilizerOff()), null, false, "red");
+              this.addActionButton("button_flyDone", txt, () => this.takeAction("actFlyDone").then(() => this.stabilizerOff()), null, false, "red");
             } else {
-              this.addActionButton("button_flyDone", _("End Round"), () => this.takeAction("flyDone").then(() => this.stabilizerOff()), null, false, "blue");
+              this.addActionButton("button_flyDone", _("End Round"), () => this.takeAction("actFlyDone").then(() => this.stabilizerOff()), null, false, "blue");
             }
             // Update the possible moves
             this.deleteMoves();
@@ -911,11 +911,11 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       if (this.isCurrentPlayerActive()) {
         const pax = this.gamedatas.pax[paxId];
         if (pax.status == "SEAT" && pax.playerId == this.player_id) {
-          if (this.checkAction("deplane")) {
-            this.takeAction("deplane", { paxId: Math.abs(pax.id), paxPlayerId: pax.playerId });
+          if (this.checkAction("actDeplane")) {
+            this.takeAction("actDeplane", { paxId: Math.abs(pax.id), paxPlayerId: pax.playerId });
           }
-        } else if (this.checkAction("board")) {
-          this.takeAction("board", { paxId: Math.abs(pax.id), paxPlayerId: pax.playerId });
+        } else if (this.checkAction("actBoard")) {
+          this.takeAction("actBoard", { paxId: Math.abs(pax.id), paxPlayerId: pax.playerId });
         }
       }
     },
@@ -944,8 +944,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       const dialogPromise = dialog ? this.confirmationDialogPromise(dialog) : Promise.resolve();
       dialogPromise.then(
         () => {
-          if (this.checkAction("move")) {
-            this.takeAction("move", { from: plane.location, to: move.location });
+          if (this.checkAction("actMove")) {
+            this.takeAction("actMove", { from: plane.location, to: move.location });
           }
         },
         () => {}
@@ -1731,7 +1731,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         buysEl.insertAdjacentHTML("beforeend", buyHtml);
         const buyEl = document.getElementById(id);
         if (buy.enabled && buy.ownerId == null) {
-          buyEl.addEventListener("click", (ev) => this.takeAction("buy", buy));
+          buyEl.addEventListener("click", (ev) => this.takeAction("actBuy", buy));
         }
         if (buy.type == "ALLIANCE" && !isTouch) {
           buyEl.addEventListener("mouseenter", (ev) => this.onEnterMapManifest(buy.alliance));

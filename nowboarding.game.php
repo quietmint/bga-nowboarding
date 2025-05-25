@@ -10,6 +10,9 @@
  * -----
  */
 
+use \Bga\GameFramework\Actions\CheckAction;
+use \Bga\GameFramework\Actions\Types\IntArrayParam;
+
 require_once APP_GAMEMODULE_PATH . 'module/table/table.game.php';
 require_once 'modules/constants.inc.php';
 require_once 'modules/NGameOverException.class.php';
@@ -805,9 +808,11 @@ class NowBoarding extends Table
     //////////// Actions (ajax)
     ////////////
 
-    public function undo(): void
+    #[CheckAction(false)]
+    public function actUndo(int $version): void
     {
-        $this->gamestate->checkPossibleAction('undo');
+        $this->checkVersion($version);
+        $this->gamestate->checkPossibleAction('actUndo');
         $playerId = $this->getCurrentPlayerId();
         $this->applyUndo($playerId);
 
@@ -821,9 +826,11 @@ class NowBoarding extends Table
         $this->gamestate->initializePrivateState($playerId);
     }
 
-    public function buy(string $type, ?string $alliance): void
+    #[CheckAction(false)]
+    public function actBuy(int $version, string $type, ?string $alliance): void
     {
-        $this->checkAction('buy');
+        $this->checkVersion($version);
+        $this->checkAction('actBuy');
         $playerId = $this->getCurrentPlayerId();
         $plane = $this->getPlaneById($playerId);
         if ($type == 'ALLIANCE') {
@@ -1082,16 +1089,20 @@ class NowBoarding extends Table
         $this->gamestate->nextPrivateState($plane->id, 'prepareBuy');
     }
 
-    public function buyAgain(): void
+    #[CheckAction(false)]
+    public function actBuyAgain(int $version): void
     {
-        $this->checkAction('buyAgain');
+        $this->checkVersion($version);
+        $this->checkAction('actBuyAgain');
         $playerId = $this->getCurrentPlayerId();
         $this->gamestate->nextPrivateState($playerId, 'prepareBuy');
     }
 
-    public function pay(array $paid): void
+    #[CheckAction(false)]
+    public function actPay(int $version, #[IntArrayParam()] array $paid): void
     {
-        $this->checkAction('pay');
+        $this->checkVersion($version);
+        $this->checkAction('actPay');
         $playerId = $this->getCurrentPlayerId();
         $plane = $this->getPlaneById($playerId);
 
@@ -1145,9 +1156,11 @@ class NowBoarding extends Table
         $this->gamestate->setPlayerNonMultiactive($playerId, 'reveal');
     }
 
-    public function vip(bool $accept): void
+    #[CheckAction(false)]
+    public function actVip(int $version, bool $accept): void
     {
-        $this->checkAction('vip');
+        $this->checkVersion($version);
+        $this->checkAction('actVip');
         $hourInfo = $this->getHourInfo();
         $vips = $this->globals->get('vips');
         if ($accept && empty($vips[$hourInfo['hour']])) {
@@ -1162,9 +1175,11 @@ class NowBoarding extends Table
         $this->notifyAllPlayers('hour', $msg, $hourInfo);
     }
 
-    public function prepareDone(): void
+    #[CheckAction(false)]
+    public function actPrepareDone(int $version): void
     {
-        $this->checkAction('prepareDone');
+        $this->checkVersion($version);
+        $this->checkAction('actPrepareDone');
         $playerId = $this->getCurrentPlayerId();
         $plane = $this->getPlaneById($playerId);
         if ($plane->debt > 0) {
@@ -1174,9 +1189,11 @@ class NowBoarding extends Table
         }
     }
 
-    public function flyDone(bool $snooze = false): void
+    #[CheckAction(false)]
+    public function actFlyDone(int $version, bool $snooze = false): void
     {
-        $this->checkAction('flyDone');
+        $this->checkVersion($version);
+        $this->checkAction('actFlyDone');
         if ($this->enforceTimer()) {
             return;
         }
@@ -1215,14 +1232,18 @@ class NowBoarding extends Table
         }
     }
 
-    public function flyTimer(): void
+    #[CheckAction(false)]
+    public function actFlyTimer(int $version): void
     {
+        $this->checkVersion($version);
         $this->enforceTimer();
     }
 
-    public function flyAgain(): void
+    #[CheckAction(false)]
+    public function actFlyAgain(int $version): void
     {
-        $this->gamestate->checkPossibleAction('flyAgain');
+        $this->checkVersion($version);
+        $this->gamestate->checkPossibleAction('actFlyAgain');
         if ($this->enforceTimer()) {
             return;
         }
@@ -1236,9 +1257,11 @@ class NowBoarding extends Table
         $this->gamestate->initializePrivateState($playerId);
     }
 
-    public function move(string $from, string $to): void
+    #[CheckAction(false)]
+    public function actMove(int $version, string $from, string $to): void
     {
-        $this->checkAction('move');
+        $this->checkVersion($version);
+        $this->checkAction('actMove');
         if ($this->enforceTimer()) {
             return;
         }
@@ -1363,9 +1386,11 @@ class NowBoarding extends Table
         ]);
     }
 
-    public function board(int $paxId, ?int $paxPlayerId): void
+    #[CheckAction(false)]
+    public function actBoard(int $version, int $paxId, ?int $paxPlayerId): void
     {
-        $this->checkAction('board');
+        $this->checkVersion($version);
+        $this->checkAction('actBoard');
         if ($this->enforceTimer()) {
             return;
         }
@@ -1517,9 +1542,11 @@ class NowBoarding extends Table
         ]);
     }
 
-    public function deplane(int $paxId, ?int $paxPlayerId): void
+    #[CheckAction(false)]
+    public function actDeplane(int $version, int $paxId, ?int $paxPlayerId): void
     {
-        $this->checkAction('deplane');
+        $this->checkVersion($version);
+        $this->checkAction('actDeplane');
         if ($this->enforceTimer()) {
             return;
         }
