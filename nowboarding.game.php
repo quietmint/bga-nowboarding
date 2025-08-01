@@ -2347,6 +2347,7 @@ class NowBoarding extends Table
             $babyLocations = $this->getObjectListFromDB("SELECT DISTINCT `location` FROM `pax` WHERE `status` = 'PORT' AND `vip` = 'BABY'", true);
             $angerPax = [];
             $complaintPax = [];
+            $notifyPax = [];
             foreach ($pax as $x) {
                 if ($x->vip == 'CREW') {
                     // VIP Crew
@@ -2365,12 +2366,25 @@ class NowBoarding extends Table
                         $x->status = 'COMPLAINT';
                         $this->DbQuery("UPDATE `pax` SET `anger` = {$x->anger}, `status` = 'COMPLAINT' WHERE `pax_id` = {$x->id}");
                         $complaintPax[] = $x;
+                        if ($x->vip == 'REUNION') {
+                            // VIP Reunion
+                            // Remove bereaved companion's VIP condition
+                            $reunion = $this->getPaxById(intval($this->getUniqueValueFromDB("SELECT `pax_id` FROM `pax` WHERE `vip` = 'REUNION' AND `destination` = '{$x->destination}' AND `pax_id` != {$x->id}")));
+                            if ($reunion != null) {
+                                $reunion->vip = null;
+                                $this->DbQuery("UPDATE `pax` SET `vip` = NULL WHERE `pax_id` = {$reunion->id}");
+                                $notifyPax[$reunion->id] = $reunion;
+                            }
+                        }
                     } else {
                         // VIP Double
                         // Delete the fugitive
                         $this->DbQuery("DELETE FROM `pax` WHERE `pax_id` = {$x->id}");
                     }
                 }
+            }
+            if (!empty($notifyPax)) {
+                $pax = array_merge($pax, $notifyPax);
             }
             $this->notifyAllPlayers('pax', '', [
                 'pax' => array_values($pax),
