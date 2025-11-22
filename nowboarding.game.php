@@ -60,12 +60,6 @@ class NowBoarding extends Table
         $this->initGameStateLabels([]);
     }
 
-    protected function getGameName(): string
-    {
-        // Used for translations and stuff. Please do not modify.
-        return "nowboarding";
-    }
-
     protected function setupNewGame($players, $options = [])
     {
         // Create players and planes
