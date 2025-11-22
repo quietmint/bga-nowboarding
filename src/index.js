@@ -1688,8 +1688,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     renderBuys() {
       let buysEl = document.getElementById("nbbuys");
       if (!buysEl) {
-        const parentEl = document.getElementById("maintitlebar_content");
-        parentEl.insertAdjacentHTML("beforeend", `<div id="nbwrap"><div id="nbbuys"></div></div>`);
+        const parentEl = document.getElementById("pagemaintitletext");
+        parentEl.insertAdjacentHTML("afterend", `<div id="nbwrap"><div id="nbbuys"></div></div>`);
         buysEl = document.getElementById("nbbuys");
       } else {
         buysEl.textContent = "";
