@@ -1,6 +1,6 @@
 <?php
 
-class NNode extends APP_GameClass
+class NNode
 {
     public string $id;
     public ?string $alliance;

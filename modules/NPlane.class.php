@@ -1,6 +1,6 @@
 <?php
 
-class NPlane extends APP_GameClass implements JsonSerializable
+class NPlane implements JsonSerializable
 {
     public int $id;
     public array $alliances;

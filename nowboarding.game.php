@@ -2043,7 +2043,7 @@ class NowBoarding extends Table
                 $currentWeather = $weather[$hour];
             }
         }
-        return new NMap($playerCount, $this->getOption(N_OPTION_MAP), $currentWeather);
+        return new NMap($this, $playerCount, $this->getOption(N_OPTION_MAP), $currentWeather);
     }
 
     private function getPlaneById(int $playerId): NPlane

@@ -1,6 +1,6 @@
 <?php
 
-class NMove extends APP_GameClass implements JsonSerializable
+class NMove implements JsonSerializable
 {
     public int $fuel;
     public string $location;

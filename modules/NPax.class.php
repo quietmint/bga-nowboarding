@@ -2,7 +2,7 @@
 
 require_once 'constants.inc.php';
 
-class NPax extends APP_GameClass implements JsonSerializable
+class NPax implements JsonSerializable
 {
     public int $id;
     public int $anger;

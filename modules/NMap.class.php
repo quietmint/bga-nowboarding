@@ -1,15 +1,17 @@
 <?php
 
-class NMap extends APP_GameClass implements JsonSerializable
+class NMap implements JsonSerializable
 {
+    public NowBoarding $game;
     public array $airports = ['ATL', 'DEN', 'DFW', 'LAX', 'MIA', 'ORD', 'SFO'];
     public string $name;
     public array $nodes = [];
     public array $routes = [];
     public array $weather = [];
 
-    public function __construct(int $playerCount, ?int $optionMap, array $weather)
+    public function __construct(NowBoarding $game, int $playerCount, ?int $optionMap, array $weather)
     {
+        $this->game = $game;
         // Determine airports
         if ($playerCount >= 3 || $optionMap == N_MAP_JFK || $optionMap == N_MAP_SEA) {
             $this->airports[] = 'JFK';
@@ -161,7 +163,7 @@ class NMap extends APP_GameClass implements JsonSerializable
     {
         $fuelMax = $plane->speedRemain + ($plane->tempSpeed ? 1 : 0);
         // VIP Nervous
-        $planeHasNervous = intval($this->getUniqueValueFromDB("SELECT COUNT(1) FROM `pax` WHERE `player_id` = {$plane->id} AND `status` = 'SEAT' AND `vip` = 'NERVOUS'")) > 0;
+        $planeHasNervous = intval($this->game->getUniqueValueFromDB("SELECT COUNT(1) FROM `pax` WHERE `player_id` = {$plane->id} AND `status` = 'SEAT' AND `vip` = 'NERVOUS'")) > 0;
         $visited = [];
         $best = [];
         $queue = [new NMove(0, $this->nodes[$plane->location], [], false)];
@@ -171,7 +173,7 @@ class NMap extends APP_GameClass implements JsonSerializable
                 $pathString = $move->getPathString();
                 $visited[$pathString] = true;
                 if (!array_key_exists($move->location, $best) || $best[$move->location]->fuel > $move->fuel) {
-                    $this->debug("getPossibleMoves best: $move // ");
+                    $this->game->debug("getPossibleMoves best: $move // ");
                     $best[$move->location] = $move;
                 }
                 foreach ($move->node->connections as $connectedNode) {
@@ -209,7 +211,7 @@ class NMap extends APP_GameClass implements JsonSerializable
             }
             $queue = $nextQueue;
         }
-        $this->debug("getPossibleMoves complete: " . count($visited) . " iterations // ");
+        $this->game->debug("getPossibleMoves complete: " . count($visited) . " iterations // ");
         // Remove your current location
         unset($best[$plane->location]);
         // Remove fast weather
