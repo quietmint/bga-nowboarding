@@ -10,10 +10,10 @@
  * -----
  */
 
+use \Bga\GameFramework\Table;
 use \Bga\GameFramework\Actions\CheckAction;
 use \Bga\GameFramework\Actions\Types\IntArrayParam;
 
-require_once APP_GAMEMODULE_PATH . 'module/table/table.game.php';
 require_once 'modules/constants.inc.php';
 require_once 'modules/NGameOverException.class.php';
 require_once 'modules/NMap.class.php';
