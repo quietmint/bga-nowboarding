@@ -1407,6 +1407,7 @@ class NowBoarding extends Table
 
         $msg = N_REF_MSG['board'];
         $args = [
+            'number' => $x->id,
             'route' => $x->origin . "-" . $x->destination
         ];
         if ($x->status == 'SEAT') {
@@ -1577,6 +1578,7 @@ class NowBoarding extends Table
             'pax' => [$x],
             'player_id' => $plane->id,
             'player_name' => $plane->name,
+            'number' => $x->id,
             'route' => $x->origin . "-" . $x->destination,
         ];
 
@@ -1612,6 +1614,7 @@ class NowBoarding extends Table
                         'location' => $reunion->location,
                         'player_id' => $plane->id,
                         'player_name' => $plane->name,
+                        'number' => $reunion->id,
                         'route' => $reunion->origin . "-" . $reunion->destination,
                         'cash' => $reunion->cash,
                         'moves' => $reunion->moves,
@@ -2569,6 +2572,7 @@ class NowBoarding extends Table
                         'location' => $x->location,
                         'player_id' => $plane->id,
                         'player_name' => $plane->name,
+                        'number' => $x->id,
                         'route' => $x->origin . "-" . $x->destination,
                     ]);
                 }
