@@ -1,0 +1,17 @@
+{
+    "150": {
+        "name": "Animation",
+        "needReload": false,
+        "values": [
+            {
+                "name": "Enabled"
+            },
+            {
+                "name": "Enabled except airport pinging"
+            },
+            {
+                "name": "Disabled"
+            }
+        ]
+    }
+}

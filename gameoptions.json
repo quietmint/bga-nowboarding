@@ -1,0 +1,166 @@
+{
+    "100": {
+        "name": "Flight Phase Timer",
+        "default": 2,
+        "notdisplayedmessage": "Off",
+        "values": {
+            "1": {
+                "name": "On",
+                "description": "The flight phase lasts 30 - 45 seconds (depending on player count) and time is STRICTLY ENFORCED",
+                "tmdisplay": "Flight Phase Timer On"
+            },
+            "2": {
+                "name": "Doubled",
+                "description": "The flight phase lasts 60 - 90 seconds (depending on player count) and time is STRICTLY ENFORCED [unofficial, easier]",
+                "tmdisplay": "Flight Phase Timer Doubled"
+            },
+            "0": {
+                "name": "Off",
+                "description": "The flight phase has no specific time limit [unofficial, easier]",
+                "tmdisplay": "Flight Phase Timer Off"
+            }
+        },
+        "displaycondition": [
+            {
+                "type": "otheroption",
+                "id": 200,
+                "value": [
+                    0,
+                    1,
+                    2,
+                    9
+                ]
+            }
+        ]
+    },
+    "101": {
+        "name": "VIP Variant",
+        "default": 0,
+        "values": [
+            {
+                "name": "Off"
+            },
+            {
+                "name": "Normal VIPs",
+                "description": "Some passengers will have normal complications (like \"must board first\" or \"must fly alone\")",
+                "tmdisplay": "Normal VIPs",
+                "nobeginner": true
+            },
+            {
+                "name": "BGA Community VIPs",
+                "description": "Some passengers will have crowdsourced complications (suggested by the BGA player community) [unofficial, harder]",
+                "tmdisplay": "BGA Community VIPs",
+                "nobeginner": true
+            },
+            {
+                "name": "Normal + BGA Community VIPs",
+                "description": "Some passengers will have normal or crowdsourced complications [unofficial, harder]",
+                "tmdisplay": "Normal + BGA Community VIPs",
+                "nobeginner": true
+            }
+        ]
+    },
+    "111": {
+        "level": "additional",
+        "name": "VIP Count",
+        "default": 1,
+        "values": {
+            "1": {
+                "name": "Normal",
+                "description": "4\/5\/6\/7 VIPs, depending on player count"
+            },
+            "2": {
+                "name": "Increased",
+                "description": "6\/7\/8\/9 VIPs, depending on player count [unofficial, harder]",
+                "tmdisplay": "VIP Count Increased"
+            },
+            "4": {
+                "name": "Doubled",
+                "description": "8\/10\/12\/13 VIPs, depending on player count [unofficial, harder]",
+                "tmdisplay": "VIP Count Doubled"
+            }
+        },
+        "displaycondition": [
+            {
+                "type": "otheroptionisnot",
+                "id": 101,
+                "value": 0
+            }
+        ]
+    },
+    "110": {
+        "level": "additional",
+        "name": "Map Size",
+        "default": 0,
+        "values": [
+            {
+                "name": "Normal"
+            },
+            {
+                "name": "Add JFK (2 players)",
+                "description": "Play with additional airports intended for more players [unofficial, harder]",
+                "tmdisplay": "Add JFK (2 players)",
+                "nobeginner": true
+            },
+            {
+                "name": "Add JFK and SEA (2-3 players)",
+                "description": "Play with additional airports intended for more players [unofficial, harder]",
+                "tmdisplay": "Add JFK and SEA (2-3 players)",
+                "nobeginner": true
+            }
+        ],
+        "displaycondition": [
+            {
+                "type": "maxplayers",
+                "value": [
+                    2,
+                    3
+                ]
+            }
+        ]
+    },
+    "112": {
+        "level": "additional",
+        "name": "Starting Upgrade",
+        "default": 0,
+        "values": {
+            "0": {
+                "name": "Normal"
+            },
+            "2": {
+                "name": "Seat",
+                "description": "Start with 2 seats, 3 speed",
+                "tmdisplay": "Start With Seat Upgrade",
+                "nobeginner": true
+            },
+            "3": {
+                "name": "Speed",
+                "description": "Start with 1 seat, 4 speed",
+                "tmdisplay": "Start With Speed Upgrade",
+                "nobeginner": true
+            },
+            "4": {
+                "name": "Both",
+                "description": "Start with 2 seats, 4 speed [unofficial, easier]",
+                "tmdisplay": "Start With Both Upgrades",
+                "nobeginner": true
+            }
+        }
+    },
+    "113": {
+        "level": "additional",
+        "name": "Anger",
+        "default": 0,
+        "values": [
+            {
+                "name": "Normal"
+            },
+            {
+                "name": "Increased",
+                "description": "Passengers start with 1 anger [unofficial, harder]",
+                "tmdisplay": "Anger Increased",
+                "nobeginner": true
+            }
+        ]
+    }
+}

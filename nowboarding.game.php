@@ -10,7 +10,9 @@
  * -----
  */
 
+use \Bga\GameFramework\NotificationMessage;
 use \Bga\GameFramework\Table;
+use \Bga\GameFramework\UserException;
 use \Bga\GameFramework\Actions\CheckAction;
 use \Bga\GameFramework\Actions\Types\IntArrayParam;
 
@@ -244,7 +246,7 @@ class NowBoarding extends Table
     public function checkVersion(int $clientVersion): void
     {
         if ($clientVersion != $this->getOption(N_BGA_VERSION)) {
-            throw new BgaUserException('!!!checkVersion');
+            throw new UserException('!!!checkVersion');
         }
     }
 
@@ -850,7 +852,10 @@ class NowBoarding extends Table
     {
         $owner = $this->getOwnerName("SUBSTRING_INDEX(`alliances`, ',', 1) = '$alliance'");
         if ($owner != null) {
-            $this->userException('allianceOwner', $owner, $alliance);
+            $this->userException('allianceOwner', [
+                'player_name' => $owner,
+                'alliance' => $alliance
+            ]);
         }
 
         $color = N_REF_ALLIANCE_COLOR[$alliance];
@@ -966,7 +971,10 @@ class NowBoarding extends Table
     {
         $owner = $this->getOwnerName("`temp_seat` = 1");
         if ($owner != null) {
-            $this->userException('tempOwner', $owner, $this->_('Temporary Seat'));
+            $this->userException('tempOwner', [
+                'player_name' => $owner,
+                'temp' => clienttranslate('Temporary Seat')
+            ]);
         }
         $cost = 2;
         $cash = $plane->getCashRemain();
@@ -1045,7 +1053,10 @@ class NowBoarding extends Table
     {
         $owner = $this->getOwnerName("`temp_speed` = 1");
         if ($owner != null) {
-            $this->userException('tempOwner', $owner, $this->_('Temporary Speed'));
+            $this->userException('tempOwner', [
+                'player_name' => $owner,
+                'temp' => clienttranslate('Temporary Speed')
+            ]);
         }
         $cost = 1;
         $cash = $plane->getCashRemain();
@@ -1123,7 +1134,9 @@ class NowBoarding extends Table
             $validIds[] = $paxId;
         }
         if ($total < $plane->debt) {
-            $this->userException('pay', "\${$plane->debt}");
+            $this->userException('pay', [
+                'amount' => "\${$plane->debt}"
+            ]);
         }
 
         if ($strSuggestion != $strPaid) {
@@ -1418,7 +1431,9 @@ class NowBoarding extends Table
             // Must be together at an airport
             $other = $this->getPlaneById($x->playerId);
             if ($other->location != $plane->location || strlen($plane->location) != 3) {
-                $this->userException('boardTransfer', $other->name);
+                $this->userException('boardTransfer', [
+                    'player_name' => $other->name
+                ]);
             }
             // Implicit deplane
             $msg = N_REF_MSG['boardTransfer'];
@@ -1488,7 +1503,9 @@ class NowBoarding extends Table
                 throw new BgaVisibleSystemException("board: $x location is not at an airport [???]");
             }
             if ($x->location != $plane->location) {
-                $this->userException('boardPort', $x->location);
+                $this->userException('boardPort', [
+                    'location' => $x->location
+                ]);
             }
         } else {
             throw new BgaVisibleSystemException("board: $x status is invalid [???]");
@@ -1634,7 +1651,9 @@ class NowBoarding extends Table
 
         // Cannot transfer if delivery is possible
         if ($transfer && $deliver) {
-            $this->userException('boardDeliver', $plane->name);
+            $this->userException('boardDeliver', [
+                'player_name' => $plane->name
+            ]);
         }
 
         $countToWin = false;
@@ -1758,7 +1777,7 @@ class NowBoarding extends Table
 
     private function getOption(int $id, ?int $default = null): ?int
     {
-        $value = @$this->gamestate->table_globals[$id];
+        $value = $this->bga->tableOptions->get($id);
         return $value == null ? $default : intval($value);
     }
 
@@ -2147,19 +2166,14 @@ class NowBoarding extends Table
         return $countToWin;
     }
 
-    private function exceptionMsg(string $msgExKey, ...$args): string
+    private function userException(string $msgExKey, ?array $args): void
     {
-        $msg = $this->_(N_REF_MSG_EX[$msgExKey]);
+        $msg = N_REF_MSG_EX[$msgExKey];
         if (!empty($args)) {
-            $msg = sprintf($msg, ...$args);
+            throw new UserException(new NotificationMessage($msg, $args));
+        } else {
+            throw new UserException($msg);
         }
-        return $msg;
-    }
-
-    private function userException(string $msgExKey, ...$args): void
-    {
-        $msg = $this->exceptionMsg($msgExKey, ...$args);
-        throw new BgaUserException($msg);
     }
 
     private function vipException($vipInfo): void
@@ -2170,13 +2184,16 @@ class NowBoarding extends Table
                 'desc' => N_REF_VIP[$vipInfo]['desc'],
             ];
         }
-        $msg = $this->exceptionMsg('vip', $this->_($vipInfo['name']), $this->_($vipInfo['desc']));
+        $args = [
+            'vip' => $vipInfo['name'],
+            'desc' => $vipInfo['desc']
+        ];
         if (array_key_exists('args', $vipInfo) && $vipInfo['args']) {
             foreach ($vipInfo['args'] as $argKey => $argValue) {
-                $msg = str_replace('${' . $argKey . '}', $argValue, $msg);
+                $args[$argKey] =  $argValue;
             }
         }
-        throw new BgaUserException($msg);
+        $this->userException('vip', $args);
     }
 
     private function getLedger(int $playerId): array
@@ -2659,37 +2676,5 @@ class NowBoarding extends Table
         $this->globals->delete('endTime');
 
         $this->warn("upgradeTableDb complete: fromVersion=$fromVersion");
-    }
-
-    ///////////////////////////////////////////////////////////////////////////////////:
-    ////////// Production bug report handler
-    //////////
-
-    public function loadBugReportSQL(int $reportId, array $studioPlayers): void
-    {
-        $prodPlayers = $this->getObjectListFromDb("SELECT `player_id` FROM `player`", true);
-        $prodCount = count($prodPlayers);
-        $studioCount = count($studioPlayers);
-        if ($prodCount != $studioCount) {
-            throw new BgaVisibleSystemException("Incorrect player count (bug report has $prodCount players, studio table has $studioCount players)");
-        }
-        $sql = [
-            "UPDATE `global` SET `global_value` = 2 WHERE `global_id` = 1 AND `global_value` = 99"
-        ];
-        foreach ($prodPlayers as $index => $prodId) {
-            $studioId = $studioPlayers[$index];
-            $sql[] = "UPDATE `global` SET `global_value` = $studioId WHERE `global_value` = $prodId";
-            $sql[] = "UPDATE `player` SET `player_id` = $studioId WHERE `player_id` = $prodId";
-            $sql[] = "UPDATE `pax` SET `player_id` = $studioId WHERE `player_id` = $prodId";
-            $sql[] = "UPDATE `pax_undo` SET `player_id` = $studioId WHERE `player_id` = $prodId";
-            $sql[] = "UPDATE `plane` SET `player_id` = $studioId WHERE `player_id` = $prodId";
-            $sql[] = "UPDATE `plane_undo` SET `player_id` = $studioId WHERE `player_id` = $prodId";
-            $sql[] = "UPDATE `stats` SET `stats_player_id` = $studioId WHERE `stats_player_id` = $prodId";
-            $sql[] = "UPDATE `stats_undo` SET `stats_player_id` = $studioId WHERE `stats_player_id` = $prodId";
-        }
-        foreach ($sql as $q) {
-            $this->DbQuery($q);
-        }
-        $this->reloadPlayersBasicInfos();
     }
 }

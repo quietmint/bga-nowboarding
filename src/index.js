@@ -104,7 +104,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           this.resizeMap();
         },
         this,
-        100
+        100,
       );
     },
 
@@ -685,7 +685,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
               const dialogPromise = dialog ? this.confirmationDialogPromise(dialog) : Promise.resolve();
               dialogPromise.then(
                 () => this.takeAction("actPrepareDone"),
-                () => {}
+                () => {},
               );
             });
             if (this.gamedatas.hour.vipRemain) {
@@ -852,58 +852,46 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         this.confirmationDialog(
           message,
           () => resolve(),
-          () => reject()
+          () => reject(),
         );
       });
     },
 
-    takeAction(action, data) {
+    takeAction(action, args) {
       return new Promise((resolve, reject) => {
         // Prepare data
-        data = data || {};
-        data.version = this.gamedatas.version;
-        if (data.lock === false) {
-          delete data.lock;
-        } else {
-          data.lock = true;
+        const options = { lock: true, checkAction: false };
+        args = args || {};
+        args.version = this.gamedatas.version;
+        if (args.lock === false) {
+          options.lock = false;
         }
-        for (const key in data) {
-          if (Array.isArray(data[key])) {
-            data[key] = data[key].join(",");
+        for (const key in args) {
+          if (Array.isArray(args[key])) {
+            args[key] = args[key].join(",");
           }
         }
 
         // Web call
         const start = Date.now();
-        console.log(`👆 Take action ${action}`, data);
-        this.ajaxcall(
-          "/nowboarding/nowboarding/" + action + ".html",
-          data,
-          this,
-          () => {},
-          (error, errorMsg) => {
-            const duration = Date.now() - start;
-            if (error) {
-              console.error(`Take action ${action} error in ${duration}ms`, errorMsg);
-              if (errorMsg == "!!!checkVersion") {
-                console.warn(`🆙 New version available`);
-                this.infoDialog(
-                  _("A new version of this game is now available"),
-                  _("Reload Required"),
-                  () => {
-                    window.location.reload();
-                  },
-                  true
-                );
-              } else {
-                reject(errorMsg);
-              }
-            } else {
-              console.log(`Take action ${action} done in ${duration}ms`);
-              resolve();
-            }
+        console.log(`👆 Take action ${action}`, args);
+        this.bga.actions.performAction(action, args, options).catch((error) => {
+          const duration = Date.now() - start;
+          console.error(`Take action ${action} error in ${duration}ms`, error);
+          if (error?.message == "!!!checkVersion") {
+            console.warn(`🆙 New version available`);
+            this.infoDialog(
+              _("A new version of this game is now available"),
+              _("Reload Required"),
+              () => {
+                window.location.reload();
+              },
+              true,
+            );
+          } else {
+            reject(error?.message);
           }
-        );
+        });
       });
     },
 
@@ -948,7 +936,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
             this.takeAction("actMove", { from: plane.location, to: move.location });
           }
         },
-        () => {}
+        () => {},
       );
     },
 
@@ -1234,7 +1222,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 <div id="board-${plane.id}" class="plane-board">
   <div id="alliances-${plane.id}" class="alliancelist"></div>
   <div id="paxlist-${plane.id}" class="paxlist is-plane"></div>
-</div>`
+</div>`,
         );
       }
       const gaugesEl = document.getElementById(`gauges-${plane.id}`);
@@ -1353,7 +1341,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
   <div class="emptytxt"></div>
   <div class="location">${manifestId}</div>
   <div id="paxlist-${manifestId}" class="paxlist is-map"></div>
-</div>`
+</div>`,
       );
       if (!isTouch) {
         const manifestEl = document.getElementById(`manifest-${manifestId}`);
@@ -1395,7 +1383,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           `<div id="node-${node}" class="port node node-${node} is-empty">
   <div id="leadline-${node}" class="leadline"></div>
   <i class="icon people"></i><span id="nodecount-${node}" class="nodecount">0</span>
-</div>`
+</div>`,
         );
         if (!isTouch) {
           const nodeEl = document.getElementById(`node-${node}`);
@@ -1573,7 +1561,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
     <span class="destination"></span>
     <div class="cash"></div>
   </div>
-</div>`
+</div>`,
         );
         paxEl = document.getElementById(`pax-${pax.id}`);
         paxEl.addEventListener("click", () => this.takePaxAction(pax.id));
@@ -1773,7 +1761,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
   <tr><td class="lline">${_("Cash")} ${walletHtml}</td><td class="lline lamt">$${walletSum}&nbsp;</td></tr>
   ${ledgerHtml}
   <tr><td colspan="2" class="lhead"></td></tr>
-</table>`
+</table>`,
       );
     },
 
@@ -1933,7 +1921,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
               .slice(i, i + chunkSize)
               .map((row) => row.html)
               .join("") +
-            "</table>"
+            "</table>",
         );
       }
 
