@@ -122,7 +122,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
       // Setup chat
       this.chatHeaderEl = document.getElementById("nbchatheader");
       this.chatHeaderEl.insertAdjacentText("beforeend", __("lang_mainsite", "Discuss at this table"));
-      this.chatHeaderEl.insertAdjacentElement("afterend", document.getElementById("spectatorbox"));
       if (gamedatas.hourTiming) {
         for (const hourTiming of gamedatas.hourTiming) {
           this.appendNbChatHourTiming(hourTiming);
