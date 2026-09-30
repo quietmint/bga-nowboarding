@@ -59,7 +59,6 @@ class NowBoarding extends Table
     {
         parent::__construct();
         $this->bSelectGlobalsForUpdate = true;
-        $this->initGameStateLabels([]);
     }
 
     protected function setupNewGame($players, $options = [])
@@ -245,14 +244,13 @@ class NowBoarding extends Table
 
     public function checkVersion(int $clientVersion): void
     {
-        if ($clientVersion != $this->getOption(N_BGA_VERSION)) {
+        if ($clientVersion != $this->bga->tableOptions->getGameVersion()) {
             throw new UserException('!!!checkVersion');
         }
     }
 
     protected function getAllDatas(): array
     {
-        $bgaClock = $this->getOption(N_BGA_CLOCK);
         $plans = $this->gamestate->state()['name'] == 'gameEnd' ? $this->getFlightPlans() : null;
         $players = $this->getCollectionFromDb("SELECT player_id id, player_score score FROM player");
         return [
@@ -261,13 +259,12 @@ class NowBoarding extends Table
             'hour' => $this->getHourInfo(),
             'hourTiming' => $this->globals->get('hourTiming'),
             'map' => $this->getMap(),
-            'noTimeLimit' => in_array($bgaClock, N_REF_BGA_CLOCK_UNLIMITED),
             'pax' => $this->filterPax($this->getPaxByStatus(['SECRET', 'PORT', 'SEAT'])),
             'planes' => $this->getPlanesByIds(),
             'plans' => $plans,
             'players' => $players,
-            'timer' => (in_array($bgaClock, N_REF_BGA_CLOCK_REALTIME) ? $this->getOption(N_OPTION_TIMER) : 0) * (count($players) * 5 + 20),
-            'version' => $this->getOption(N_BGA_VERSION),
+            'timer' => ($this->bga->tableOptions->isRealTime() ? $this->getOption(N_OPTION_TIMER) : 0) * (count($players) * 5 + 20),
+            'version' => $this->bga->tableOptions->getGameVersion(),
             'vip' => $this->getOption(N_OPTION_VIP) ? $this->getVipOverall($this->globals->get('vips')) : null,
         ];
     }
@@ -754,7 +751,7 @@ class NowBoarding extends Table
         $this->notifyAllPlayers('pax', $msg, $args);
 
         // Start the timer
-        if (in_array($this->getOption(N_BGA_CLOCK), N_REF_BGA_CLOCK_REALTIME)) {
+        if ($this->bga->tableOptions->isRealTime()) {
             $seconds = 9999;
             $duration = $this->getOption(N_OPTION_TIMER) * ($this->getPlayersNumber() * 5 + 20);
             if ($duration) {
@@ -1812,7 +1809,7 @@ class NowBoarding extends Table
             $endTime > 0
             && time() >= $endTime
             && $this->getOption(N_OPTION_TIMER)
-            && in_array($this->getOption(N_BGA_CLOCK), N_REF_BGA_CLOCK_REALTIME)
+            && $this->bga->tableOptions->isRealTime()
             && $this->gamestate->state()['name'] == 'fly'
         ) {
             $this->notifyAllPlayers('flyTimer', N_REF_MSG['flyTimer'], []);

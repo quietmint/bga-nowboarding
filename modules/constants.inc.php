@@ -15,14 +15,6 @@ define('N_STATE_FLY', 6);
 define('N_STATE_FLY_PRIVATE', 61);
 define('N_STATE_END', 99);
 
-// Globals
-define('N_BGA_ELO', 201);
-define('N_BGA_CLOCK', 200);
-define('N_BGA_VERSION', 300);
-
-define('N_REF_BGA_CLOCK_REALTIME', [0, 1, 2, 9]);
-define('N_REF_BGA_CLOCK_UNLIMITED', [9, 20]);
-
 // Game options
 define('N_OPTION_TIMER', 100);
 define('N_OPTION_VIP', 101);

@@ -618,7 +618,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
       if (stateName == "fly") {
         if (args.args.remain != null) {
-          document.body.classList.add("no_time_limit");
           if (!this.isReadOnly()) {
             // Start timer
             if (flyTimer) {
@@ -637,9 +636,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           window.clearTimeout(flyTimer);
           flyTimer = null;
           endTime = null;
-        }
-        if (!this.gamedatas.noTimeLimit) {
-          document.body.classList.remove("no_time_limit");
         }
         this.renderCountdown();
         this.renderTitleMessage();
