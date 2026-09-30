@@ -195,14 +195,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
 
       // Setup sounds
       window.playSound = this.playSound.bind(this);
-      this.sounds.load("cash");
-      this.sounds.load("chime");
-      this.sounds.load("complaint1");
-      this.sounds.load("complaint2");
-      this.sounds.load("complaint3");
-      this.sounds.load("complaint4");
-      this.sounds.load("plane");
-      this.sounds.load("walkway");
 
       // Setup notifications
       dojo.subscribe("buildPrimary", this, "onNotify");
