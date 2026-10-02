@@ -79,6 +79,12 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
   // Sounds
   const playSoundSuper = window.playSound;
   const getRandomInt = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
+  const formatTime = (seconds) => {
+    seconds = Math.max(Math.floor(seconds), 0);
+    const mm = Math.floor(seconds / 60);
+    const ss = (seconds - mm * 60) % 60;
+    return mm + ":" + ss.toString().padStart(2, "0");
+  };
 
   // Viewport
   const viewportEl = document.querySelector('meta[name="viewport"]');
@@ -571,7 +577,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
           playSoundSuper("time_alarm");
           this.gamedatas.gamestate.args.sound = true;
         }
-        this.renderCountdown(this.formatReflexionTime(seconds).string);
+        this.renderCountdown(formatTime(seconds));
       }
     },
 
@@ -853,6 +859,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         if (args.lock === false) {
           options.lock = false;
         }
+        delete args.lock;
         for (const key in args) {
           if (Array.isArray(args[key])) {
             args[key] = args[key].join(",");
@@ -1101,7 +1108,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter"], functi
         countdownEl.textContent = txt;
       } else if (this.gamedatas.timer) {
         countdownEl.classList.remove("active");
-        countdownEl.textContent = this.formatReflexionTime(this.gamedatas.timer).string;
+        countdownEl.textContent = formatTime(this.gamedatas.timer);
       }
     },
 
